@@ -42,3 +42,13 @@ class LogoutButtonPressed extends AuthEvent {
 
 // Sự kiện kiểm tra trạng thái khi vừa mở App
 class AppStarted extends AuthEvent {}
+
+class VerifyOtpPressed extends AuthEvent {
+  final String phoneNumber;
+  final String code;
+
+  VerifyOtpPressed({required this.phoneNumber, required this.code});
+
+  @override
+  List<Object?> get props => [phoneNumber, code];
+}

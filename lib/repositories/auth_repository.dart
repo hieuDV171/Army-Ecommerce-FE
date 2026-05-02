@@ -1,3 +1,4 @@
+import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/models/user_model.dart';
 import 'package:dio/dio.dart';
 
@@ -58,7 +59,7 @@ class AuthRepository {
     }
   }
 
-  Future<AuthResponse> checkVerifyCode(String phoneNumber, String resetCode) async {
+  Future<AuthResponse> checkCodeResetPassword(String phoneNumber, String resetCode) async {
     try {
       final response = await _dioClient.dio.post(
         '/auth/check_code_reset_password',
@@ -86,6 +87,38 @@ class AuthRepository {
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi xác thực token");
     }
+  }
+
+  Future<AuthResponse> checkSignupCode(String phoneNumber, String code) async {
+    // --- ĐOẠN MÃ GIẢ LẬP (PLACEHOLDER) ---
+    // Giả lập thời gian chờ phản hồi từ server là 1 giây
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Giả lập logic kiểm tra: Nếu mã là '123456' thì coi như thành công
+    if (code == '123456') {
+      return AuthResponse(
+          code: '1000',
+          message: 'Xác thực thành công',
+          // Trả về data ảo để app không bị crash khi parse
+        data: UserModel(id: 'temp', username: phoneNumber, token: 'temp_token', active: 1)
+      );
+    } else {
+      return AuthResponse(code: ResponseCode.codeVerifyIncorrect.code, message: ResponseCode.codeVerifyIncorrect.message);
+    }
+
+    // // --- SAU NÀY KHI BACKEND XONG, MỞ COMMENT ĐOẠN NÀY VÀ XÓA ĐOẠN GIẢ LẬP TRÊN ---
+    // try {
+    //   final response = await _dioClient.dio.post(
+    //     '/auth/check_signup_code', // Thay bằng endpoint thật của backend
+    //     data: {
+    //       'phone_number': phoneNumber,
+    //       'code': code,
+    //     },
+    //   );
+    //   return AuthResponse.fromJson(response.data);
+    // } on DioException catch (e) {
+    //   throw Exception(e.response?.data['message'] ?? "Lỗi xác thực");
+    // }
   }
 
 }

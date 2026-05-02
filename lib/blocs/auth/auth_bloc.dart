@@ -80,6 +80,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLogoutSuccess());
     });
 
+    on<VerifyOtpPressed>((event, emit) async {
+      emit(AuthLoading()); // Hiển thị trạng thái đang xử lý
+      try {
+        final response = await authRepository.checkSignupCode(event.phoneNumber, event.code);
+
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok) {
+          // Xác thực OTP thành công -> Cho phép vào trang Home hoặc yêu cầu Login lại
+          // Ở đây ta phát trạng thái AuthSuccess để vào thẳng Home
+          emit(AuthSuccess(user: response.data!));
+        } else {
+          final errorMessage = response.message.isNotEmpty ? response.message : responseCode.message;
+          emit(AuthFailure(error: errorMessage, code: response.code));
+        }
+      } catch (e) {
+        emit(AuthFailure(error: ResponseCode.exception.message, code: ResponseCode.exception.code));
+      }
+    });
+
     on<AppStarted>((event, emit) async {
       // 1. Lấy token đã lưu dưới máy (nếu có)
       final token = await SessionManager.getToken();
