@@ -1,3 +1,14 @@
+// =============================================================================
+// [WORKAROUND: TEMPORARY OTP HANDLING]
+// MÔ TẢ: Do Backend chưa cài đặt SMS Gateway nên OTP được trả về trực tiếp
+// trong response của API 'create_code_reset_password'.
+//
+// TODO: KHI BACKEND HOÀN THIỆN SMS:
+// 1. Xóa biến 'tempOtp' trong VerifyOtpScreen.
+// 2. Sửa lại AuthRepository để trả về AuthResponse chuẩn thay vì Map.
+// 3. Xóa logic tự động điền (auto-fill) trong initState của VerifyOtpScreen.
+// =============================================================================
+
 import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/models/user_model.dart';
 import 'package:dio/dio.dart';
@@ -41,7 +52,7 @@ class AuthRepository {
 
       return AuthResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Lỗi đăng ký');
+      throw Exception(e.response?.data['message'] ?? 'Lỗi kết nối mạng');
     }
   }
 
@@ -55,40 +66,9 @@ class AuthRepository {
         },
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối");
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
     }
   }
-
-  Future<AuthResponse> checkCodeResetPassword(String phoneNumber, String resetCode) async {
-    try {
-      final response = await _dioClient.dio.post(
-        '/auth/check_code_reset_password',
-        data: {
-          'phone_number': phoneNumber,
-          'reset_code': resetCode,
-        },
-      );
-      return AuthResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Mã xác thực không đúng");
-    }
-  }
-
-  Future<AuthResponse> getUserInfo(String token) async {
-    try {
-      final response = await _dioClient.dio.post(
-        '/users/get_user_info',
-        data: {
-          'token': token
-          // Không truyền user_id để lấy thông tin của chính mình
-        },
-      );
-      return AuthResponse.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi xác thực token");
-    }
-  }
-
   Future<AuthResponse> checkSignupCode(String phoneNumber, String code) async {
     // --- ĐOẠN MÃ GIẢ LẬP (PLACEHOLDER) ---
     // Giả lập thời gian chờ phản hồi từ server là 1 giây
@@ -117,8 +97,88 @@ class AuthRepository {
     //   );
     //   return AuthResponse.fromJson(response.data);
     // } on DioException catch (e) {
-    //   throw Exception(e.response?.data['message'] ?? "Lỗi xác thực");
+    //   throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
     // }
+  }
+
+  // Future<AuthResponse> createCodeResetPassword(String phoneNumber) async {
+  //   // Gọi API tạo mã OTP quên mật khẩu
+  //   try {
+  //     final response = await _dioClient.dio.post(
+  //       '/auth/create_code_reset_password',
+  //       data: {
+  //         'phone_number': phoneNumber
+  //       }
+  //     );
+  //
+  //     return AuthResponse.fromJson(response.data);
+  //   } on DioException catch (e) {
+  //     throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+  //   }
+  // }
+
+  // [!!!] QUAN TRỌNG: ĐOẠN CODE TẠM THỜI ĐỂ LẤY OTP TRỰC TIẾP TỪ BE [!!!]
+  // Sau này BE cài SMS xong, chỉ cần comment đoạn code dưới đây và mở đoạn code bên trên
+  Future<Map<String, dynamic>> createCodeResetPassword(String phoneNumber) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/auth/create_code_reset_password',
+        data: {
+          'phone_number': phoneNumber
+        }
+      );
+
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
+  }
+  // [!!!] HẾT ĐOẠN TẠM THỜI [!!!]
+
+  Future<AuthResponse> checkCodeResetPassword(String phoneNumber, String resetCode) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/auth/check_code_reset_password',
+        data: {
+          'phone_number': phoneNumber,
+          'reset_code': resetCode,
+        },
+      );
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
+  }
+
+  Future<AuthResponse> getUserInfo(String token) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/users/get_user_info',
+        data: {
+          'token': token
+          // Không truyền user_id để lấy thông tin của chính mình
+        },
+      );
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
+  }
+
+  Future<AuthResponse> resetPassword(String phoneNumber, String newPassword) async {
+    try {
+      final response = await _dioClient.dio.post(
+        '/auth/reset_password',
+        data: {
+          'phone_number': phoneNumber,
+          'password': newPassword,
+        }
+      );
+
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
   }
 
 }

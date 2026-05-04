@@ -6,10 +6,19 @@ import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'create_new_password_screen.dart';
+
 class VerifyOtpScreen extends StatefulWidget{
   final String phoneNumber;
+  final bool isForgotPassword;
+  final String? tempOtp; // Mã OTP tạm thời từ BE
 
-  const VerifyOtpScreen({super.key, required this.phoneNumber});
+  const VerifyOtpScreen({
+    super.key,
+    required this.phoneNumber,
+    this.isForgotPassword = false,
+    this.tempOtp
+  });
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -17,6 +26,26 @@ class VerifyOtpScreen extends StatefulWidget{
 
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   final TextEditingController _otpController = TextEditingController();
+
+  // ---------------------------------------------------------------------
+  // [!!!] ĐOẠN CODE CÀI ĐẶT TẠM THỜI CHO BE TRẢ VỀ OTP TRONG RESPONSE
+  @override
+  void initState() {
+    super.initState();
+
+    // Nếu có mã tạm từ BE thì tự động điền vào controller
+    if (widget.tempOtp != null) {
+      _otpController.text = widget.tempOtp!;
+
+      // Thông báo cho đồng chí biết mã đã được điền tự động
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Mã xác thực tạm thời: ${widget.tempOtp}'))
+        );
+      });
+    }
+  }
+  // [!!!] ----------------------------------------------------------[!!!]
 
   void _onVerifyPressed() {
     final otpCode = _otpController.text.trim();
@@ -29,17 +58,35 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       return;
     }
 
-    // Bắn sự kiện xác thực vào BLoC
-    context.read<AuthBloc>().add(
-      VerifyOtpPressed(phoneNumber: widget.phoneNumber, code: otpCode),
-    );
+    if (widget.isForgotPassword) {
+      // GỌI LOGIC QUÊN MẬT KHẨU
+      context.read<AuthBloc>().add(
+        VerifyResetCodeRequested(phoneNumber: widget.phoneNumber, resetCode: otpCode),
+      );
+    } else {
+      // GỌI LOGIC ĐĂNG KÝ
+      context.read<AuthBloc>().add(
+        VerifyOtpPressed(phoneNumber: widget.phoneNumber, code: otpCode),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthSuccess) {
+          if(state is VerifyResetCodeSuccess) {
+            // NẾU LÀ QUÊN MẬT KHẨU THÌ CHUYỂN SANG MÀN ĐẶT PASS MỚI
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CreateNewPasswordScreen(
+                      phoneNumber: state.phoneNumber,
+                      resetCode: state.resetCode
+                    )
+                )
+            );
+          } else if (state is AuthSuccess && !widget.isForgotPassword) {
             // XÁC THỰC THÀNH CÔNG -> Vào trang Home
             Navigator.pushAndRemoveUntil(
                 context,

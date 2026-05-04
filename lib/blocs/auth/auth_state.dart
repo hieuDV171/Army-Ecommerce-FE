@@ -47,3 +47,33 @@ class AuthLogoutSuccess extends AuthState {}
 
 // Trạng thái xác định người dùng chưa đăng nhập hoặc token hết hạn
 class Unauthenticated extends AuthState {}
+
+// Trạng thái báo hiệu mã OTP đã được gửi thành công
+class ForgotPasswordCodeSent extends AuthState {
+  final String phoneNumber;
+  final String otp; // Biến tạm để giữ mã OTP từ BE trả về
+  ForgotPasswordCodeSent({required this.phoneNumber, required this.otp});
+
+  @override
+  List<Object?> get props => [phoneNumber, otp];
+}
+
+class VerifyResetCodeSuccess extends AuthState {
+  final String phoneNumber;
+  final String resetCode; // Giữ lại mã code để gửi kèm ở bước Reset mật khẩu cuối cùng
+
+  VerifyResetCodeSuccess({required this.phoneNumber, required this.resetCode});
+
+  @override
+  List<Object?> get props => [phoneNumber, resetCode];
+}
+
+// Trạng thái báo hiệu đã đặt lại mật khẩu thành công
+class ResetPasswordSuccess extends AuthState {
+  final UserModel user;
+
+  ResetPasswordSuccess({required this.user});
+
+  @override
+  List<Object?> get props => [user];
+}

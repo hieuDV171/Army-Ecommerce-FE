@@ -52,3 +52,33 @@ class VerifyOtpPressed extends AuthEvent {
   @override
   List<Object?> get props => [phoneNumber, code];
 }
+
+// Sự kiện yêu cầu gửi mã OTP quên mật khẩu
+class ForgotPasswordRequested extends AuthEvent {
+  final String phoneNumber;
+  ForgotPasswordRequested({required this.phoneNumber});
+
+  @override
+  List<Object?> get props => [phoneNumber];
+}
+
+// Sự kiện xác thực mã OTP quên mật khẩu
+class VerifyResetCodeRequested extends AuthEvent {
+  final String phoneNumber;
+  final String resetCode;
+
+  VerifyResetCodeRequested({required this.phoneNumber, required this.resetCode});
+
+  @override
+  List<Object?> get props => [phoneNumber, resetCode];
+}
+
+class ResetPasswordRequested extends AuthEvent {
+  final String phoneNumber;
+  final String newPassword;
+
+  ResetPasswordRequested({required this.phoneNumber, required this.newPassword});
+
+  @override
+  List<Object?> get props => [phoneNumber, newPassword];
+}

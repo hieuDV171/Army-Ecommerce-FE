@@ -1,6 +1,7 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/ui/auth/forgot_password_screen.dart';
 import 'package:army_ecommerce/ui/auth/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Đăng nhập', style: TextStyle(color: Colors.black)), //[cite: 1]
+        title: const Text('Đăng nhập', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -105,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _isObscure, // Ẩn/hiện mật khẩu
                   decoration: InputDecoration(
-                    labelText: 'Mật khẩu', //[cite: 1]
+                    labelText: 'Mật khẩu',
                     border: const OutlineInputBorder(),
                     // Icon để toggle ẩn/hiện mật khẩu
                     suffixIcon: IconButton(
@@ -136,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Colors.white,
                             )
                           : const Text(
-                            'Đăng nhập', //[cite: 1]
+                            'Đăng nhập',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
@@ -148,8 +149,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     TextButton(
-                        onPressed: () {},
-                        child: const Text('Quên mật khẩu'), //[cite: 1]
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()));
+                        },
+                        child: const Text('Quên mật khẩu'),
                     ),
                     TextButton(
                         onPressed: () {

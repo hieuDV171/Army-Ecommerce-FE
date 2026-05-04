@@ -96,7 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthFailure(error: errorMessage, code: response.code));
         }
       } catch (e) {
-        emit(AuthFailure(error: ResponseCode.exception.message, code: ResponseCode.exception.code));
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
       }
     });
 
@@ -132,9 +132,71 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // hoặc bắt login lại. Ở đây ta tạm cho login lại để an toàn.
         emit(Unauthenticated());
       }
+    });
 
+    on<ForgotPasswordRequested>((event, emit) async {
+      emit(AuthLoading());
+
+      try {
+        final response = await authRepository.createCodeResetPassword(event.phoneNumber);
+        final responseCode = ResponseCode.fromCode(response['code']); // response.code
+
+        if (responseCode == ResponseCode.ok) {
+          final tempOtp = response['data']['otp'].toString(); //
+          // Thành công -> Phát state thông báo mã đã gửi
+          emit(ForgotPasswordCodeSent(phoneNumber: event.phoneNumber, otp: tempOtp));
+        } else {
+          // Thất bại (SĐT chưa đăng ký...) -> Phát state lỗi
+          emit(AuthFailure(error: response['message'], code: response['code'])); // response.message // response.code
+        }
+      } catch (e) {
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
 
     });
+
+    on<VerifyResetCodeRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final response = await authRepository.checkCodeResetPassword(
+            event.phoneNumber,
+            event.resetCode
+        );
+
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok) {
+          // Xác thực mã OK -> Phát state Success để chuyển sang màn đặt Pass mới
+          emit(VerifyResetCodeSuccess(phoneNumber: event.phoneNumber, resetCode: event.resetCode));
+        } else {
+          emit(AuthFailure(error: response.message, code: response.code));
+        }
+      } catch (e) {
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
+    });
+
+    on<ResetPasswordRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final response = await authRepository.resetPassword(event.phoneNumber, event.newPassword);
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok && response.data != null) {
+          // 1. LƯU TOKEN MỚI VÀO MÁY (Giống hệt logic Login)
+          await SessionManager.saveSession(
+            response.data!.token,
+            response.data!.username,
+          );
+          emit(ResetPasswordSuccess(user: response.data!));
+        } else {
+          emit(AuthFailure(error: response.message, code: response.code));
+        }
+      } catch (e) {
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
+    });
+
   }
 }
 
