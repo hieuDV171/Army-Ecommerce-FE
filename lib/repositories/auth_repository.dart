@@ -18,7 +18,6 @@ import 'package:army_ecommerce/models/user_model.dart';
 import 'package:dio/dio.dart';
 
 import '../core/api/dio_client.dart';
-import '../core/services/cloudinary_service.dart';
 
 class AuthRepository {
   final DioClient _dioClient;
@@ -242,14 +241,28 @@ class AuthRepository {
     try {
       String? avatarUrl;
 
+      // If an avatar file is provided, upload it to backend '/upload/file'
       if (avatarFile != null) {
-        final cloudinary = CloudinaryService();
-        avatarUrl = await cloudinary.uploadImageFile(
-          file: avatarFile,
-          folder: 'users',
+        final fileName = avatarFile.path.split(Platform.pathSeparator).last;
+        final formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(
+            avatarFile.path,
+            filename: fileName,
+          ),
+        });
+
+        final uploadResponse = await _dioClient.dio.post(
+          '/upload/file',
+          data: formData,
+          options: Options(
+            contentType: 'multipart/form-data',
+          ),
         );
+
+        // The upload API returns the url under data.url according to backend response
+        avatarUrl = uploadResponse.data?['data']?['url'] as String?;
       }
-      
+
       final response = await _dioClient.dio.post(
         '/auth/change_info_after_signup',
         data: {

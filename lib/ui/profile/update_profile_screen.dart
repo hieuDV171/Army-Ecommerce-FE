@@ -76,7 +76,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       }
     }
 
-    // Upload ảnh sẽ được xử lý trong repository qua Cloudinary.
+    // Upload ảnh sẽ được xử lý trong repository
     authBloc.add(
       ChangeInfoRequested(username: name, avatarFile: _selectedImage),
     );

@@ -42,7 +42,6 @@ dependencies:
   flutter_dotenv: ^6.0.1
   logger: ^2.7.0
   image_picker: ^1.2.2
-  cloudinary_public: ^0.23.1
   firebase_core: ^4.7.0
   firebase_messaging: ^16.2.0
 
