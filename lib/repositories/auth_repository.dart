@@ -1,5 +1,5 @@
 // =============================================================================
-// [WORKAROUND: TEMPORARY OTP HANDLING]
+// [GIẢI PHÁP TẠM THỜI: XỬ LÝ OTP]
 // MÔ TẢ: Do Backend chưa cài đặt SMS Gateway nên OTP được trả về trực tiếp
 // trong response của API 'create_code_reset_password'.
 //
@@ -9,11 +9,16 @@
 // 3. Xóa logic tự động điền (auto-fill) trong initState của VerifyOtpScreen.
 // =============================================================================
 
+
+import 'dart:io';
+
 import 'package:army_ecommerce/core/constants/response_code.dart';
+import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/models/user_model.dart';
 import 'package:dio/dio.dart';
 
 import '../core/api/dio_client.dart';
+import '../core/services/cloudinary_service.dart';
 
 class AuthRepository {
   final DioClient _dioClient;
@@ -178,6 +183,87 @@ class AuthRepository {
       return AuthResponse.fromJson(response.data);
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
+  }
+
+  Future<AuthResponse> changePassword({
+    required String oldPassword,
+    required String newPassword
+  }) async {
+    try {
+      final token = await SessionManager.getToken();
+
+      final response = await _dioClient.dio.post(
+        '/auth/change_password',
+        data: {
+          'token': token,
+          'password': oldPassword,
+          'new_password': newPassword,
+        }
+      );
+
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
+  }
+
+  /// Gửi device token (FCM / APNs) lên server để đăng ký thiết bị cho push notification
+  /// devtype: '0' = iOS, '1' = Android
+  Future<AuthResponse> setDevToken({
+    required String devToken,
+    required String devType,
+  }) async {
+    try {
+      final token = await SessionManager.getToken();
+
+      final response = await _dioClient.dio.post(
+        '/dev_tokens/set_devtoken',
+        data: {
+          'token': token,
+          'devtype': devType,
+          'devtoken': devToken,
+        },
+      );
+
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    }
+  }
+
+  Future<AuthResponse> changeInfoAfterSignup({
+    required String username,
+    File? avatarFile,
+  }) async {
+    // Lấy token
+    final token = await SessionManager.getToken();
+
+    try {
+      String? avatarUrl;
+
+      if (avatarFile != null) {
+        final cloudinary = CloudinaryService();
+        avatarUrl = await cloudinary.uploadImageFile(
+          file: avatarFile,
+          folder: 'users',
+        );
+      }
+      
+      final response = await _dioClient.dio.post(
+        '/auth/change_info_after_signup',
+        data: {
+          'token': token,
+          'username': username,
+          'avatar': ?avatarUrl,
+        },
+      );
+
+      return AuthResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi thay đổi thông tin: $e');
     }
   }
 

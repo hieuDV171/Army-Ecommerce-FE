@@ -5,6 +5,7 @@ import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
@@ -25,8 +26,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // 3. Kiểm tra mã phản hồi theo chuẩn API (1000 là OK)
         if (responseCode == ResponseCode.ok && response.data != null) {
 
-          // LƯU VÀO MÁY CỤC BỘ TRƯỚC
-          await SessionManager.saveSession(response.data!.token, response.data!.username);
+          // LƯU VÀO MÁY CỤC BỘ TRƯỚC (lưu token, username, phoneNumber nếu có)
+          await SessionManager.saveSession(response.data!.token, response.data!.username, event.phoneNumber); // :)))
+
+          // Lưu avatar từ API response
+          if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
+            await SessionManager.setAvatar(response.data!.avatar!);
+          }
+          logger.i('Login: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
 
           // 4. Nếu đăng nhập thành công, chuyển sang trạng thái AuthSuccess với dữ liệu người dùng
           emit(AuthSuccess(user: response.data!));
@@ -66,6 +73,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       // Bất kể có mạng hay không, xóa sạch bộ nhớ máy
       await SessionManager.clearSession();
+      logger.i('Logout: cleared local session');
 
       // Thử gọi API để server hủy token cũ
       try {
@@ -88,8 +96,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final responseCode = ResponseCode.fromCode(response.code);
 
         if (responseCode == ResponseCode.ok) {
-          // Xác thực OTP thành công -> Cho phép vào trang Home hoặc yêu cầu Login lại
-          // Ở đây ta phát trạng thái AuthSuccess để vào thẳng Home
+          // Xác thực OTP thành công -> Lưu session (nếu BE trả token) rồi vào Home
+          if (response.data != null) {
+            await SessionManager.saveSession(response.data!.token, response.data!.username, event.phoneNumber);
+
+            // Lưu avatar từ API response
+            if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
+              await SessionManager.setAvatar(response.data!.avatar!);
+            }
+            logger.i('VerifyOtp: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
+          }
+          // Phát state để vào Home
           emit(AuthSuccess(user: response.data!));
         } else {
           final errorMessage = response.message.isNotEmpty ? response.message : responseCode.message;
@@ -103,30 +120,63 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AppStarted>((event, emit) async {
       // 1. Lấy token đã lưu dưới máy (nếu có)
       final token = await SessionManager.getToken();
+      logger.d('AutoLogin: token from SessionManager: ${token != null ? "[REDACTED]" : "null"}');
 
       // 2. Nếu không có token -> Chuyển sang trạng thái chưa đăng nhập
       if (token == null || token.isEmpty) {
+        logger.i('AutoLogin: no token found -> Unauthenticated');
         emit(Unauthenticated());
         return;
       }
 
       // 3. Nếu có token, thử gọi API lấy thông tin user để kiểm tra token còn sống không
-      try {
+        try {
+         final prefs = await SharedPreferences.getInstance();
+         final localUsername = prefs.getString('username') ?? '';
+         final localPhone = prefs.getString('phone_number') ?? '';
+         logger.d('AutoLogin: local username from SharedPreferences: "$localUsername" phone="$localPhone"');
+
         final response = await authRepository.getUserInfo(token);
+        logger.d('AutoLogin: getUserInfo response code=${response.code}, data=${response.data}');
 
         final responseCode = ResponseCode.fromCode(response.code);
 
-        if (responseCode == ResponseCode.ok && response.data != null) {
-          final user = response.data!.copyWith(token: token);
-          // Token hợp lệ -> Chuyển thẳng vào trang Home
-          emit(AuthSuccess(user: user));
+         if (responseCode == ResponseCode.ok && response.data != null) {
+           // Nếu API không trả username, dùng username lưu local làm fallback
+           final apiUsername = response.data!.username;
+           final usernameToUse = apiUsername.isNotEmpty ? apiUsername : localUsername;
+           if (apiUsername.isEmpty && localUsername.isNotEmpty) {
+             logger.w('AutoLogin: API returned empty username -> using local username "$localUsername"');
+           } else {
+             logger.d('AutoLogin: using username from API: "$apiUsername"');
+           }
+
+           // Lấy avatar từ local storage nếu API không trả
+           final localAvatar = await SessionManager.getAvatar();
+           final avatarToUse = (response.data!.avatar != null && response.data!.avatar!.isNotEmpty)
+               ? response.data!.avatar
+               : localAvatar;
+
+           // Lưu avatar lại nếu API trả về
+           if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
+             await SessionManager.setAvatar(response.data!.avatar!);
+           }
+
+           final user = response.data!.copyWith(
+             token: token,
+             username: usernameToUse,
+             avatar: avatarToUse,
+           );
+           // Token hợp lệ -> Chuyển thẳng vào trang Home
+           emit(AuthSuccess(user: user));
         } else {
+          logger.w('AutoLogin: token invalid or response not OK -> clearing session. response.code=${response.code}');
           // Token hết hạn hoặc không hợp lệ -> Xóa rác và yêu cầu login lại
           await SessionManager.clearSession();
           emit(Unauthenticated());
         }
       } catch (e) {
-        logger.d("DEBUG: Lỗi Auto Login: $e");
+        logger.e("DEBUG: Lỗi Auto Login: $e");
         // Trường hợp mất mạng:
         // Tùy chiến thuật, ta có thể cho vào Home luôn (chế độ offline)
         // hoặc bắt login lại. Ở đây ta tạm cho login lại để an toàn.
@@ -187,8 +237,84 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           await SessionManager.saveSession(
             response.data!.token,
             response.data!.username,
+            event.phoneNumber,
           );
+
+          // Lưu avatar từ API response
+          if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
+            await SessionManager.setAvatar(response.data!.avatar!);
+          }
+          logger.i('ResetPassword: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
+
           emit(ResetPasswordSuccess(user: response.data!));
+        } else {
+          emit(AuthFailure(error: response.message, code: response.code));
+        }
+      } catch (e) {
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
+    });
+
+    on<ChangePasswordRequested>((event, emit) async {
+      emit(AuthLoading());
+
+      try {
+        final response = await authRepository.changePassword(
+            oldPassword: event.oldPassword,
+            newPassword: event.newPassword
+        );
+
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok) {
+          emit(ChangePasswordSuccess());
+        } else {
+          emit(AuthFailure(error: response.message, code: response.code));
+        }
+      } catch (e) {
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
+    });
+
+    on<VerifyOldPasswordRequested>((event, emit) async {
+      emit(AuthLoading());
+        try {
+        // Lấy SĐT từ SessionManager (phone stored under phone_number)
+        final prefs = await SharedPreferences.getInstance();
+        final phone = prefs.getString('phone_number') ?? "";
+
+        // Gọi API Login để kiểm tra mật khẩu cũ
+        final response = await authRepository.login(phone, event.oldPassword);
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok) {
+          emit(OldPasswordVerifySuccess()); // Mật khẩu cũ đúng
+        } else {
+          emit(AuthFailure(error: response.message, code: response.code));
+        }
+      } catch (e) {
+        emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
+    });
+
+    on<ChangeInfoRequested>((event, emit) async {
+      emit(AuthLoading());
+
+      try {
+        final response = await authRepository.changeInfoAfterSignup(
+          username: event.username,
+          avatarFile: event.avatarFile,
+        );
+
+        final responseCode = ResponseCode.fromCode(response.code);
+        if (responseCode == ResponseCode.ok && response.data != null) {
+           // Cập nhật lại username và avatar trong bộ nhớ tạm
+           await SessionManager.setUsername(response.data!.username);
+           if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
+             await SessionManager.setAvatar(response.data!.avatar!);
+           }
+
+           emit(ChangeInfoSuccess(updatedUser: response.data!));
         } else {
           emit(AuthFailure(error: response.message, code: response.code));
         }

@@ -9,10 +9,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/api/dio_client.dart';
+import 'core/services/firebase_notification_service.dart';
 
 Future<void> main() async {
   // Đảm bảo Flutter binding được khởi tạo trước khi chạy các setup bất đồng bộ
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo Firebase
+  await FirebaseNotificationService.initializeFirebase();
 
   // Load file .env
   await dotenv.load(fileName: ".env");
@@ -23,16 +27,29 @@ Future<void> main() async {
   runApp(MyApp(dioClient: dioClient));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final DioClient dioClient;
   const MyApp({super.key, required this.dioClient});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Setup Firebase message handlers
+    FirebaseNotificationService.setupForegroundMessageHandler();
+    FirebaseNotificationService.setupNotificationTapHandler();
+  }
+
+  // Widget gốc (root) của ứng dụng.
   @override
   Widget build(BuildContext context) {
     // RepositoryProvider cung cấp AuthRepository cho các Bloc sử dụng
     return RepositoryProvider(
-        create: (context) => AuthRepository(dioClient: dioClient),
+        create: (context) => AuthRepository(dioClient: widget.dioClient),
       // BlocProvider khởi tạo và cung cấp AuthBloc cho toàn bộ cây Widget
       child: BlocProvider(
           create: (context) => AuthBloc(
@@ -44,7 +61,24 @@ class MyApp extends StatelessWidget {
             theme: ThemeData(
               primarySwatch: Colors.blue,
             ),
-            home: BlocBuilder<AuthBloc, AuthState>(
+            home: BlocConsumer<AuthBloc, AuthState>(
+                listenWhen: (previous, current) {
+                  // Lắng nghe khi user login thành công để đăng ký device token
+                  return current is AuthSuccess;
+                },
+                listener: (context, state) {
+                  if (state is AuthSuccess) {
+                    // Lấy AuthRepository từ context và đăng ký device token
+                    final authRepo = RepositoryProvider.of<AuthRepository>(context);
+                    FirebaseNotificationService.registerDeviceToken(
+                      authRepository: authRepo,
+                    );
+                    // Lắng nghe token refresh
+                    FirebaseNotificationService.listenTokenRefresh(
+                      authRepository: authRepo,
+                    );
+                  }
+                },
                 buildWhen: (previous, current) {
                   // Chỉ vẽ lại màn hình chính khi trạng thái chuyển sang Success hoặc Unauthenticated
                   return current is AuthSuccess || current is Unauthenticated || current is AuthInitial;

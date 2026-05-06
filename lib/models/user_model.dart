@@ -13,12 +13,12 @@ class UserModel {
     required this.active,
   });
 
-  UserModel copyWith({String? token}) {
+  UserModel copyWith({String? token, String? username, String? avatar}) {
     return UserModel(
       id: id,
-      username: username,
+      username: username ?? this.username,
       token: token ?? this.token,
-      avatar: avatar,
+      avatar: avatar ?? this.avatar,
       active: active,
     );
   }
@@ -50,7 +50,7 @@ class AuthResponse {
     return AuthResponse(
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
-      data: json['data'] != null ? UserModel.fromJson(json['data']) : null,
+      data: (json['data'] != null && json['data'] is Map<String, dynamic>) ? UserModel.fromJson(json['data']) : null,
     );
   }
 }

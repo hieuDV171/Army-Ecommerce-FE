@@ -44,5 +44,25 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variable files
+# 🔐 CREDENTIALS & SECRETS
+# Firebase
+**/android/app/google-services.json
+**/ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
+
+# Cloudinary & APIs
 .env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.cloudinary
+secrets.json
+api_keys.dart
+constants/api_keys.dart
+
+# Private keys
+*.jks
+*.keystore
+*.p12
+*.pem

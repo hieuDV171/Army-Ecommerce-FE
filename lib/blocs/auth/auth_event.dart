@@ -1,3 +1,6 @@
+
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 
 abstract class AuthEvent extends Equatable {
@@ -81,4 +84,29 @@ class ResetPasswordRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [phoneNumber, newPassword];
+}
+
+class ChangePasswordRequested extends AuthEvent {
+  final String oldPassword;
+  final String newPassword;
+
+  ChangePasswordRequested({required this.oldPassword, required this.newPassword});
+
+  @override
+  List<Object?> get props => [oldPassword, newPassword];
+}
+
+class VerifyOldPasswordRequested extends AuthEvent {
+  final String oldPassword;
+  VerifyOldPasswordRequested({required this.oldPassword});
+}
+
+class ChangeInfoRequested extends AuthEvent {
+  final String username;
+  final File? avatarFile;
+
+  ChangeInfoRequested({required this.username, this.avatarFile});
+
+  @override
+  List<Object?> get props => [username, avatarFile];
 }

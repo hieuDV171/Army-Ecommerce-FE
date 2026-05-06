@@ -77,3 +77,16 @@ class ResetPasswordSuccess extends AuthState {
   @override
   List<Object?> get props => [user];
 }
+
+class ChangePasswordSuccess extends AuthState {}
+
+class OldPasswordVerifySuccess extends AuthState {} // Cho phép sang bước 2
+
+class ChangeInfoSuccess extends AuthState {
+  final UserModel updatedUser; // Chứa thông tin và link avatar mới
+
+  ChangeInfoSuccess({required this.updatedUser});
+
+  @override
+  List<Object?> get props => [updatedUser];
+}
