@@ -92,6 +92,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => HomeScreen(
+                        userId: state.user.id,
                         username: state.user.username,
                         token: state.user.token
                     ),

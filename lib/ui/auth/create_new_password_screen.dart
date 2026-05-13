@@ -116,6 +116,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
       navigator.pushAndRemoveUntil(
           MaterialPageRoute(
               builder: (_) => HomeScreen(
+                  userId: user.id,
                   username: user.username,
                   token: user.token)
           ),

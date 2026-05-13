@@ -2,6 +2,10 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
+import 'package:army_ecommerce/repositories/block_repository.dart';
+import 'package:army_ecommerce/repositories/chat_repository.dart';
+import 'package:army_ecommerce/repositories/follow_repository.dart';
+import 'package:army_ecommerce/repositories/notification_repository.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +25,7 @@ Future<void> main() async {
   // Load file .env
   await dotenv.load(fileName: ".env");
 
-  // Khởi tạo DioClient
+  // Khởi tạo DioClient dùng chung cho toàn bộ app
   final dioClient = DioClient();
 
   runApp(MyApp(dioClient: dioClient));
@@ -44,77 +48,80 @@ class _MyAppState extends State<MyApp> {
     FirebaseNotificationService.setupNotificationTapHandler();
   }
 
-  // Widget gốc (root) của ứng dụng.
   @override
   Widget build(BuildContext context) {
-    // RepositoryProvider cung cấp AuthRepository cho các Bloc sử dụng
-    return RepositoryProvider(
-        create: (context) => AuthRepository(dioClient: widget.dioClient),
-      // BlocProvider khởi tạo và cung cấp AuthBloc cho toàn bộ cây Widget
+    // MultiRepositoryProvider cung cấp tất cả repository cho toàn bộ cây widget
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(
+          create: (_) => AuthRepository(dioClient: widget.dioClient),
+        ),
+        RepositoryProvider(
+          create: (_) => FollowRepository(dioClient: widget.dioClient),
+        ),
+        RepositoryProvider(
+          create: (_) => BlockRepository(dioClient: widget.dioClient),
+        ),
+        RepositoryProvider(
+          create: (_) => ChatRepository(dioClient: widget.dioClient),
+        ),
+        RepositoryProvider(
+          create: (_) => NotificationRepository(dioClient: widget.dioClient),
+        ),
+      ],
       child: BlocProvider(
-          create: (context) => AuthBloc(
-              authRepository: RepositoryProvider.of<AuthRepository>(context),
-          )
-            ..add(AppStarted()), // GỌI NGAY sự kiện kiểm tra khi App vừa khởi tạo
-          child: MaterialApp(
-            title: 'Army E-commerce',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-            ),
-            home: BlocConsumer<AuthBloc, AuthState>(
-                listenWhen: (previous, current) {
-                  // Lắng nghe khi user login thành công để đăng ký device token
-                  return current is AuthSuccess;
-                },
-                listener: (context, state) {
-                  if (state is AuthSuccess) {
-                    // Lấy AuthRepository từ context và đăng ký device token
-                    final authRepo = RepositoryProvider.of<AuthRepository>(context);
-                    FirebaseNotificationService.registerDeviceToken(
-                      authRepository: authRepo,
-                    );
-                    // Lắng nghe token refresh
-                    FirebaseNotificationService.listenTokenRefresh(
-                      authRepository: authRepo,
-                    );
-                  }
-                },
-                buildWhen: (previous, current) {
-                  // Chỉ vẽ lại màn hình chính khi trạng thái chuyển sang Success hoặc Unauthenticated
-                  return current is AuthSuccess || current is Unauthenticated || current is AuthInitial;
-                },
-                builder: (context, state) {
-                  // 1. Nếu xác định đã đăng nhập thành công từ token cũ
-                  if (state is AuthSuccess) {
-                    return HomeScreen(
-                      username: state.user.username,
-                      token: state.user.token,
-                    );
-                  }
-
-                  // 2. Nếu chưa đăng nhập hoặc token hỏng
-                  if (state is Unauthenticated) {
-                    return const LoginScreen();
-                  }
-
-                  // 3. Màn hình chờ (Splash Screen) khi đang kiểm tra token
-                  return const Scaffold(
-                      body: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.military_tech, size: 80, color: Colors.lightGreen),
-                            SizedBox(height: 20),
-                            CircularProgressIndicator(),
-                            SizedBox(height: 10),
-                            Text("Đang kiểm tra dữ liệu quân nhu..."),
-                          ],
-                        ),
-                      ),
-                  );
-                }
-            )
+        create: (ctx) => AuthBloc(
+          authRepository: ctx.read<AuthRepository>(),
+        )..add(AppStarted()),
+        child: MaterialApp(
+          title: 'Army E-commerce',
+          theme: ThemeData(primarySwatch: Colors.blue),
+          home: BlocConsumer<AuthBloc, AuthState>(
+            listenWhen: (_, current) => current is AuthSuccess,
+            listener: (context, state) {
+              if (state is AuthSuccess) {
+                final authRepo = context.read<AuthRepository>();
+                FirebaseNotificationService.registerDeviceToken(
+                  authRepository: authRepo,
+                );
+                FirebaseNotificationService.listenTokenRefresh(
+                  authRepository: authRepo,
+                );
+              }
+            },
+            buildWhen: (_, current) =>
+                current is AuthSuccess ||
+                current is Unauthenticated ||
+                current is AuthInitial,
+            builder: (context, state) {
+              if (state is AuthSuccess) {
+                return HomeScreen(
+                  userId: state.user.id,
+                  username: state.user.username,
+                  token: state.user.token,
+                );
+              }
+              if (state is Unauthenticated) {
+                return const LoginScreen();
+              }
+              // Splash screen khi đang kiểm tra token
+              return const Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.military_tech, size: 80, color: Colors.lightGreen),
+                      SizedBox(height: 20),
+                      CircularProgressIndicator(),
+                      SizedBox(height: 10),
+                      Text('Đang kiểm tra dữ liệu quân nhu...'),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
+        ),
       ),
     );
   }
