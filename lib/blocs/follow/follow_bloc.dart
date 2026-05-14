@@ -11,7 +11,7 @@ const int _pageSize = 20;
 class FollowBloc extends Bloc<FollowEvent, FollowState> {
   final FollowRepository followRepository;
 
-  // Lưu vị trí trang hiện tại để phục vụ infinite scroll
+  // Lưu số trang hiện tại (1-indexed) để phục vụ infinite scroll
   int _followersIndex = 0;
   int _followingIndex = 0;
 
@@ -63,7 +63,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
     Emitter<FollowState> emit,
   ) async {
     emit(FollowLoading());
-    _followersIndex = 0;
+    _followersIndex = 1;
 
     try {
       final response = await followRepository.getListFollowed(
@@ -76,7 +76,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
 
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
-        _followersIndex = list.length;
+        _followersIndex += 1;
         emit(FollowersLoaded(followers: list, hasMore: list.length == _pageSize));
       } else {
         logger.w('FollowBloc: getListFollowed failed code=${response.code}');
@@ -109,7 +109,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
 
       if (responseCode == ResponseCode.ok) {
         final newItems = response.data ?? [];
-        _followersIndex += newItems.length;
+        _followersIndex += 1;
         final updatedList = [...currentState.followers, ...newItems];
         emit(FollowersLoaded(followers: updatedList, hasMore: newItems.length == _pageSize));
       } else {
@@ -132,7 +132,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
     Emitter<FollowState> emit,
   ) async {
     emit(FollowLoading());
-    _followingIndex = 0;
+    _followingIndex = 1;
 
     try {
       final response = await followRepository.getListFollowing(
@@ -145,7 +145,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
 
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
-        _followingIndex = list.length;
+        _followingIndex += 1;
         emit(FollowingLoaded(following: list, hasMore: list.length == _pageSize));
       } else {
         logger.w('FollowBloc: getListFollowing failed code=${response.code}');
@@ -177,7 +177,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
 
       if (responseCode == ResponseCode.ok) {
         final newItems = response.data ?? [];
-        _followingIndex += newItems.length;
+        _followingIndex += 1;
         final updatedList = [...currentState.following, ...newItems];
         emit(FollowingLoaded(following: updatedList, hasMore: newItems.length == _pageSize));
       } else {

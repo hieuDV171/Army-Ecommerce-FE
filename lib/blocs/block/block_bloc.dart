@@ -56,7 +56,7 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
     Emitter<BlockState> emit,
   ) async {
     emit(BlockLoading());
-    _index = 0;
+    _index = 1;
 
     try {
       final response = await blockRepository.getListBlocks(
@@ -68,7 +68,7 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
 
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
-        _index = list.length;
+        _index += 1;
         emit(BlockedUsersLoaded(blockedUsers: list, hasMore: list.length == _pageSize));
       } else {
         logger.w('BlockBloc: getListBlocks failed code=${response.code}');
@@ -99,7 +99,7 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
 
       if (responseCode == ResponseCode.ok) {
         final newItems = response.data ?? [];
-        _index += newItems.length;
+        _index += 1;
         final updatedList = [...currentState.blockedUsers, ...newItems];
         emit(BlockedUsersLoaded(blockedUsers: updatedList, hasMore: newItems.length == _pageSize));
       } else {

@@ -30,19 +30,20 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     Emitter<NotificationState> emit,
   ) async {
     emit(NotificationLoading());
-    _index = 0;
+    _index = 1;
 
     try {
       final response = await notificationRepository.getNotification(
         index: _index,
         count: _pageSize,
+        group: 0,
       );
 
       final responseCode = ResponseCode.fromCode(response.code);
 
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
-        _index = list.length;
+        _index += 1;
         emit(NotificationsLoaded(
           notifications: list,
           hasMore: list.length == _pageSize,
@@ -71,13 +72,14 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       final response = await notificationRepository.getNotification(
         index: _index,
         count: _pageSize,
+        group: 0,
       );
 
       final responseCode = ResponseCode.fromCode(response.code);
 
       if (responseCode == ResponseCode.ok) {
         final newItems = response.data ?? [];
-        _index += newItems.length;
+        _index += 1;
         final updatedList = [...currentState.notifications, ...newItems];
         emit(NotificationsLoaded(
           notifications: updatedList,

@@ -1,5 +1,4 @@
 import 'package:army_ecommerce/core/api/dio_client.dart';
-import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:dio/dio.dart';
 
@@ -15,12 +14,9 @@ class FollowRepository {
     required String action,
   }) async {
     try {
-      final token = await SessionManager.getToken();
-
       final response = await _dioClient.dio.post(
-        '/users/set_user_follow',
+        '/set_user_follow',
         data: {
-          'token': token,
           'followee_id': followeeId,
           'action': action,
         },
@@ -39,12 +35,9 @@ class FollowRepository {
     required int count,
   }) async {
     try {
-      final token = await SessionManager.getToken();
-
       final response = await _dioClient.dio.post(
-        '/users/get_list_followed',
+        '/get_list_followed',
         data: {
-          'token': token,
           'user_id': userId,
           'index': index,
           'count': count,
@@ -64,12 +57,9 @@ class FollowRepository {
     required int count,
   }) async {
     try {
-      final token = await SessionManager.getToken();
-
       final response = await _dioClient.dio.post(
-        '/users/get_list_following',
+        '/get_list_following',
         data: {
-          'token': token,
           'user_id': userId,
           'index': index,
           'count': count,

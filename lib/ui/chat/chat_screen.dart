@@ -45,14 +45,12 @@ class _ChatScreenState extends State<ChatScreen> {
     // Tải tin nhắn khi mở màn hình
     context.read<ChatBloc>().add(LoadMessagesRequested(
           partnerId: widget.partnerId,
-          productId: widget.productId,
           conversationId: widget.conversationId,
         ));
 
     // Đánh dấu đã đọc tất cả tin nhắn (gọi ngầm, không ảnh hưởng UI)
     context.read<ChatBloc>().add(MarkMessageReadRequested(
           partnerId: widget.partnerId,
-          productId: widget.productId,
         ));
 
     // Lắng nghe cuộn đến đầu danh sách để tải thêm tin cũ
@@ -71,7 +69,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_scrollController.offset >= _scrollController.position.maxScrollExtent - 100) {
       context.read<ChatBloc>().add(LoadMoreMessagesRequested(
             partnerId: widget.partnerId,
-            productId: widget.productId,
             conversationId: _resolvedConversationId,
           ));
     }
@@ -88,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
     context.read<ChatBloc>().add(SendMessageRequested(
           toId: widget.partnerId,
           message: text,
-          productId: widget.productId,
+          productId: widget.productId ?? '0',
         ));
   }
 
@@ -124,7 +121,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   // Tải lại tin nhắn để hiển thị tin vừa gửi
                   context.read<ChatBloc>().add(LoadMessagesRequested(
                         partnerId: widget.partnerId,
-                        productId: widget.productId,
                         conversationId: _resolvedConversationId,
                       ));
                   _scrollToBottom();

@@ -9,13 +9,20 @@ abstract class ChatEvent extends Equatable {
 class SendMessageRequested extends ChatEvent {
   final String toId;
   final String message;
-  // product_id không bắt buộc, dùng khi chat từ trang sản phẩm
-  final String? productId;
+  // type_message bắt buộc theo spec: 'text' | 'image' | 'video' | 'file'
+  final String typeMessage;
+  // product_id bắt buộc theo spec, truyền '0' nếu không chat từ trang sản phẩm
+  final String productId;
 
-  SendMessageRequested({required this.toId, required this.message, this.productId});
+  SendMessageRequested({
+    required this.toId,
+    required this.message,
+    this.typeMessage = 'text',
+    this.productId = '0',
+  });
 
   @override
-  List<Object?> get props => [toId, message, productId];
+  List<Object?> get props => [toId, message, typeMessage, productId];
 }
 
 // Sự kiện tải danh sách hội thoại (trang đầu)
@@ -25,36 +32,34 @@ class LoadConversationsRequested extends ChatEvent {}
 class LoadMoreConversationsRequested extends ChatEvent {}
 
 // Sự kiện tải tin nhắn trong một conversation (trang đầu)
+// partnerId và conversationId là String, BLoC sẽ parse sang int khi gọi repository
 class LoadMessagesRequested extends ChatEvent {
   final String? partnerId;
-  final String? productId;
   final String? conversationId;
 
-  LoadMessagesRequested({this.partnerId, this.productId, this.conversationId});
+  LoadMessagesRequested({this.partnerId, this.conversationId});
 
   @override
-  List<Object?> get props => [partnerId, productId, conversationId];
+  List<Object?> get props => [partnerId, conversationId];
 }
 
 // Sự kiện tải thêm tin nhắn cũ hơn (infinite scroll ngược)
 class LoadMoreMessagesRequested extends ChatEvent {
   final String? partnerId;
-  final String? productId;
   final String? conversationId;
 
-  LoadMoreMessagesRequested({this.partnerId, this.productId, this.conversationId});
+  LoadMoreMessagesRequested({this.partnerId, this.conversationId});
 
   @override
-  List<Object?> get props => [partnerId, productId, conversationId];
+  List<Object?> get props => [partnerId, conversationId];
 }
 
 // Sự kiện đánh dấu đã đọc tin nhắn (gọi ngầm khi mở màn hình chat)
 class MarkMessageReadRequested extends ChatEvent {
   final String partnerId;
-  final String? productId;
 
-  MarkMessageReadRequested({required this.partnerId, this.productId});
+  MarkMessageReadRequested({required this.partnerId});
 
   @override
-  List<Object?> get props => [partnerId, productId];
+  List<Object?> get props => [partnerId];
 }

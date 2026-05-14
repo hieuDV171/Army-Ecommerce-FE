@@ -2,7 +2,6 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/block/block_bloc.dart';
-import 'package:army_ecommerce/blocs/block/block_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
@@ -58,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
   late final BlockBloc _blockBloc;
   late final ChatBloc _chatBloc;
   late final NotificationBloc _notificationBloc;
+
+  // GlobalKey để truy cập ScaffoldState nhằm đóng Drawer đúng cách
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -148,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Mở màn hình danh sách người đã chặn
   void _openBlockedUsers() {
-    Navigator.pop(context); // Đóng Drawer trước
+    _closeDrawer(); // Đóng Drawer an toàn trước khi navigate
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -157,14 +159,17 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const BlockedUsersScreen(),
         ),
       ),
-    ).then((_) {
-      if (mounted) _blockBloc.add(LoadBlockedUsersRequested());
-    });
+    );
+  }
+
+  // Đóng Drawer an toàn (no-op nếu Drawer không mở)
+  void _closeDrawer() {
+    _scaffoldKey.currentState?.closeDrawer();
   }
 
   // Mở màn hình cập nhật hồ sơ
   void _openUpdateProfile() {
-    Navigator.pop(context);
+    _closeDrawer();
     final authBloc = context.read<AuthBloc>();
     Navigator.push(
       context,
@@ -185,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Mở màn hình đổi mật khẩu
   void _openChangePassword() {
-    Navigator.pop(context);
+    _closeDrawer();
     final authBloc = context.read<AuthBloc>();
     Navigator.push(
       context,
@@ -227,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
         child: Scaffold(
+          key: _scaffoldKey,
           backgroundColor: const Color(0xFFF5F5F5),
           appBar: _buildAppBar(),
           drawer: _buildDrawer(),

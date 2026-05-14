@@ -1,5 +1,4 @@
 import 'package:army_ecommerce/core/api/dio_client.dart';
-import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/models/message_model.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:dio/dio.dart';
@@ -16,14 +15,11 @@ class BlockRepository {
     required String action,
   }) async {
     try {
-      final token = await SessionManager.getToken();
-
       final response = await _dioClient.dio.post(
-        '/users/set_blocks',
+        '/set_user_block',
         data: {
-          'token': token,
           'user_id': userId,
-          'action': action,
+          'type': action,
         },
       );
 
@@ -39,12 +35,9 @@ class BlockRepository {
     required int count,
   }) async {
     try {
-      final token = await SessionManager.getToken();
-
       final response = await _dioClient.dio.post(
-        '/users/get_list_blocks',
+        '/get_list_blocks',
         data: {
-          'token': token,
           'index': index,
           'count': count,
         },

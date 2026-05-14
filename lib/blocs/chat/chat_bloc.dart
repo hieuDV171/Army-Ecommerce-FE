@@ -31,7 +31,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final response = await chatRepository.sendMessage(
         toId: event.toId,
         message: event.message,
-        productId: event.productId,
+        typeMessage: event.typeMessage,
+        productId: int.tryParse(event.productId) ?? 0,
       );
 
       final responseCode = ResponseCode.fromCode(response.code);
@@ -56,7 +57,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     emit(ChatLoading());
-    _conversationsIndex = 0;
+    _conversationsIndex = 1;
 
     try {
       final response = await chatRepository.getListConversation(
@@ -68,7 +69,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
-        _conversationsIndex = list.length;
+        _conversationsIndex += 1;
         emit(ConversationsLoaded(conversations: list, hasMore: list.length == _pageSize));
       } else {
         logger.w('ChatBloc: getListConversation failed code=${response.code}');
@@ -99,7 +100,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (responseCode == ResponseCode.ok) {
         final newItems = response.data ?? [];
-        _conversationsIndex += newItems.length;
+        _conversationsIndex += 1;
         final updatedList = [...currentState.conversations, ...newItems];
         emit(ConversationsLoaded(conversations: updatedList, hasMore: newItems.length == _pageSize));
       } else {
@@ -121,13 +122,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     emit(ChatLoading());
-    _messagesIndex = 0;
+    _messagesIndex = 1;
 
     try {
       final response = await chatRepository.getConversation(
-        partnerId: event.partnerId,
-        productId: event.productId,
-        conversationId: event.conversationId,
+        partnerId: int.tryParse(event.partnerId ?? '') ?? 0,
+        conversationId: int.tryParse(event.conversationId ?? '') ?? 0,
         index: _messagesIndex,
         count: _pageSize,
       );
@@ -136,7 +136,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
-        _messagesIndex = list.length;
+        _messagesIndex += 1;
         emit(MessagesLoaded(messages: list, hasMore: list.length == _pageSize));
       } else {
         logger.w('ChatBloc: getConversation failed code=${response.code}');
@@ -159,9 +159,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     try {
       final response = await chatRepository.getConversation(
-        partnerId: event.partnerId,
-        productId: event.productId,
-        conversationId: event.conversationId,
+        partnerId: int.tryParse(event.partnerId ?? '') ?? 0,
+        conversationId: int.tryParse(event.conversationId ?? '') ?? 0,
         index: _messagesIndex,
         count: _pageSize,
       );
@@ -170,7 +169,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (responseCode == ResponseCode.ok) {
         final newItems = response.data ?? [];
-        _messagesIndex += newItems.length;
+        _messagesIndex += 1;
         // Tin nhắn cũ hơn được thêm vào đầu danh sách
         final updatedList = [...newItems, ...currentState.messages];
         emit(MessagesLoaded(messages: updatedList, hasMore: newItems.length == _pageSize));
@@ -194,8 +193,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     try {
       await chatRepository.setReadMessage(
-        partnerId: event.partnerId,
-        productId: event.productId,
+        partnerId: int.tryParse(event.partnerId) ?? 0,
       );
       // Không emit state mới - mobile không hiển thị trạng thái "Đã xem"
     } catch (e) {

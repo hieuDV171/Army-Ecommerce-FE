@@ -38,19 +38,20 @@ class DioClient {
 
           }
 
-          logger.d("📡 ĐANG GỬI: [${options.method}] ${options.path}");
+          final hasAuth = options.headers.containsKey('Authorization');
+          logger.d("📡 GỬI: [${options.method}] ${options.path} | auth=$hasAuth | body=${options.data}");
           return handler.next(options); // Tiếp tục gửi đi
         },
 
         // 2. KHI NHẬN PHẢN HỒI (onResponse)
         onResponse: (response, handler) {
-          logger.i("✅ NHẬN VỀ: [${response.statusCode}] ${response.requestOptions.path}");
+          logger.i("✅ NHẬN VỀ: [${response.statusCode}] ${response.requestOptions.path} | data=${response.data}");
           return handler.next(response); // Tiếp tục trả về cho Repository
         },
 
         // 3. KHI CÓ LỖI (onError)
         onError: (DioException e, handler) {
-          logger.e("❌ LỖI API: [${e.response?.statusCode}] ${e.message}");
+          logger.e("❌ LỖI API: [${e.response?.statusCode}] ${e.requestOptions.path} | resp=${e.response?.data} | msg=${e.message}");
 
           String code = e.response?.data['code']?.toString() ?? '';
           // Xử lý thông minh: Nếu Server báo Token hết hạn (ví dụ mã 9998)
