@@ -28,6 +28,9 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
     FollowUserRequested event,
     Emitter<FollowState> emit,
   ) async {
+    // Lưu lại state hiện tại để cập nhật list sau khi action thành công
+    final previousState = state;
+
     try {
       final response = await followRepository.setUserFollow(
         followeeId: event.followeeId,
@@ -37,12 +40,30 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
       final responseCode = ResponseCode.fromCode(response.code);
 
       if (responseCode == ResponseCode.ok && response.data != null) {
+        // Dùng event.action thay vì response.data.isFollowed vì API có thể không trả về đúng
+        final newIsFollowed = event.action == 'follow';
         emit(FollowActionSuccess(
           followeeId: response.data!.followeeId,
-          isFollowed: response.data!.isFollowed,
+          username: event.username,
+          isFollowed: newIsFollowed,
           followerCount: response.data!.followerCount,
           followingCount: response.data!.followingCount,
         ));
+        if (previousState is FollowingLoaded) {
+          final updatedList = previousState.following.map((user) {
+            return user.id == event.followeeId
+                ? user.copyWith(isFollowed: newIsFollowed)
+                : user;
+          }).toList();
+          emit(FollowingLoaded(following: updatedList, hasMore: previousState.hasMore));
+        } else if (previousState is FollowersLoaded) {
+          final updatedList = previousState.followers.map((user) {
+            return user.id == event.followeeId
+                ? user.copyWith(isFollowed: newIsFollowed)
+                : user;
+          }).toList();
+          emit(FollowersLoaded(followers: updatedList, hasMore: previousState.hasMore));
+        }
       } else {
         // Mã 1010: đã thực hiện hành động trước đó - không cần báo lỗi ra UI
         if (responseCode == ResponseCode.actionDone) {
@@ -63,7 +84,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
     Emitter<FollowState> emit,
   ) async {
     emit(FollowLoading());
-    _followersIndex = 1;
+    _followersIndex = 0;
 
     try {
       final response = await followRepository.getListFollowed(
@@ -132,7 +153,7 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
     Emitter<FollowState> emit,
   ) async {
     emit(FollowLoading());
-    _followingIndex = 1;
+    _followingIndex = 0;
 
     try {
       final response = await followRepository.getListFollowing(

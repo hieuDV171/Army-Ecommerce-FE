@@ -25,19 +25,21 @@ class FollowLoadingMore extends FollowState {
 // Trạng thái sau khi follow/unfollow thành công
 class FollowActionSuccess extends FollowState {
   final String followeeId;
+  final String username;
   final bool isFollowed;
   final int followerCount;
   final int followingCount;
 
   FollowActionSuccess({
     required this.followeeId,
+    required this.username,
     required this.isFollowed,
     required this.followerCount,
     required this.followingCount,
   });
 
   @override
-  List<Object?> get props => [followeeId, isFollowed, followerCount, followingCount];
+  List<Object?> get props => [followeeId, username, isFollowed, followerCount, followingCount];
 }
 
 // Trạng thái sau khi tải danh sách người theo dõi thành công

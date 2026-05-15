@@ -8,13 +8,18 @@ abstract class FollowEvent extends Equatable {
 // Sự kiện follow hoặc unfollow một user
 class FollowUserRequested extends FollowEvent {
   final String followeeId;
+  final String username;
   // action: 'follow' | 'unfollow'
   final String action;
 
-  FollowUserRequested({required this.followeeId, required this.action});
+  FollowUserRequested({
+    required this.followeeId,
+    required this.username,
+    required this.action,
+  });
 
   @override
-  List<Object?> get props => [followeeId, action];
+  List<Object?> get props => [followeeId, username, action];
 }
 
 // Sự kiện tải danh sách người đang theo dõi user_id (trang đầu)

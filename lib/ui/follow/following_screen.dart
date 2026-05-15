@@ -72,12 +72,19 @@ class _FollowingScreenState extends State<FollowingScreen> {
         centerTitle: true,
       ),
       body: BlocConsumer<FollowBloc, FollowState>(
+        // Không rebuild khi FollowActionSuccess vì ngay sau đó sẽ có FollowingLoaded
+        buildWhen: (_, current) => current is! FollowActionSuccess,
+        listenWhen: (_, current) =>
+            current is FollowActionSuccess || current is FollowFailure,
         listener: (context, state) {
           if (state is FollowActionSuccess) {
+            final message = state.isFollowed
+                ? 'Theo dõi ${state.username} thành công'
+                : 'Đã hủy theo dõi ${state.username}';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(state.isFollowed ? 'Đã theo dõi' : 'Đã bỏ theo dõi'),
-                duration: const Duration(seconds: 1),
+                content: Text(message),
+                duration: const Duration(seconds: 2),
                 backgroundColor: _shopeeOrange,
               ),
             );
@@ -123,10 +130,15 @@ class _FollowingScreenState extends State<FollowingScreen> {
                   );
                 }
                 return _UserListItem(
+                  key: ValueKey(following[index].id),
                   user: following[index],
                   onFollowToggle: (user, action) {
                     context.read<FollowBloc>().add(
-                          FollowUserRequested(followeeId: user.id, action: action),
+                          FollowUserRequested(
+                            followeeId: user.id,
+                            username: user.username,
+                            action: action,
+                          ),
                         );
                   },
                 );
@@ -163,17 +175,89 @@ class _FollowingScreenState extends State<FollowingScreen> {
   }
 }
 
-// Widget một dòng user trong danh sách
-class _UserListItem extends StatelessWidget {
+// Widget một dòng user trong danh sách — StatefulWidget để tự quản lý trạng thái nút
+class _UserListItem extends StatefulWidget {
   final UserFollowModel user;
   final void Function(UserFollowModel user, String action) onFollowToggle;
 
-  const _UserListItem({required this.user, required this.onFollowToggle});
+  const _UserListItem({
+    required this.user,
+    required this.onFollowToggle,
+    super.key,
+  });
+
+  @override
+  State<_UserListItem> createState() => _UserListItemState();
+}
+
+class _UserListItemState extends State<_UserListItem> {
+  // Trạng thái nút cục bộ — không phụ thuộc vào BLoC state để tránh lệch timing
+  late bool _isFollowed;
+
+  @override
+  void initState() {
+    super.initState();
+    // Trong danh sách đang theo dõi, mặc định là đang theo dõi nếu API không trả về
+    _isFollowed = widget.user.isFollowed ?? true;
+  }
+
+  @override
+  void didUpdateWidget(_UserListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Đồng bộ nếu parent truyền user mới với isFollowed thay đổi
+    if (oldWidget.user.isFollowed != widget.user.isFollowed) {
+      _isFollowed = widget.user.isFollowed ?? true;
+    }
+  }
+
+  // Hiện dialog xác nhận hủy theo dõi
+  Future<void> _showUnfollowDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text(
+          'Hủy theo dõi',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Bạn có muốn bỏ theo dõi "${widget.user.username}"?',
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        actions: [
+          // Nút hủy — đóng dialog, không làm gì
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.grey),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            ),
+            child: const Text('Hủy', style: TextStyle(color: Colors.black54)),
+          ),
+          // Nút xác nhận — cập nhật state cục bộ rồi gọi API unfollow
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _shopeeOrange,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            ),
+            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Cập nhật nút ngay lập tức trước khi API trả về
+      setState(() => _isFollowed = false);
+      widget.onFollowToggle(widget.user, 'unfollow');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bool isFollowed = user.isFollowed ?? false;
-
     return Container(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 1),
@@ -183,17 +267,17 @@ class _UserListItem extends StatelessWidget {
           CircleAvatar(
             radius: 24,
             backgroundColor: Colors.grey[200],
-            backgroundImage: (user.avatar != null && user.avatar!.isNotEmpty)
-                ? NetworkImage(user.avatar!)
+            backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
+                ? NetworkImage(widget.user.avatar!)
                 : null,
-            child: (user.avatar == null || user.avatar!.isEmpty)
+            child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
                 ? Icon(Icons.person, size: 28, color: Colors.grey[500])
                 : null,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              user.username,
+              widget.user.username,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -205,23 +289,32 @@ class _UserListItem extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => onFollowToggle(user, isFollowed ? 'unfollow' : 'follow'),
+            onTap: () {
+              if (_isFollowed) {
+                // Đang theo dõi → hiện dialog xác nhận trước khi hủy
+                _showUnfollowDialog();
+              } else {
+                // Chưa theo dõi → cập nhật nút ngay rồi gọi API follow
+                setState(() => _isFollowed = true);
+                widget.onFollowToggle(widget.user, 'follow');
+              }
+            },
             child: Container(
               height: 32,
               constraints: const BoxConstraints(minWidth: 96),
               decoration: BoxDecoration(
-                color: isFollowed ? _shopeeOrange : Colors.white,
+                color: _isFollowed ? _shopeeOrange : Colors.white,
                 borderRadius: BorderRadius.circular(2),
                 border: Border.all(color: _shopeeOrange, width: 1),
               ),
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                isFollowed ? 'Đang theo dõi' : 'Theo dõi',
+                _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: isFollowed ? Colors.white : _shopeeOrange,
+                  color: _isFollowed ? Colors.white : _shopeeOrange,
                 ),
               ),
             ),

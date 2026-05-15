@@ -24,14 +24,21 @@ class UserFollowModel {
   }
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
+  // get_list_followed trả về trường 'followed' (0/1)
+  // get_list_following trả về trường 'is_followed' (true/false hoặc 0/1)
   factory UserFollowModel.fromJson(Map<String, dynamic> json) {
+    bool? isFollowed;
+    if (json['followed'] != null) {
+      isFollowed = json['followed'] == 1 || json['followed'] == true;
+    } else if (json['is_followed'] != null) {
+      isFollowed = json['is_followed'] == true || json['is_followed'] == 1;
+    }
+
     return UserFollowModel(
       id: json['id']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       avatar: json['avatar']?.toString(),
-      isFollowed: json['is_followed'] != null
-          ? (json['is_followed'] == true || json['is_followed'] == 1)
-          : null,
+      isFollowed: isFollowed,
     );
   }
 }
