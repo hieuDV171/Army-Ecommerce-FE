@@ -8,13 +8,18 @@ abstract class BlockEvent extends Equatable {
 // Sự kiện block hoặc unblock một user
 class BlockUserRequested extends BlockEvent {
   final String userId;
+  final String username;
   // action: 'block' | 'unblock'
   final String action;
 
-  BlockUserRequested({required this.userId, required this.action});
+  BlockUserRequested({
+    required this.userId,
+    required this.username,
+    required this.action,
+  });
 
   @override
-  List<Object?> get props => [userId, action];
+  List<Object?> get props => [userId, username, action];
 }
 
 // Sự kiện tải danh sách user đã chặn (trang đầu)

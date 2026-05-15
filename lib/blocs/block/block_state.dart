@@ -25,12 +25,17 @@ class BlockLoadingMore extends BlockState {
 // Trạng thái sau khi block/unblock thành công
 class BlockActionSuccess extends BlockState {
   final String userId;
+  final String username;
   final bool isBlocked;
 
-  BlockActionSuccess({required this.userId, required this.isBlocked});
+  BlockActionSuccess({
+    required this.userId,
+    required this.username,
+    required this.isBlocked,
+  });
 
   @override
-  List<Object?> get props => [userId, isBlocked];
+  List<Object?> get props => [userId, username, isBlocked];
 }
 
 // Trạng thái sau khi tải danh sách đã chặn thành công

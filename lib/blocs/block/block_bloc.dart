@@ -34,6 +34,7 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
       if (responseCode == ResponseCode.ok) {
         emit(BlockActionSuccess(
           userId: event.userId,
+          username: event.username,
           isBlocked: event.action == 'block',
         ));
       } else {
@@ -56,7 +57,7 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
     Emitter<BlockState> emit,
   ) async {
     emit(BlockLoading());
-    _index = 1;
+    _index = 0;
 
     try {
       final response = await blockRepository.getListBlocks(

@@ -46,32 +46,6 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     await Future.delayed(const Duration(milliseconds: 800));
   }
 
-  // Hiển thị dialog xác nhận trước khi bỏ chặn
-  void _showUnblockConfirmDialog(BuildContext context, UserFollowModel user) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Bỏ chặn người dùng'),
-        content: Text('Bỏ chặn "${user.username}"? Người này sẽ có thể xem trang cá nhân và liên hệ với bạn.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('HỦY', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              context.read<BlockBloc>().add(
-                    BlockUserRequested(userId: user.id, action: 'unblock'),
-                  );
-            },
-            child: const Text('BỎ CHẶN', style: TextStyle(color: _shopeeOrange)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,16 +68,22 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         centerTitle: true,
       ),
       body: BlocConsumer<BlockBloc, BlockState>(
+        // Không rebuild khi BlockActionSuccess — item tự quản lý trạng thái nút
+        buildWhen: (_, current) => current is! BlockActionSuccess,
+        listenWhen: (_, current) =>
+            current is BlockActionSuccess || current is BlockFailure,
         listener: (context, state) {
-          if (state is BlockActionSuccess && !state.isBlocked) {
-            // Bỏ chặn thành công → làm mới danh sách
+          if (state is BlockActionSuccess) {
+            final message = state.isBlocked
+                ? 'Đã chặn ${state.username}'
+                : 'Đã bỏ chặn ${state.username}';
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Đã bỏ chặn người dùng'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(message),
+                duration: const Duration(seconds: 2),
+                backgroundColor: state.isBlocked ? Colors.black87 : _shopeeOrange,
               ),
             );
-            context.read<BlockBloc>().add(LoadBlockedUsersRequested());
           } else if (state is BlockFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Lỗi: ${state.error}')),
@@ -160,9 +140,17 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         );
                       }
                       return _BlockedUserItem(
+                        key: ValueKey(blockedUsers[index].id),
                         user: blockedUsers[index],
-                        onUnblock: () =>
-                            _showUnblockConfirmDialog(context, blockedUsers[index]),
+                        onBlockToggle: (u, action) {
+                          context.read<BlockBloc>().add(
+                                BlockUserRequested(
+                                  userId: u.id,
+                                  username: u.username,
+                                  action: action,
+                                ),
+                              );
+                        },
                       );
                     },
                   ),
@@ -220,12 +208,76 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   }
 }
 
-// Widget một dòng user đã chặn
-class _BlockedUserItem extends StatelessWidget {
+// Widget một dòng user đã chặn — StatefulWidget để tự quản lý trạng thái nút
+class _BlockedUserItem extends StatefulWidget {
   final UserFollowModel user;
-  final VoidCallback onUnblock;
+  final void Function(UserFollowModel user, String action) onBlockToggle;
 
-  const _BlockedUserItem({required this.user, required this.onUnblock});
+  const _BlockedUserItem({
+    required this.user,
+    required this.onBlockToggle,
+    super.key,
+  });
+
+  @override
+  State<_BlockedUserItem> createState() => _BlockedUserItemState();
+}
+
+class _BlockedUserItemState extends State<_BlockedUserItem> {
+  // Tất cả item trong danh sách này mặc định đang bị chặn
+  late bool _isBlocked;
+
+  @override
+  void initState() {
+    super.initState();
+    _isBlocked = true;
+  }
+
+  // Hiện dialog xác nhận trước khi bỏ chặn
+  Future<void> _showUnblockDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text(
+          'Bỏ chặn người dùng',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Bỏ chặn "${widget.user.username}"? Người này sẽ có thể xem trang cá nhân và liên hệ với bạn.',
+          style: const TextStyle(fontSize: 14, color: Colors.black87),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        actions: [
+          // Nút hủy — đóng dialog, không làm gì
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.grey),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            ),
+            child: const Text('Hủy', style: TextStyle(color: Colors.black54)),
+          ),
+          // Nút xác nhận — gọi API unblock (type=1)
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _shopeeOrange,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            ),
+            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Cập nhật nút ngay lập tức trước khi API trả về
+      setState(() => _isBlocked = false);
+      widget.onBlockToggle(widget.user, 'unblock');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,39 +287,39 @@ class _BlockedUserItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Avatar tròn với hiệu ứng mờ báo hiệu bị chặn
+          // Avatar tròn với overlay mờ khi đang bị chặn
           Stack(
             children: [
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Colors.grey[200],
-                backgroundImage: (user.avatar != null && user.avatar!.isNotEmpty)
-                    ? NetworkImage(user.avatar!)
+                backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
+                    ? NetworkImage(widget.user.avatar!)
                     : null,
-                child: (user.avatar == null || user.avatar!.isEmpty)
+                child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
                     ? Icon(Icons.person, size: 28, color: Colors.grey[400])
                     : null,
               ),
-              // Overlay mờ biểu thị trạng thái bị chặn
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.15),
+              if (_isBlocked)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withValues(alpha: 0.15),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(width: 12),
 
-          // Username
+          // Tên người dùng và trạng thái
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user.username,
+                  widget.user.username,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -278,33 +330,48 @@ class _BlockedUserItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Đã chặn',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  _isBlocked ? 'Đã chặn' : 'Chưa chặn',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _isBlocked ? Colors.grey[500] : Colors.green[600],
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
 
-          // Nút bỏ chặn — màu xám để phân biệt với nút follow
+          // Nút bỏ chặn / chặn
           GestureDetector(
-            onTap: onUnblock,
+            onTap: () {
+              if (_isBlocked) {
+                // Đang chặn → hiện dialog xác nhận trước khi bỏ chặn (type=1)
+                _showUnblockDialog();
+              } else {
+                // Chưa chặn → chặn lại ngay, không cần xác nhận (type=0)
+                setState(() => _isBlocked = true);
+                widget.onBlockToggle(widget.user, 'block');
+              }
+            },
             child: Container(
               height: 32,
               constraints: const BoxConstraints(minWidth: 88),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: _isBlocked ? Colors.white : Colors.black87,
                 borderRadius: BorderRadius.circular(2),
-                border: Border.all(color: Colors.grey[400]!, width: 1),
+                border: Border.all(
+                  color: _isBlocked ? Colors.grey[400]! : Colors.black87,
+                  width: 1,
+                ),
               ),
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                'Bỏ chặn',
+                _isBlocked ? 'Bỏ chặn' : 'Chặn',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
+                  color: _isBlocked ? Colors.grey[700] : Colors.white,
                 ),
               ),
             ),

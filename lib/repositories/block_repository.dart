@@ -15,11 +15,12 @@ class BlockRepository {
     required String action,
   }) async {
     try {
+      // type: 0 = block, 1 = unblock
       final response = await _dioClient.dio.post(
         '/set_user_block',
         data: {
           'user_id': userId,
-          'type': action,
+          'type': action == 'block' ? 0 : 1,
         },
       );
 
