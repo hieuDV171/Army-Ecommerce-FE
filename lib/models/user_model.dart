@@ -34,23 +34,3 @@ class UserModel {
     );
   }
 }
-
-class AuthResponse {
-  final String code;
-  final String message;
-  final UserModel? data;
-
-  AuthResponse({
-    required this.code,
-    required this.message,
-    this.data
-  });
-
-  factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    return AuthResponse(
-      code: json['code']?.toString() ?? '',
-      message: json['message']?.toString() ?? '',
-      data: (json['data'] != null && json['data'] is Map<String, dynamic>) ? UserModel.fromJson(json['data']) : null,
-    );
-  }
-}

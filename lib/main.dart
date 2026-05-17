@@ -1,7 +1,9 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
+import 'package:army_ecommerce/repositories/setting_repository.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -47,16 +49,32 @@ class _MyAppState extends State<MyApp> {
   // Widget gốc (root) của ứng dụng.
   @override
   Widget build(BuildContext context) {
-    // RepositoryProvider cung cấp AuthRepository cho các Bloc sử dụng
-    return RepositoryProvider(
-        create: (context) => AuthRepository(dioClient: widget.dioClient),
-      // BlocProvider khởi tạo và cung cấp AuthBloc cho toàn bộ cây Widget
-      child: BlocProvider(
-          create: (context) => AuthBloc(
-              authRepository: RepositoryProvider.of<AuthRepository>(context),
-          )
-            ..add(AppStarted()), // GỌI NGAY sự kiện kiểm tra khi App vừa khởi tạo
-          child: MaterialApp(
+    // RepositoryProvider cung cấp Repository cho các Bloc sử dụng
+    return MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider(
+            create: (context) => AuthRepository(dioClient: widget.dioClient),
+          ),
+          RepositoryProvider(
+            create: (context) => SettingRepository(dioClient: widget.dioClient),
+          ),
+        ],
+      // BlocProvider khởi tạo và cung cấp Bloc cho toàn bộ cây Widget
+      child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => AuthBloc(
+                  authRepository: RepositoryProvider.of<AuthRepository>(context),
+              )
+                ..add(AppStarted()), // GỌI NGAY sự kiện kiểm tra khi App vừa khởi tạo
+            ),
+            BlocProvider(
+              create: (context) => PushSettingBloc(
+                  settingRepository: RepositoryProvider.of<SettingRepository>(context),
+              ),
+             ),
+           ],
+           child: MaterialApp(
             title: 'Army E-commerce',
             theme: ThemeData(
               primarySwatch: Colors.blue,

@@ -1,5 +1,6 @@
 import 'package:army_ecommerce/ui/auth/change_password_screen.dart';
 import 'package:army_ecommerce/ui/profile/update_profile_screen.dart';
+import 'package:army_ecommerce/ui/settings/push_settings_screen.dart';
 import 'package:flutter/material.dart';
 import '../../core/services/session_manager.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/settings/push_setting_bloc.dart';
 import '../auth/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -145,6 +147,29 @@ class _HomeScreenState extends State<HomeScreen> {
                    );
                  },
                ),
+
+                // MỤC CÀI ĐẶT THÔNG BÁO
+                ListTile(
+                  leading: const Icon(Icons.notifications_active, color: Colors.purple,),
+                  title: const Text('Cài đặt thông báo'),
+                  onTap: () {
+                    // 1. Đóng menu trượt trước
+                    Navigator.pop(context);
+
+                    // 2. Chuyển sang màn hình cài đặt thông báo
+                    // Lưu ý: "Truyền tay" PushSettingBloc hiện tại sang để dùng tiếp
+                    final pushSettingBloc = context.read<PushSettingBloc>();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BlocProvider.value(
+                          value: pushSettingBloc,
+                          child: const PushSettingsScreen(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
               const Divider(), // Đường kẻ ngăn cách
               // MỤC ĐĂNG XUẤT

@@ -14,6 +14,7 @@ import 'dart:io';
 
 import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
+import 'package:army_ecommerce/models/api_response.dart';
 import 'package:army_ecommerce/models/user_model.dart';
 import 'package:dio/dio.dart';
 
@@ -24,7 +25,7 @@ class AuthRepository {
 
   AuthRepository({required DioClient dioClient}) : _dioClient = dioClient;
 
-  Future<AuthResponse> login(String phoneNumber, String password) async {
+  Future<ApiResponse<UserModel>> login(String phoneNumber, String password) async {
     try {
       // Gửi request POST với SĐT và mật khẩu
       final response = await _dioClient.dio.post(
@@ -35,14 +36,20 @@ class AuthRepository {
         },
       );
 
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<UserModel>.fromJson(
+        response.data,
+        (json) => UserModel.fromJson(json as Map<String, dynamic>)
+      );
+
     } on DioException catch (e) {
       // Bắt các lỗi kết nối hoặc server
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi đăng nhâp: $e');
     }
   }
 
-  Future<AuthResponse> signup(String phoneNumber, String password, String uuid) async {
+  Future<ApiResponse<UserModel>> signup(String phoneNumber, String password, String uuid) async {
     try {
       // Gửi request POST đăng ký
       final response = await _dioClient.dio.post(
@@ -54,9 +61,14 @@ class AuthRepository {
         },
       );
 
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<UserModel>.fromJson(
+        response.data,
+          (json) => UserModel.fromJson(json as Map<String, dynamic>)
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'Lỗi kết nối mạng');
+    } catch (e) {
+      throw Exception('Lỗi đăng ký: $e');
     }
   }
 
@@ -71,23 +83,28 @@ class AuthRepository {
       );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi đăng xuất: $e');
     }
   }
-  Future<AuthResponse> checkSignupCode(String phoneNumber, String code) async {
+  Future<ApiResponse<UserModel>> checkSignupCode(String phoneNumber, String code) async {
     // --- ĐOẠN MÃ GIẢ LẬP (PLACEHOLDER) ---
     // Giả lập thời gian chờ phản hồi từ server là 1 giây
     await Future.delayed(const Duration(seconds: 1));
 
     // Giả lập logic kiểm tra: Nếu mã là '123456' thì coi như thành công
     if (code == '123456') {
-      return AuthResponse(
+      return ApiResponse(
           code: '1000',
           message: 'Xác thực thành công',
           // Trả về data ảo để app không bị crash khi parse
         data: UserModel(id: 'temp', username: phoneNumber, token: 'temp_token', active: 1)
       );
     } else {
-      return AuthResponse(code: ResponseCode.codeVerifyIncorrect.code, message: ResponseCode.codeVerifyIncorrect.message);
+      return ApiResponse(
+          code: ResponseCode.codeVerifyIncorrect.code,
+          message: ResponseCode.codeVerifyIncorrect.message
+      );
     }
 
     // // --- SAU NÀY KHI BACKEND XONG, MỞ COMMENT ĐOẠN NÀY VÀ XÓA ĐOẠN GIẢ LẬP TRÊN ---
@@ -99,13 +116,18 @@ class AuthRepository {
     //       'code': code,
     //     },
     //   );
-    //   return AuthResponse.fromJson(response.data);
+    //   return ApiResponse<UserModel>.fromJson(
+    //      response.data,
+    //      (json) => UserModel.fromJson(json as Map<String, dynamic>)
+    //   );
     // } on DioException catch (e) {
     //   throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    // } catch (e) {
+    //   throw Exception('Lỗi kiểm tra OTP đăng ký: $e');
     // }
   }
 
-  // Future<AuthResponse> createCodeResetPassword(String phoneNumber) async {
+  // Future<ApiResponse<String?>> createCodeResetPassword(String phoneNumber) async {
   //   // Gọi API tạo mã OTP quên mật khẩu
   //   try {
   //     final response = await _dioClient.dio.post(
@@ -115,9 +137,15 @@ class AuthRepository {
   //       }
   //     );
   //
-  //     return AuthResponse.fromJson(response.data);
+  //     return ApiResponse<String?>.fromJson(
+  //         response.data,
+  //         (json) => json?.toString(),
+  //     );
+  //
   //   } on DioException catch (e) {
   //     throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+  //   } catch (e) {
+  //     throw Exception('Lỗi tạo OTP: $e');
   //   }
   // }
 
@@ -139,7 +167,7 @@ class AuthRepository {
   }
   // [!!!] HẾT ĐOẠN TẠM THỜI [!!!]
 
-  Future<AuthResponse> checkCodeResetPassword(String phoneNumber, String resetCode) async {
+  Future<ApiResponse<String?>> checkCodeResetPassword(String phoneNumber, String resetCode) async {
     try {
       final response = await _dioClient.dio.post(
         '/auth/check_code_reset_password',
@@ -148,13 +176,18 @@ class AuthRepository {
           'reset_code': resetCode,
         },
       );
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<String?>.fromJson(
+          response.data,
+          (json) => json?.toString()
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi kiểm tra OTP: $e');
     }
   }
 
-  Future<AuthResponse> getUserInfo(String token) async {
+  Future<ApiResponse<UserModel>> getUserInfo(String token) async {
     try {
       final response = await _dioClient.dio.post(
         '/users/get_user_info',
@@ -163,13 +196,18 @@ class AuthRepository {
           // Không truyền user_id để lấy thông tin của chính mình
         },
       );
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<UserModel>.fromJson(
+          response.data,
+          (json) => UserModel.fromJson(json as Map<String, dynamic>)
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi lấy thông tin người dùng: $e');
     }
   }
 
-  Future<AuthResponse> resetPassword(String phoneNumber, String newPassword) async {
+  Future<ApiResponse<UserModel>> resetPassword(String phoneNumber, String newPassword) async {
     try {
       final response = await _dioClient.dio.post(
         '/auth/reset_password',
@@ -179,13 +217,18 @@ class AuthRepository {
         }
       );
 
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<UserModel>.fromJson(
+          response.data,
+          (json) => UserModel.fromJson(json as Map<String, dynamic>)
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi đặt lại mật khẩu: $e');
     }
   }
 
-  Future<AuthResponse> changePassword({
+  Future<ApiResponse<String>> changePassword({
     required String oldPassword,
     required String newPassword
   }) async {
@@ -201,15 +244,20 @@ class AuthRepository {
         }
       );
 
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<String>.fromJson(
+          response.data,
+          (json) => json.toString()
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi thay đổi mật khẩu: $e');
     }
   }
 
   /// Gửi device token (FCM / APNs) lên server để đăng ký thiết bị cho push notification
   /// devtype: '0' = iOS, '1' = Android
-  Future<AuthResponse> setDevToken({
+  Future<ApiResponse<String>> setDevToken({
     required String devToken,
     required String devType,
   }) async {
@@ -225,13 +273,18 @@ class AuthRepository {
         },
       );
 
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<String>.fromJson(
+          response.data,
+          (json) => json.toString()
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    } catch (e) {
+      throw Exception('Lỗi thiết lập token thiết bị: $e');
     }
   }
 
-  Future<AuthResponse> changeInfoAfterSignup({
+  Future<ApiResponse<UserModel>> changeInfoAfterSignup({
     required String username,
     File? avatarFile,
   }) async {
@@ -241,7 +294,7 @@ class AuthRepository {
     try {
       String? avatarUrl;
 
-      // If an avatar file is provided, upload it to backend '/upload/file'
+      // Nếu avatar được cung cấp, gửi nó cho BE '/upload/file'
       if (avatarFile != null) {
         final fileName = avatarFile.path.split(Platform.pathSeparator).last;
         final formData = FormData.fromMap({
@@ -259,7 +312,6 @@ class AuthRepository {
           ),
         );
 
-        // The upload API returns the url under data.url according to backend response
         avatarUrl = uploadResponse.data?['data']?['url'] as String?;
       }
 
@@ -272,12 +324,17 @@ class AuthRepository {
         },
       );
 
-      return AuthResponse.fromJson(response.data);
+      return ApiResponse<UserModel>.fromJson(
+          response.data,
+          (json) => UserModel.fromJson(json as Map<String, dynamic>)
+      );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
     } catch (e) {
       throw Exception('Lỗi thay đổi thông tin: $e');
     }
   }
+
+
 
 }
