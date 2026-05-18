@@ -90,3 +90,46 @@ class ChangeInfoSuccess extends AuthState {
   @override
   List<Object?> get props => [updatedUser];
 }
+
+class GetUserInfoLoading extends AuthState {}
+
+class GetUserInfoSuccess extends AuthState {
+  final UserModel user;
+
+  GetUserInfoSuccess({required this.user});
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class GetUserInfoFailure extends AuthState {
+  final String error;
+  final String code;
+
+  GetUserInfoFailure({required this.error, required this.code});
+
+  @override
+  List<Object?> get props => [error, code];
+}
+
+class SetUserInfoLoading extends AuthState {}
+
+class SetUserInfoSuccess extends AuthState {
+  final UserModel user;
+
+  SetUserInfoSuccess({required this.user});
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class SetUserInfoFailure extends AuthState {
+  final String error;
+  final String code;
+
+  SetUserInfoFailure({required this.error, required this.code});
+
+  @override
+  List<Object?> get props => [error, code];
+}
+

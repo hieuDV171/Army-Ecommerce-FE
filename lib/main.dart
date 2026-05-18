@@ -6,7 +6,9 @@ import 'package:army_ecommerce/repositories/auth_repository.dart';
 import 'package:army_ecommerce/repositories/setting_repository.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/home/home_screen.dart';
+import 'package:army_ecommerce/ui/profile/change_info_after_signup_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -16,6 +18,10 @@ import 'core/services/firebase_notification_service.dart';
 Future<void> main() async {
   // Đảm bảo Flutter binding được khởi tạo trước khi chạy các setup bất đồng bộ
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Ẩn system navigation bar và status bar (Immersive Sticky Mode)
+  // Người dùng vẫn có thể gọi lại nếu swipe từ dưới lên hoặc cạnh màn hình
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   // Khởi tạo Firebase
   await FirebaseNotificationService.initializeFirebase();
@@ -104,6 +110,15 @@ class _MyAppState extends State<MyApp> {
                 builder: (context, state) {
                   // 1. Nếu xác định đã đăng nhập thành công từ token cũ
                   if (state is AuthSuccess) {
+                    // Nếu backend trả active == -1 (yêu cầu hoàn tất thông tin) -> hiển thị màn cập nhật hồ sơ
+                    if (state.user.active == -1) {
+                      final authBloc = BlocProvider.of<AuthBloc>(context);
+                      return BlocProvider.value(
+                        value: authBloc,
+                        child: ChangeInfoAfterSignupScreen(currentUsername: state.user.username),
+                      );
+                    }
+
                     return HomeScreen(
                       username: state.user.username,
                       token: state.user.token,

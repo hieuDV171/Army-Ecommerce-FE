@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../home/home_screen.dart';
+import '../profile/change_info_after_signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,14 +63,44 @@ class _LoginScreenState extends State<LoginScreen> {
       // BlocConsumer vừa lắng nghe trạng thái (listener), vừa vẽ lại UI (builder)
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
+          final navigator = Navigator.of(context);
           // Xử lý các logic điều hướng hoặc hiển thị thông báo ở đây
           if (state is AuthSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Đăng nhập thành công!'),)
             );
+
+            // Nếu backend trả về active == -1 -> yêu cầu user hoàn tất thông tin
+            if (state.user.active == -1) {
+              final authBloc = context.read<AuthBloc>();
+
+              // Chuyển sang màn hình cập nhật thông tin (đã được cài đặt).
+              // Sau khi màn cập nhật đóng lại, chuyển tiếp đến Home.
+              navigator.push(
+                MaterialPageRoute(
+                  builder: (context) => BlocProvider.value(
+                    value: authBloc,
+                    child: ChangeInfoAfterSignupScreen(currentUsername: state.user.username),
+                  ),
+                ),
+              ).then((updatedUser) {
+                // Chỉ cho vào Home khi đã cập nhật xong và màn này trả về user hợp lệ
+                if (updatedUser == null) return;
+                navigator.pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => HomeScreen(
+                      username: updatedUser != null ? updatedUser.username : state.user.username,
+                      token: state.user.token,
+                    ),
+                  ),
+                );
+              });
+
+              return; // tránh chạy phần điều hướng Home mặc định phía dưới
+            }
+
             // Chuyển sang màn hình Home
-            Navigator.pushReplacement(
-                context,
+            navigator.pushReplacement(
                 MaterialPageRoute(
                     builder: (_) => HomeScreen(
                       username: state.user.username,

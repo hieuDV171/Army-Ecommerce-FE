@@ -7,17 +7,18 @@ import 'package:image_picker/image_picker.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../home/home_screen.dart';
 import '../../core/services/session_manager.dart';
 
-class UpdateProfileScreen extends StatefulWidget {
+class ChangeInfoAfterSignupScreen extends StatefulWidget {
   final String currentUsername;
-  const UpdateProfileScreen({super.key, required this.currentUsername});
+  const ChangeInfoAfterSignupScreen({super.key, required this.currentUsername});
 
   @override
-  State<UpdateProfileScreen> createState() => _UpdateProfileScreenState();
+  State<ChangeInfoAfterSignupScreen> createState() => _ChangeInfoAfterSignupScreenState();
 }
 
-class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
+class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScreen> {
   late TextEditingController _nameController;
   File? _selectedImage;
   String? _currentAvatarUrl;
@@ -84,20 +85,53 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is ChangeInfoSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật hồ sơ thành công!')));
-          Navigator.pop(context, state.updatedUser); // Trả user mới về màn hình trước
-        } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(title: const Text('Cập nhật hồ sơ')),
-        body: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
+    return PopScope(
+      canPop: false,
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) async {
+          if (state is ChangeInfoSuccess) {
+            final navigator = Navigator.of(context);
+            final updatedUser = state.updatedUser;
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
+            );
+
+            // Nếu màn này được push từ Login/OTP thì trả kết quả về cho màn trước.
+            // Nếu đây là root screen (điều hướng từ main.dart), không được pop vì sẽ tạo màn đen.
+            if (navigator.canPop()) {
+              navigator.pop(updatedUser);
+              return;
+            }
+
+            final fallbackToken = await SessionManager.getToken() ?? '';
+            if (!context.mounted) return;
+
+            navigator.pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (_) => HomeScreen(
+                  username: updatedUser.username.isNotEmpty
+                      ? updatedUser.username
+                      : widget.currentUsername,
+                  token: updatedUser.token.isNotEmpty
+                      ? updatedUser.token
+                      : fallbackToken,
+                ),
+              ),
+              (route) => false,
+            );
+          } else if (state is AuthFailure) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Cập nhật hồ sơ'),
+            automaticallyImplyLeading: false,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
             children: [
               // --- VÙNG CHỌN ẢNH ĐẠI DIỆN ---
               GestureDetector(
@@ -154,6 +188,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                 },
               ),
             ],
+          ),
           ),
         ),
       ),

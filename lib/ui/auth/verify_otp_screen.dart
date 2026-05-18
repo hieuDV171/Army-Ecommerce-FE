@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'create_new_password_screen.dart';
+import '../profile/change_info_after_signup_screen.dart';
 
 class VerifyOtpScreen extends StatefulWidget{
   final String phoneNumber;
@@ -87,9 +88,37 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                 )
             );
           } else if (state is AuthSuccess && !widget.isForgotPassword) {
+            final navigator = Navigator.of(context);
+            // Nếu backend trả về active == -1 -> yêu cầu user hoàn tất thông tin
+            if (state.user.active == -1) {
+              final authBloc = context.read<AuthBloc>();
+
+              navigator.push(
+                MaterialPageRoute(
+                  builder: (context) => BlocProvider.value(
+                    value: authBloc,
+                    child: ChangeInfoAfterSignupScreen(currentUsername: state.user.username),
+                  ),
+                ),
+              ).then((updatedUser) {
+                if (updatedUser == null) return;
+                // Sau khi quay về từ màn cập nhật, đi tới Home và xoá lịch sử
+                navigator.pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (context) => HomeScreen(
+                            username: updatedUser != null ? updatedUser.username : state.user.username,
+                            token: state.user.token
+                        ),
+                    ),
+                    (route) => false
+                );
+              });
+
+              return;
+            }
+
             // XÁC THỰC THÀNH CÔNG -> Vào trang Home
-            Navigator.pushAndRemoveUntil(
-                context,
+            navigator.pushAndRemoveUntil(
                 MaterialPageRoute(
                     builder: (context) => HomeScreen(
                         username: state.user.username,

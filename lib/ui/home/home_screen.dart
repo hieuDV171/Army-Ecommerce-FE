@@ -1,5 +1,4 @@
 import 'package:army_ecommerce/ui/auth/change_password_screen.dart';
-import 'package:army_ecommerce/ui/profile/update_profile_screen.dart';
 import 'package:army_ecommerce/ui/settings/push_settings_screen.dart';
 import 'package:flutter/material.dart';
 import '../../core/services/session_manager.dart';
@@ -10,6 +9,7 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/settings/push_setting_bloc.dart';
 import '../auth/login_screen.dart';
+import '../profile/user_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String username;
@@ -73,8 +73,17 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Quân Nhu Tiền Tuyến'),
+          title: const Text(
+            'Quân Nhu Tiền Tuyến',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+          ),
           backgroundColor: const Color(0xFF003366), // Màu Navy quân đội
+          iconTheme: const IconThemeData(color: Colors.white), // Hamburger menu icon màu trắng
         ),
         drawer: Drawer(
           child: ListView(
@@ -96,32 +105,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-               // MỤC CẬP NHẬT HỒ SƠ
+                // MỤC HỒ SƠ
                ListTile(
                  leading: const Icon(Icons.person_outline, color: Colors.blue,),
-                 title: const Text('Cập nhật hồ sơ'),
+                  title: const Text('Hồ sơ của tôi'),
                  onTap: () {
-                   // 1. Đóng menu trượt trước
                    Navigator.pop(context);
-
-                   // 2. Chuyển sang màn hình cập nhật hồ sơ
-                   final authBloc = context.read<AuthBloc>();
                    Navigator.push(
                      context,
                      MaterialPageRoute(
-                       builder: (context) => BlocProvider.value(
-                         value: authBloc,
-                         child: UpdateProfileScreen(currentUsername: _displayName),
-                       ),
-                     ),
-                   ).then((updatedUser) {
-                     if (updatedUser != null) {
-                       setState(() {
-                           _currentUsername = updatedUser.username;
-                           _avatarUrl = updatedUser.avatar;
-                       });
-                     }
-                   });
+                        builder: (context) => const UserProfileScreen(),
+                      ),
+                    );
                  },
                ),
 

@@ -136,7 +136,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
          final localPhone = prefs.getString('phone_number') ?? '';
          logger.d('AutoLogin: local username from SharedPreferences: "$localUsername" phone="$localPhone"');
 
-        final response = await authRepository.getUserInfo(token);
+        final response = await authRepository.getUserInfo(token: token);
         logger.d('AutoLogin: getUserInfo response code=${response.code}, data=${response.data}');
 
         final responseCode = ResponseCode.fromCode(response.code);
@@ -320,6 +320,89 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       } catch (e) {
         emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
+      }
+    });
+
+    on<GetUserInfoRequested>((event, emit) async {
+      emit(GetUserInfoLoading());
+
+      try {
+        final token = await SessionManager.getToken();
+        if (token == null || token.isEmpty) {
+          emit(GetUserInfoFailure(
+            error: ResponseCode.tokenInvalid.message,
+            code: ResponseCode.tokenInvalid.code,
+          ));
+          return;
+        }
+
+        final userId = event.userId;
+        final response = await authRepository.getUserInfo(
+          token: token,
+          userId: userId,
+        );
+        logger.d('GetUserInfo: response code=${response.code}, data=${response.data}');
+
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok && response.data != null) {
+          emit(GetUserInfoSuccess(user: response.data!));
+        } else {
+          emit(GetUserInfoFailure(
+            error: response.message.isNotEmpty ? response.message : responseCode.message,
+            code: response.code,
+          ));
+        }
+      } catch (e) {
+        emit(GetUserInfoFailure(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ));
+      }
+    });
+
+
+    on<SetUserInfoRequested>((event, emit) async {
+      emit(SetUserInfoLoading());
+
+      try {
+        final response = await authRepository.setUserInfo(
+          currentUser: event.currentUser,
+          email: event.email,
+          username: event.username,
+          status: event.status,
+          avatarFile: event.avatarFile,
+          firstName: event.firstName,
+          lastName: event.lastName,
+          address: event.address,
+          password: event.password,
+          coverImageFile: event.coverImageFile,
+          coverImageWebFile: event.coverImageWebFile,
+        );
+
+        final responseCode = ResponseCode.fromCode(response.code);
+        if (responseCode == ResponseCode.ok && response.data != null) {
+          final updatedUser = response.data!;
+
+          if (updatedUser.username.isNotEmpty) {
+            await SessionManager.setUsername(updatedUser.username);
+          }
+          if (updatedUser.avatar != null && updatedUser.avatar!.isNotEmpty) {
+            await SessionManager.setAvatar(updatedUser.avatar!);
+          }
+
+          emit(SetUserInfoSuccess(user: updatedUser));
+        } else {
+          emit(SetUserInfoFailure(
+            error: response.message.isNotEmpty ? response.message : responseCode.message,
+            code: response.code,
+          ));
+        }
+      } catch (e) {
+        emit(SetUserInfoFailure(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ));
       }
     });
 
