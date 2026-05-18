@@ -3,7 +3,11 @@ import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
+import 'data/repositories/auth_repository_impl.dart';
+import 'data/sources/remote/auth_remote_data_source.dart';
 import 'package:army_ecommerce/repositories/setting_repository.dart';
+import 'data/repositories/setting_repository_impl.dart';
+import 'data/sources/remote/setting_remote_data_source.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:army_ecommerce/ui/profile/change_info_after_signup_screen.dart';
@@ -58,11 +62,15 @@ class _MyAppState extends State<MyApp> {
     // RepositoryProvider cung cấp Repository cho các Bloc sử dụng
     return MultiRepositoryProvider(
         providers: [
-          RepositoryProvider(
-            create: (context) => AuthRepository(dioClient: widget.dioClient),
+          RepositoryProvider<AuthRepository>(
+            create: (context) => AuthRepositoryImpl(
+              remoteDataSource: AuthRemoteDataSource(dioClient: widget.dioClient),
+            ),
           ),
-          RepositoryProvider(
-            create: (context) => SettingRepository(dioClient: widget.dioClient),
+          RepositoryProvider<SettingRepository>(
+            create: (context) => SettingRepositoryImpl(
+              remoteDataSource: SettingRemoteDataSource(dioClient: widget.dioClient),
+            ),
           ),
         ],
       // BlocProvider khởi tạo và cung cấp Bloc cho toàn bộ cây Widget
