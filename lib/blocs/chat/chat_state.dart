@@ -38,22 +38,32 @@ class MessageSent extends ChatState {
 class ConversationsLoaded extends ChatState {
   final List<ConversationModel> conversations;
   final bool hasMore;
+  final int numNewMessage;
 
-  ConversationsLoaded({required this.conversations, required this.hasMore});
+  ConversationsLoaded({
+    required this.conversations,
+    required this.hasMore,
+    this.numNewMessage = 0,
+  });
 
   @override
-  List<Object?> get props => [conversations, hasMore];
+  List<Object?> get props => [conversations, hasMore, numNewMessage];
 }
 
 // Trạng thái sau khi tải tin nhắn trong một conversation thành công
 class MessagesLoaded extends ChatState {
   final List<MessageModel> messages;
   final bool hasMore;
+  final bool canSendMessage;
 
-  MessagesLoaded({required this.messages, required this.hasMore});
+  MessagesLoaded({
+    required this.messages,
+    required this.hasMore,
+    this.canSendMessage = true,
+  });
 
   @override
-  List<Object?> get props => [messages, hasMore];
+  List<Object?> get props => [messages, hasMore, canSendMessage];
 }
 
 // Trạng thái khi có lỗi xảy ra

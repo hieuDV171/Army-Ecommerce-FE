@@ -1,47 +1,75 @@
-// Model đại diện cho một hội thoại trong danh sách conversation
-class ConversationModel {
-  final String conversationId;
-  final String partnerId;
-  final String partnerUsername;
-  final String? partnerAvatar;
-  final String? lastMessage;
-  final int unreadCount;
-  final DateTime? lastMessageAt;
+// Model đại diện cho thông tin đối tác trong hội thoại
+class ConversationPartner {
+  final int id;
+  final String username;
+  final String? avatar;
 
-  ConversationModel({
-    required this.conversationId,
-    required this.partnerId,
-    required this.partnerUsername,
-    this.partnerAvatar,
-    this.lastMessage,
-    required this.unreadCount,
-    this.lastMessageAt,
+  ConversationPartner({
+    required this.id,
+    required this.username,
+    this.avatar,
   });
 
-  // Tạo bản sao với một số trường được thay đổi
-  ConversationModel copyWith({String? lastMessage, int? unreadCount, DateTime? lastMessageAt}) {
-    return ConversationModel(
-      conversationId: conversationId,
-      partnerId: partnerId,
-      partnerUsername: partnerUsername,
-      partnerAvatar: partnerAvatar,
-      lastMessage: lastMessage ?? this.lastMessage,
-      unreadCount: unreadCount ?? this.unreadCount,
-      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+  // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
+  factory ConversationPartner.fromJson(Map<String, dynamic> json) {
+    return ConversationPartner(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      username: json['username']?.toString() ?? '',
+      avatar: json['avatar']?.toString(),
     );
   }
+}
+
+// Model đại diện cho tin nhắn cuối trong hội thoại
+class ConversationLastMessage {
+  final String message;
+  final String type;
+  final DateTime created;
+  final bool unread;
+
+  ConversationLastMessage({
+    required this.message,
+    required this.type,
+    required this.created,
+    required this.unread,
+  });
+
+  // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
+  // created là Unix timestamp (giây)
+  factory ConversationLastMessage.fromJson(Map<String, dynamic> json) {
+    final createdTs = (json['created'] as num?)?.toInt() ?? 0;
+    return ConversationLastMessage(
+      message: json['message']?.toString() ?? '',
+      type: json['type']?.toString() ?? 'text',
+      created: DateTime.fromMillisecondsSinceEpoch(createdTs * 1000),
+      unread: json['unread'] == true,
+    );
+  }
+}
+
+// Model đại diện cho một hội thoại trong danh sách conversation
+class ConversationModel {
+  final int id;
+  final ConversationPartner partner;
+  final ConversationLastMessage? lastMessage;
+
+  ConversationModel({
+    required this.id,
+    required this.partner,
+    this.lastMessage,
+  });
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
     return ConversationModel(
-      conversationId: json['conversation_id']?.toString() ?? '',
-      partnerId: json['partner_id']?.toString() ?? '',
-      partnerUsername: json['partner_username']?.toString() ?? '',
-      partnerAvatar: json['partner_avatar']?.toString(),
-      lastMessage: json['last_message']?.toString(),
-      unreadCount: int.tryParse(json['unread_count']?.toString() ?? '0') ?? 0,
-      lastMessageAt: json['last_message_at'] != null
-          ? DateTime.tryParse(json['last_message_at'].toString())
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      partner: ConversationPartner.fromJson(
+        json['partner'] as Map<String, dynamic>? ?? {},
+      ),
+      lastMessage: (json['last_message'] != null && json['last_message'] is Map)
+          ? ConversationLastMessage.fromJson(
+              json['last_message'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -76,11 +104,13 @@ class ConversationListResponse {
   final String code;
   final String message;
   final List<ConversationModel>? data;
+  final int numNewMessage;
 
   ConversationListResponse({
     required this.code,
     required this.message,
     this.data,
+    this.numNewMessage = 0,
   });
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
@@ -97,6 +127,7 @@ class ConversationListResponse {
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       data: dataList,
+      numNewMessage: (json['num_new_message'] as num?)?.toInt() ?? 0,
     );
   }
 }

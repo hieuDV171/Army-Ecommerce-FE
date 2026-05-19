@@ -171,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
 
                     final message = messages[index];
-                    final isMine = message.senderId == widget.currentUserId;
+                    final isMine = message.sender.id.toString() == widget.currentUserId;
 
                     // Hiển thị ngăn cách ngày nếu tin nhắn trước đó là ngày khác
                     final bool showDateSeparator = _shouldShowDate(messages, index);
@@ -179,7 +179,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     return Column(
                       children: [
                         if (showDateSeparator)
-                          _DateSeparator(date: message.createdAt),
+                          _DateSeparator(date: message.created),
                         _MessageBubble(message: message, isMine: isMine),
                       ],
                     );
@@ -189,8 +189,13 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // Vùng nhập tin nhắn
-          _buildInputArea(),
+          // Vùng nhập tin nhắn — ẩn khi không được phép gửi (can_send_message = false)
+          BlocBuilder<ChatBloc, ChatState>(
+            builder: (context, state) {
+              final canSend = state is MessagesLoaded ? state.canSendMessage : true;
+              return canSend ? _buildInputArea() : _buildBlockedBanner();
+            },
+          ),
         ],
       ),
     );
@@ -202,7 +207,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (index == messages.length - 1) return true; // Tin cũ nhất luôn có date
     final current = messages[index];
     final older = messages[index + 1];
-    return !_isSameDay(current.createdAt, older.createdAt);
+    return !_isSameDay(current.created, older.created);
   }
 
   bool _isSameDay(DateTime a, DateTime b) =>
@@ -343,6 +348,25 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // Banner hiển thị khi không được phép gửi tin nhắn (bị chặn hoặc chưa xác thực)
+  Widget _buildBlockedBanner() {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF5F5F5),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).padding.bottom + 12,
+      ),
+      child: const Text(
+        'Bạn không thể gửi tin nhắn trong cuộc trò chuyện này',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 13, color: Colors.grey),
+      ),
+    );
+  }
+
   // Màn hình trống khi chưa có tin nhắn
   Widget _buildEmptyChat() {
     return Center(
@@ -406,7 +430,7 @@ class _MessageBubble extends StatelessWidget {
                     : CrossAxisAlignment.start,
                 children: [
                   Text(
-                    message.content,
+                    message.message,
                     style: TextStyle(
                       fontSize: 14,
                       color: isMine ? Colors.white : Colors.black87,
@@ -415,7 +439,7 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    _formatTime(message.createdAt),
+                    _formatTime(message.created),
                     style: TextStyle(
                       fontSize: 10,
                       color: isMine
@@ -433,6 +457,7 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
+  // Định dạng giờ:phút
   // Định dạng giờ:phút
   String _formatTime(DateTime time) {
     final h = time.hour.toString().padLeft(2, '0');

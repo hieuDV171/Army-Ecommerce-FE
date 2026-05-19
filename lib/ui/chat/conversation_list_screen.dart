@@ -55,11 +55,11 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
         builder: (_) => BlocProvider.value(
           value: context.read<ChatBloc>(),
           child: ChatScreen(
-            partnerId: conversation.partnerId,
-            partnerUsername: conversation.partnerUsername,
-            partnerAvatar: conversation.partnerAvatar,
+            partnerId: conversation.partner.id.toString(),
+            partnerUsername: conversation.partner.username,
+            partnerAvatar: conversation.partner.avatar,
             currentUserId: widget.currentUserId,
-            conversationId: conversation.conversationId,
+            conversationId: conversation.id.toString(),
           ),
         ),
       ),
@@ -194,7 +194,8 @@ class _ConversationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasUnread = conversation.unreadCount > 0;
+    final bool hasUnread = conversation.lastMessage?.unread == true;
+    final String? avatarUrl = conversation.partner.avatar;
 
     return InkWell(
       onTap: onTap,
@@ -207,12 +208,10 @@ class _ConversationItem extends StatelessWidget {
             CircleAvatar(
               radius: 26,
               backgroundColor: Colors.grey[200],
-              backgroundImage: (conversation.partnerAvatar != null &&
-                      conversation.partnerAvatar!.isNotEmpty)
-                  ? NetworkImage(conversation.partnerAvatar!)
+              backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                  ? NetworkImage(avatarUrl)
                   : null,
-              child: (conversation.partnerAvatar == null ||
-                      conversation.partnerAvatar!.isEmpty)
+              child: (avatarUrl == null || avatarUrl.isEmpty)
                   ? Icon(Icons.person, size: 30, color: Colors.grey[500])
                   : null,
             ),
@@ -224,7 +223,7 @@ class _ConversationItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    conversation.partnerUsername,
+                    conversation.partner.username,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
@@ -235,7 +234,7 @@ class _ConversationItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    conversation.lastMessage ?? 'Bắt đầu cuộc trò chuyện',
+                    conversation.lastMessage?.message ?? 'Bắt đầu cuộc trò chuyện',
                     style: TextStyle(
                       fontSize: 12,
                       color: hasUnread ? Colors.black87 : Colors.grey[500],
@@ -254,7 +253,7 @@ class _ConversationItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  _formatTime(conversation.lastMessageAt),
+                  _formatTime(conversation.lastMessage?.created),
                   style: TextStyle(
                     fontSize: 11,
                     color: hasUnread ? _shopeeOrange : Colors.grey[400],
@@ -269,11 +268,9 @@ class _ConversationItem extends StatelessWidget {
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                     constraints: const BoxConstraints(minWidth: 18),
-                    child: Text(
-                      conversation.unreadCount > 99
-                          ? '99+'
-                          : '${conversation.unreadCount}',
-                      style: const TextStyle(
+                    child: const Text(
+                      '1',
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w600,

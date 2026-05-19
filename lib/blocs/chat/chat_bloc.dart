@@ -70,7 +70,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
         _conversationsIndex += 1;
-        emit(ConversationsLoaded(conversations: list, hasMore: list.length == _pageSize));
+        emit(ConversationsLoaded(
+          conversations: list,
+          hasMore: list.length == _pageSize,
+          numNewMessage: response.numNewMessage,
+        ));
       } else {
         logger.w('ChatBloc: getListConversation failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
@@ -102,10 +106,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         final newItems = response.data ?? [];
         _conversationsIndex += 1;
         final updatedList = [...currentState.conversations, ...newItems];
-        emit(ConversationsLoaded(conversations: updatedList, hasMore: newItems.length == _pageSize));
+        emit(ConversationsLoaded(
+          conversations: updatedList,
+          hasMore: newItems.length == _pageSize,
+          numNewMessage: response.numNewMessage,
+        ));
       } else {
         if (responseCode == ResponseCode.noData) {
-          emit(ConversationsLoaded(conversations: currentState.conversations, hasMore: false));
+          emit(ConversationsLoaded(
+            conversations: currentState.conversations,
+            hasMore: false,
+            numNewMessage: currentState.numNewMessage,
+          ));
           return;
         }
         logger.w('ChatBloc: loadMore conversations failed code=${response.code}');
@@ -134,10 +146,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       final responseCode = ResponseCode.fromCode(response.code);
 
-      if (responseCode == ResponseCode.ok) {
-        final list = response.data ?? [];
+      if (responseCode == ResponseCode.ok && response.data != null) {
+        final conversationData = response.data!;
+        final list = conversationData.messages;
         _messagesIndex += 1;
-        emit(MessagesLoaded(messages: list, hasMore: list.length == _pageSize));
+        emit(MessagesLoaded(
+          messages: list,
+          hasMore: list.length == _pageSize,
+          canSendMessage: conversationData.canSendMessage,
+        ));
       } else {
         logger.w('ChatBloc: getConversation failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
@@ -167,15 +184,24 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       final responseCode = ResponseCode.fromCode(response.code);
 
-      if (responseCode == ResponseCode.ok) {
-        final newItems = response.data ?? [];
+      if (responseCode == ResponseCode.ok && response.data != null) {
+        final newItems = response.data!.messages;
         _messagesIndex += 1;
-        // Tin nhắn cũ hơn được thêm vào đầu danh sách
-        final updatedList = [...newItems, ...currentState.messages];
-        emit(MessagesLoaded(messages: updatedList, hasMore: newItems.length == _pageSize));
+        // Backend trả về mới nhất trước → tin cũ hơn (newItems) nối vào CUỐI list
+        // ListView(reverse: true): index 0 = đáy (mới nhất), index cuối = đỉnh (cũ nhất)
+        final updatedList = [...currentState.messages, ...newItems];
+        emit(MessagesLoaded(
+          messages: updatedList,
+          hasMore: newItems.length == _pageSize,
+          canSendMessage: response.data!.canSendMessage,
+        ));
       } else {
         if (responseCode == ResponseCode.noData) {
-          emit(MessagesLoaded(messages: currentState.messages, hasMore: false));
+          emit(MessagesLoaded(
+            messages: currentState.messages,
+            hasMore: false,
+            canSendMessage: currentState.canSendMessage,
+          ));
           return;
         }
         logger.w('ChatBloc: loadMore messages failed code=${response.code}');

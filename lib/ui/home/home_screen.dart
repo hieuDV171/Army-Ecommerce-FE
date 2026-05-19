@@ -51,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   String? _avatarUrl;
   late String _currentUsername;
+  // Cache số tin nhắn mới để badge không nhấp nháy trong lúc ChatBloc đang tải
+  int _chatUnreadCount = 0;
 
   // BLoC được tạo trong initState và dispose đúng lifecycle
   late final FollowBloc _followBloc;
@@ -275,10 +277,14 @@ class _HomeScreenState extends State<HomeScreen> {
         style: const TextStyle(color: Colors.white, fontSize: 16),
       ),
       actions: [
-        // Nút chat với badge số tin chưa đọc
+        // Nút chat với badge số tin nhắn mới — chỉ rebuild khi ConversationsLoaded
+        // để badge không nhấp nháy về 0 trong lúc tải
         BlocBuilder<ChatBloc, ChatState>(
+          buildWhen: (_, current) => current is ConversationsLoaded,
           builder: (context, state) {
-            final unreadCount = _totalUnreadMessages(state);
+            if (state is ConversationsLoaded) {
+              _chatUnreadCount = state.numNewMessage;
+            }
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: IconButton(
@@ -287,11 +293,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.chat_bubble_outline, color: Colors.white),
-                    if (unreadCount > 0)
+                    if (_chatUnreadCount > 0)
                       Positioned(
                         right: -6,
                         top: -4,
-                        child: _Badge(count: unreadCount),
+                        child: _Badge(count: _chatUnreadCount),
                       ),
                   ],
                 ),
@@ -301,15 +307,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
-  }
-
-  // Tính tổng số tin nhắn chưa đọc từ tất cả conversation
-  int _totalUnreadMessages(ChatState state) {
-    if (state is ConversationsLoaded) {
-      return state.conversations
-          .fold(0, (sum, c) => sum + c.unreadCount);
-    }
-    return 0;
   }
 
   Widget _buildBottomNavBar() {
