@@ -10,7 +10,7 @@ services:
       - '3000:3000'
     environment:
       - PORT=3000
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=file:/app/prisma/dev.db
       - JWT_SECRET=army_ecommerce_secret_key_2026_Quang_Trung_Soldier
       - JWT_EXPIRES_IN=7d
       - BASE_URL=http://localhost:3000 # Cần thay bằng http://<GCP-VM-IP>:3000 khi deploy
