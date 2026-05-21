@@ -2,12 +2,10 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
-import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'create_new_password_screen.dart';
-import '../profile/change_info_after_signup_screen.dart';
 
 class VerifyOtpScreen extends StatefulWidget{
   final String phoneNumber;

@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
-import '../home/home_screen.dart';
 import '../../core/services/session_manager.dart';
 
 class ChangeInfoAfterSignupScreen extends StatefulWidget {
