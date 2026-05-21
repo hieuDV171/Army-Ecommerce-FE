@@ -774,6 +774,9 @@ const getComments = async (req, res) => {
             content: c.content,
             created_at: c.created_at.toISOString(),
             createdAt: c.created_at.toISOString(),
+            author: c.user.username,
+            username: c.user.username,
+            user_name: c.user.username,
             poster: {
                 id: c.user.id.toString(),
                 name: c.user.username,

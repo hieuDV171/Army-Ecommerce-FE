@@ -78,7 +78,9 @@ router.post('/api/save_search', auth_1.authenticateToken, productCtrl.saveSearch
 router.post('/api/get_saved_searches', auth_1.authenticateToken, productCtrl.getSavedSearches);
 router.post('/api/like_product', auth_1.authenticateToken, productCtrl.likeProduct);
 router.post('/api/get_comments', productCtrl.getComments);
+router.post('/api/get_comments_product', productCtrl.getComments);
 router.post('/api/send_comment', auth_1.authenticateToken, productCtrl.sendComment);
+router.post('/api/set_comments_product', auth_1.authenticateToken, productCtrl.sendComment);
 router.post('/api/report_product', auth_1.authenticateToken, productCtrl.reportProduct);
 router.post('/api/get_rates', productCtrl.getRates);
 router.post('/api/set_rates', auth_1.authenticateToken, productCtrl.setRates);
