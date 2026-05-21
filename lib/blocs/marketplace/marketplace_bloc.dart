@@ -1203,3 +1203,215 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     }
   }
 }
+
+abstract class AddressEvent extends Equatable {
+  @override
+  List<Object?> get props => [];
+}
+
+class AddressListRequested extends AddressEvent {}
+
+class AddressAdded extends AddressEvent {
+  final String address;
+  final String fullAddress;
+  final String receiverName;
+  final String phone;
+  final bool isDefault;
+  final String? addressDetail;
+
+  AddressAdded({
+    required this.address,
+    required this.fullAddress,
+    required this.receiverName,
+    required this.phone,
+    this.isDefault = false,
+    this.addressDetail,
+  });
+
+  @override
+  List<Object?> get props => [address, fullAddress, receiverName, phone, isDefault, addressDetail];
+}
+
+class AddressUpdated extends AddressEvent {
+  final String id;
+  final String address;
+  final String fullAddress;
+  final String receiverName;
+  final String phone;
+  final bool isDefault;
+  final String? addressDetail;
+
+  AddressUpdated({
+    required this.id,
+    required this.address,
+    required this.fullAddress,
+    required this.receiverName,
+    required this.phone,
+    this.isDefault = false,
+    this.addressDetail,
+  });
+
+  @override
+  List<Object?> get props => [id, address, fullAddress, receiverName, phone, isDefault, addressDetail];
+}
+
+class AddressDeleted extends AddressEvent {
+  final String id;
+
+  AddressDeleted(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class AddressState extends Equatable {
+  final List<AddressModel> addresses;
+  final bool isLoading;
+  final bool isSubmitting;
+  final String? errorMessage;
+  final String? successMessage;
+
+  const AddressState({
+    this.addresses = const [],
+    this.isLoading = false,
+    this.isSubmitting = false,
+    this.errorMessage,
+    this.successMessage,
+  });
+
+  AddressState copyWith({
+    List<AddressModel>? addresses,
+    bool? isLoading,
+    bool? isSubmitting,
+    String? errorMessage,
+    String? successMessage,
+    bool clearMessages = false,
+  }) {
+    return AddressState(
+      addresses: addresses ?? this.addresses,
+      isLoading: isLoading ?? this.isLoading,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
+      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        addresses,
+        isLoading,
+        isSubmitting,
+        errorMessage,
+        successMessage,
+      ];
+}
+
+class AddressBloc extends Bloc<AddressEvent, AddressState> {
+  final MarketplaceRepository marketplaceRepository;
+
+  AddressBloc({required this.marketplaceRepository}) : super(const AddressState()) {
+    on<AddressListRequested>(_onListRequested);
+    on<AddressAdded>(_onAdded);
+    on<AddressUpdated>(_onUpdated);
+    on<AddressDeleted>(_onDeleted);
+  }
+
+  Future<void> _onListRequested(
+    AddressListRequested event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true, clearMessages: true));
+    try {
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isLoading: false,
+          clearMessages: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onAdded(
+    AddressAdded event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      final data = <String, dynamic>{
+        'address': event.address,
+        'full_address': event.fullAddress,
+        'receiver_name': event.receiverName,
+        'phone': event.phone,
+        'is_default': event.isDefault,
+      };
+      if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
+        data['address_detail'] = event.addressDetail;
+      }
+      await marketplaceRepository.addAddress(data);
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã thêm địa chỉ',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onUpdated(
+    AddressUpdated event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      final data = <String, dynamic>{
+        'address': event.address,
+        'full_address': event.fullAddress,
+        'receiver_name': event.receiverName,
+        'phone': event.phone,
+        'is_default': event.isDefault,
+      };
+      if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
+        data['address_detail'] = event.addressDetail;
+      }
+      await marketplaceRepository.updateAddress(event.id, data);
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã cập nhật địa chỉ',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onDeleted(
+    AddressDeleted event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      await marketplaceRepository.deleteAddress(event.id);
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã xóa địa chỉ',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+}
