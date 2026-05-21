@@ -90,7 +90,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
           } else if (state is AuthSuccess && !widget.isForgotPassword) {
             final navigator = Navigator.of(context);
             // Nếu backend trả về active == -1 -> yêu cầu user hoàn tất thông tin
-            if (state.user.active == -1) {
+            if (state.user.active == -1 && RegExp(r'^0[0-9]{9}$').hasMatch(state.user.username)) {
               final authBloc = context.read<AuthBloc>();
 
               navigator.push(

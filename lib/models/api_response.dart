@@ -13,10 +13,31 @@ class ApiResponse<T> {
       Map<String, dynamic> json,
       T Function(dynamic json)? fromJsonT
   ) {
+    final hasEnvelopeData = json.containsKey('data');
+    final rawData = hasEnvelopeData ? json['data'] : json;
+
     return ApiResponse<T>(
-      code: json['code']?.toString() ?? '',
+      code: json['code']?.toString() ?? '1000',
       message: json['message']?.toString() ?? '',
-      data: _parseData(json['data'], fromJsonT)
+      data: _parseData(rawData, fromJsonT)
+    );
+  }
+
+  factory ApiResponse.fromDynamic(
+      dynamic rawData,
+      T Function(dynamic json)? fromJsonT,
+  ) {
+    if (rawData is Map) {
+      return ApiResponse<T>.fromJson(
+        Map<String, dynamic>.from(rawData),
+        fromJsonT,
+      );
+    }
+
+    return ApiResponse<T>(
+      code: '1000',
+      message: '',
+      data: _parseData(rawData, fromJsonT),
     );
   }
 

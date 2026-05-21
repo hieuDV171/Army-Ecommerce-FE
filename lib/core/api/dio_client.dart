@@ -1,12 +1,16 @@
+import 'package:army_ecommerce/core/config/app_config.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
+import 'package:army_ecommerce/core/network/api_exception.dart';
+import 'package:army_ecommerce/core/network/api_response_parser.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import '../services/session_manager.dart';
 import '../utils/logger.dart';
 
 class DioClient {
-  late Dio _dio;
-  final baseUrl = dotenv.env['BASE_URL'] ?? '';
+  late final Dio _dio;
+  final String baseUrl = AppConfig.baseUrl;
+
   DioClient() {
     _dio = Dio(
       BaseOptions(
@@ -17,54 +21,74 @@ class DioClient {
       ),
     );
 
-    // THÊM INTERCEPTOR Ở ĐÂY
     _dio.interceptors.add(
       InterceptorsWrapper(
-        // 1. TRƯỚC KHI GỬI ĐI (onRequest)
         onRequest: (options, handler) async {
-          // Lấy token từ bộ nhớ máy
           final token = await SessionManager.getToken();
+          final isSameBackend =
+              options.path.startsWith(baseUrl) || !options.path.startsWith('http');
+          final isPublicApi =
+              options.path.endsWith('/auth/login') || options.path.endsWith('/auth/signup');
 
-          // ĐIỀU KIỆN 1: Chỉ gắn Token nếu gọi đến Server của mình
-          bool isMyServer = options.path.startsWith(baseUrl) || !options.path.startsWith('http');
-
-          // ĐIỀU KIỆN 2: Không gắn Token cho các API "Công cộng" (Login, Signup)
-          // Chúng ta kiểm tra xem path có chứa từ khóa login/signup không
-          bool isPublicApi = options.path.contains('/login') || options.path.contains('/signup');
-
-          if (token != null && token.isNotEmpty && isMyServer && !isPublicApi) {
-            // Tự động gắn vào Header cho MỌI API
+          if (token != null && token.isNotEmpty && isSameBackend && !isPublicApi) {
             options.headers['Authorization'] = 'Bearer $token';
-
           }
 
-          logger.d("📡 ĐANG GỬI: [${options.method}] ${options.path}");
-          return handler.next(options); // Tiếp tục gửi đi
+          logger.d('API gửi đi: [${options.method}] ${options.path}');
+          return handler.next(options);
         },
+        onResponse: (response, handler) async {
+          logger.i(
+            'API nhận về: [${response.statusCode}] ${response.requestOptions.path}',
+          );
 
-        // 2. KHI NHẬN PHẢN HỒI (onResponse)
-        onResponse: (response, handler) {
-          logger.i("✅ NHẬN VỀ: [${response.statusCode}] ${response.requestOptions.path}");
-          return handler.next(response); // Tiếp tục trả về cho Repository
+          if (ApiResponseParser.isTokenInvalid(response.data)) {
+            await SessionManager.clearSession();
+            final apiException = ApiResponseParser.exceptionFromData(
+              response.data,
+              statusCode: response.statusCode,
+            );
+
+            return handler.reject(
+              DioException(
+                requestOptions: response.requestOptions,
+                response: response,
+                type: DioExceptionType.badResponse,
+                error: apiException,
+              ),
+            );
+          }
+
+          return handler.next(response);
         },
+        onError: (DioException error, handler) async {
+          logger.e('Lỗi API: [${error.response?.statusCode}] ${error.message}');
 
-        // 3. KHI CÓ LỖI (onError)
-        onError: (DioException e, handler) {
-          logger.e("❌ LỖI API: [${e.response?.statusCode}] ${e.message}");
+          final responseData = error.response?.data;
+          final code = responseData is Map<String, dynamic>
+              ? responseData['code']?.toString() ?? ''
+              : '';
 
-          String code = e.response?.data['code']?.toString() ?? '';
-          // Xử lý thông minh: Nếu Server báo Token hết hạn (ví dụ mã 9998)
           if (code == ResponseCode.tokenInvalid.code) {
-            // Có thể thực hiện logic Logout tự động ở đây nếu cần
-            logger.w("Cảnh báo: Phiên đăng nhập hết hạn!");
+            await SessionManager.clearSession();
+            logger.w('Phiên đăng nhập đã hết hạn');
           }
 
-          return handler.next(e); // Trả lỗi về cho Repository xử lý
+          if (error.error is ApiException) {
+            return handler.next(error);
+          }
+
+          final apiException = ApiResponseParser.exceptionFromData(
+            responseData,
+            statusCode: error.response?.statusCode,
+            fallbackMessage: error.message,
+          );
+
+          return handler.next(error.copyWith(error: apiException));
         },
       ),
     );
   }
 
-  // Getter để lấy đối tượng Dio đã được cấu hình
   Dio get dio => _dio;
 }

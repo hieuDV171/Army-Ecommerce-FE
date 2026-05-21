@@ -1,0 +1,112 @@
+import '../models/marketplace_models.dart';
+
+abstract class MarketplaceRepository {
+  Future<List<CategoryModel>> getCategories({int? parentId});
+
+  Future<List<BrandModel>> getBrands({String? categoryId, int index = 0, int count = 20});
+
+  Future<List<ProductModel>> getProducts({
+    int index = 0,
+    int count = 20,
+    String? keyword,
+    String? categoryId,
+    String? brandId,
+    num? priceMin,
+    num? priceMax,
+    String? order,
+    String? lastId,
+  });
+
+  Future<List<ProductModel>> searchProducts({
+    String? keyword,
+    String? categoryId,
+    String? brandId,
+    num? priceMin,
+    num? priceMax,
+    int index = 0,
+    int count = 20,
+  });
+
+  Future<ProductModel?> getProductDetail(String productId);
+
+  Future<void> likeProduct(String productId);
+
+  Future<List<CommentModel>> getComments(String productId, {int index = 0, int count = 20});
+
+  Future<void> sendComment(String productId, String content);
+
+  Future<void> reportProduct(String productId, String subject, String details);
+
+  Future<List<MarketplaceItem>> getSavedSearches({int index = 0, int count = 20});
+
+  Future<void> saveSearch(String keyword);
+
+  Future<List<MarketplaceItem>> getNews({int index = 0, int count = 20});
+
+  Future<MarketplaceItem?> getNewsDetail(String id);
+
+  Future<List<MarketplaceItem>> getUserListings({
+    required String userId,
+    int index = 0,
+    int count = 20,
+    String keyword = '',
+    String categoryId = '0',
+  });
+
+  Future<List<AddressModel>> getAddresses();
+
+  Future<void> addAddress(Map<String, dynamic> data);
+
+  Future<void> updateAddress(String id, Map<String, dynamic> data);
+
+  Future<void> deleteAddress(String id);
+
+  Future<List<OrderModel>> getOrders({String? state, int index = 0, int count = 20});
+
+  Future<OrderModel?> getOrderDetail(String id);
+
+  Future<void> cancelOrder(String id, {int? reason});
+
+  Future<void> confirmReceived(String purchaseId);
+
+  Future<void> refundOrder(String purchaseId, {String? reason});
+
+  Future<List<ConversationModel>> getConversations({int index = 0, int count = 20});
+
+  Future<List<MessageModel>> getConversation({
+    required String partnerId,
+    required String conversationId,
+    int index = 0,
+    int count = 20,
+  });
+
+  Future<MessageModel?> sendMessage({
+    required String toId,
+    required String message,
+    required String productId,
+    String typeMessage = 'text',
+  });
+
+  Future<void> markConversationRead(String partnerId);
+
+  Future<List<NotificationModel>> getNotifications({
+    int group = 0,
+    int index = 0,
+    int count = 20,
+  });
+
+  Future<void> markNotificationRead(String notificationId);
+
+  Future<List<WalletHistoryModel>> getBalanceHistory({int index = 0, int count = 20});
+
+  Future<List<MarketplaceItem>> getGenericList(
+    String path, {
+    Map<String, dynamic>? data,
+    int index = 0,
+    int count = 20,
+  });
+
+  Future<WalletBalanceModel> getCurrentBalance();
+
+  Future<void> postAction(String path, Map<String, dynamic> data);
+}

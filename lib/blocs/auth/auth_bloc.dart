@@ -69,22 +69,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<LogoutButtonPressed>((event, emit) async {
+      logger.i('DEBUG LOGOUT BLOC: Received LogoutButtonPressed event, token="${event.token}"');
       emit(AuthLoading());
 
-      // Bất kể có mạng hay không, xóa sạch bộ nhớ máy
-      await SessionManager.clearSession();
-      logger.i('Logout: cleared local session');
-
-      // Thử gọi API để server hủy token cũ
-      try {
-        await authRepository.logout(event.token);
-      } catch (_) {
-        // Nếu mất mạng hoặc server chết, đoạn catch này sẽ bắt lỗi.
-        // Nhưng KHÔNG emit(AuthFailure) ở đây.
-        // Thay vào đó, cố tình bỏ qua để thực hiện bước 3.
+      // 1. Gửi request gọi API logout chạy ngầm mà không await để tránh treo UI
+      if (event.token.isNotEmpty) {
+        logger.i('DEBUG LOGOUT BLOC: Requesting backend logout...');
+        authRepository.logout(event.token).then((_) {
+          logger.i('DEBUG LOGOUT BLOC: Backend logout request succeeded.');
+        }).catchError((e) {
+          logger.e('DEBUG LOGOUT BLOC: Backend logout request failed: $e');
+          return null;
+        });
+      } else {
+        logger.w('DEBUG LOGOUT BLOC: Token is empty, skipping backend logout request.');
       }
 
-      // Luôn luôn báo đăng xuất thành công bất chấp tình trạng mạng
+      // 2. Xóa session local lập tức và chuyển trạng thái thành công
+      logger.i('DEBUG LOGOUT BLOC: Clearing local session via SessionManager...');
+      await SessionManager.clearSession();
+      logger.i('DEBUG LOGOUT BLOC: Local session cleared successfully. Emitting AuthLogoutSuccess.');
       emit(AuthLogoutSuccess());
     });
 

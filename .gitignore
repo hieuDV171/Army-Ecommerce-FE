@@ -66,3 +66,7 @@ constants/api_keys.dart
 *.keystore
 *.p12
 *.pem
+############## Virtual Environments
+/.venv
+/.tools
+backend/node_modules

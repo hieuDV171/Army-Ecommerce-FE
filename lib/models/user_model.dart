@@ -90,7 +90,9 @@ class UserModel {
       username: json['username']?.toString() ?? '',
       token: json['token']?.toString() ?? '',
       avatar: json['avatar']?.toString(),
-      active: int.tryParse(json['active']?.toString() ?? '-1') ?? -1,
+      active: json.containsKey('active')
+          ? (int.tryParse(json['active']?.toString() ?? '1') ?? 1)
+          : 1,
       email: json['email']?.toString(),
       phoneNumber: json['phone_number']?.toString(),
       status: json['status']?.toString(),

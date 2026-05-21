@@ -4,7 +4,7 @@ enum ResponseCode {
   productNotExisted('9992', 'Product is not existed'),
   codeVerifyIncorrect('9993', 'Code verify is incorrect'),
   noData('9994', 'No Data or end of list data'),
-  userNotValidated('9995', 'User is not validated'),
+  userNotValidated('9995', 'Tài khoản chưa đăng ký hoặc mật khẩu không chính xác'),
   userExisted('9996', 'User existed'),
   methodInvalid('9997', 'Method is invalid'),
   tokenInvalid('9998', 'Token is invalid'),

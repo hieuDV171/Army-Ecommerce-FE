@@ -4,10 +4,13 @@ import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
+import 'data/repositories/marketplace_repository_impl.dart';
 import 'data/sources/remote/auth_remote_data_source.dart';
+import 'data/sources/remote/marketplace_remote_data_source.dart';
 import 'package:army_ecommerce/repositories/setting_repository.dart';
 import 'data/repositories/setting_repository_impl.dart';
 import 'data/sources/remote/setting_remote_data_source.dart';
+import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:army_ecommerce/ui/profile/change_info_after_signup_screen.dart';
@@ -18,6 +21,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/api/dio_client.dart';
 import 'core/services/firebase_notification_service.dart';
+import 'core/theme/app_theme.dart';
+import 'package:army_ecommerce/core/utils/logger.dart';
 
 Future<void> main() async {
   // Đảm bảo Flutter binding được khởi tạo trước khi chạy các setup bất đồng bộ
@@ -72,6 +77,11 @@ class _MyAppState extends State<MyApp> {
               remoteDataSource: SettingRemoteDataSource(dioClient: widget.dioClient),
             ),
           ),
+          RepositoryProvider<MarketplaceRepository>(
+            create: (context) => MarketplaceRepositoryImpl(
+              remoteDataSource: MarketplaceRemoteDataSource(dioClient: widget.dioClient),
+            ),
+          ),
         ],
       // BlocProvider khởi tạo và cung cấp Bloc cho toàn bộ cây Widget
       child: MultiBlocProvider(
@@ -90,9 +100,7 @@ class _MyAppState extends State<MyApp> {
            ],
            child: MaterialApp(
             title: 'Army E-commerce',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-            ),
+            theme: AppTheme.light,
             home: BlocConsumer<AuthBloc, AuthState>(
                 listenWhen: (previous, current) {
                   // Lắng nghe khi user login thành công để đăng ký device token
@@ -112,14 +120,16 @@ class _MyAppState extends State<MyApp> {
                   }
                 },
                 buildWhen: (previous, current) {
-                  // Chỉ vẽ lại màn hình chính khi trạng thái chuyển sang Success hoặc Unauthenticated
-                  return current is AuthSuccess || current is Unauthenticated || current is AuthInitial;
+                  logger.i('DEBUG MAIN BUILDWHEN: previousState=$previous, currentState=$current');
+                  // Chỉ vẽ lại màn hình chính khi trạng thái chuyển sang Success, Unauthenticated, hoặc LogoutSuccess
+                  return current is AuthSuccess || current is Unauthenticated || current is AuthInitial || current is AuthLogoutSuccess;
                 },
                 builder: (context, state) {
-                  // 1. Nếu xác định đã đăng nhập thành công từ token cũ
+                  logger.i('DEBUG MAIN BUILDER: currentState=$state');
+                  // 1. Nếu xác định đã đăng nhập thành công từ token cũ hoặc mới
                   if (state is AuthSuccess) {
-                    // Nếu backend trả active == -1 (yêu cầu hoàn tất thông tin) -> hiển thị màn cập nhật hồ sơ
-                    if (state.user.active == -1) {
+                    // Nếu backend trả active == -1 (yêu cầu hoàn tất thông tin) và username vẫn là định dạng số điện thoại -> hiển thị màn cập nhật hồ sơ
+                    if (state.user.active == -1 && RegExp(r'^0[0-9]{9}$').hasMatch(state.user.username)) {
                       final authBloc = BlocProvider.of<AuthBloc>(context);
                       return BlocProvider.value(
                         value: authBloc,
@@ -133,8 +143,8 @@ class _MyAppState extends State<MyApp> {
                     );
                   }
 
-                  // 2. Nếu chưa đăng nhập hoặc token hỏng
-                  if (state is Unauthenticated) {
+                  // 2. Nếu chưa đăng nhập, token hỏng, hoặc vừa đăng xuất thành công
+                  if (state is Unauthenticated || state is AuthLogoutSuccess) {
                     return const LoginScreen();
                   }
 
@@ -155,7 +165,7 @@ class _MyAppState extends State<MyApp> {
                   );
                 }
             )
-          ),
+           ),
       ),
     );
   }

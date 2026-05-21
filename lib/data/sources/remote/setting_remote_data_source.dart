@@ -41,15 +41,15 @@ class SettingRemoteDataSource {
   }) async {
     try {
       final token = await SessionManager.getToken();
-      final request = {
+      final request = <String, dynamic>{
         'token': token ?? '',
-        'like': ?like,
-        'comment': ?comment,
-        'transaction': ?transaction,
-        'announcement': ?announcement,
-        'sound_on': ?soundOn,
-        'sound_default': ?soundDefault,
       };
+      if (like != null) request['like'] = like;
+      if (comment != null) request['comment'] = comment;
+      if (transaction != null) request['transaction'] = transaction;
+      if (announcement != null) request['announcement'] = announcement;
+      if (soundOn != null) request['sound_on'] = soundOn;
+      if (soundDefault != null) request['sound_default'] = soundDefault;
 
       final response = await _dioClient.dio.post(
           'push_settings/set_push_setting',

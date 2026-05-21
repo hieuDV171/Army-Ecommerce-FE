@@ -6,6 +6,10 @@ import 'package:army_ecommerce/ui/auth/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../home/home_screen.dart';
 import '../profile/change_info_after_signup_screen.dart';
 
@@ -17,130 +21,137 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controller để lấy dữ liệu người dùng nhập vào ô text
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Biến để quản lý trạng thái ẩn/hiện mật khẩu
   bool _isObscure = true;
 
   @override
   void dispose() {
-    // Luôn nhớ giải phóng controller khi đóng màn hình để tránh rò rỉ bộ nhớ
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // Hàm gọi sự kiện đăng nhập
   void _onLoginPressed() {
-    // Loại bỏ khoảng trắng ở 2 đầu
     final phone = _phoneController.text.trim();
     final password = _passwordController.text.trim();
 
     if (phone.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin'),)
+        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
       );
       return;
     }
 
-    // Bắn sự kiện LoginButtonPressed vào AuthBloc
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mật khẩu phải có ít nhất 6 ký tự')),
+      );
+      return;
+    }
+
     context.read<AuthBloc>().add(
-      LoginButtonPressed(phoneNumber: phone, password: password)
-    );
+          LoginButtonPressed(phoneNumber: phone, password: password),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Đăng nhập', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      // BlocConsumer vừa lắng nghe trạng thái (listener), vừa vẽ lại UI (builder)
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           final navigator = Navigator.of(context);
-          // Xử lý các logic điều hướng hoặc hiển thị thông báo ở đây
+
           if (state is AuthSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đăng nhập thành công!'),)
+              const SnackBar(content: Text('Đăng nhập thành công')),
             );
 
-            // Nếu backend trả về active == -1 -> yêu cầu user hoàn tất thông tin
-            if (state.user.active == -1) {
+            if (state.user.active == -1 && RegExp(r'^0[0-9]{9}$').hasMatch(state.user.username)) {
               final authBloc = context.read<AuthBloc>();
-
-              // Chuyển sang màn hình cập nhật thông tin (đã được cài đặt).
-              // Sau khi màn cập nhật đóng lại, chuyển tiếp đến Home.
-              navigator.push(
+              navigator
+                  .push(
                 MaterialPageRoute(
                   builder: (context) => BlocProvider.value(
                     value: authBloc,
-                    child: ChangeInfoAfterSignupScreen(currentUsername: state.user.username),
+                    child: ChangeInfoAfterSignupScreen(
+                      currentUsername: state.user.username,
+                    ),
                   ),
                 ),
               ).then((updatedUser) {
-                // Chỉ cho vào Home khi đã cập nhật xong và màn này trả về user hợp lệ
                 if (updatedUser == null) return;
+                final updated = updatedUser as dynamic;
                 navigator.pushReplacement(
                   MaterialPageRoute(
                     builder: (_) => HomeScreen(
-                      username: updatedUser != null ? updatedUser.username : state.user.username,
+                      username: updated.username as String,
                       token: state.user.token,
                     ),
                   ),
                 );
               });
-
-              return; // tránh chạy phần điều hướng Home mặc định phía dưới
+              return;
             }
 
-            // Chuyển sang màn hình Home
             navigator.pushReplacement(
-                MaterialPageRoute(
-                    builder: (_) => HomeScreen(
-                      username: state.user.username,
-                      token: state.user.token,
-                    )
-                )
+              MaterialPageRoute(
+                builder: (_) => HomeScreen(
+                  username: state.user.username,
+                  token: state.user.token,
+                ),
+              ),
             );
           } else if (state is AuthFailure) {
-            // Hiển thị lỗi từ API trả về
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}'),)
+              SnackBar(content: Text('Lỗi: ${state.error}')),
             );
           }
         },
         builder: (context, state) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
-                // Ô nhập Số điện thoại
-                TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Số điện thoại',
-                    border: OutlineInputBorder(),
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 32),
+                  const Icon(
+                    Icons.military_tech,
+                    size: 76,
+                    color: AppColors.primary,
                   ),
-                ),
-                const SizedBox(height: 20),
-                // Ô nhập Mật khẩu
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _isObscure, // Ẩn/hiện mật khẩu
-                  decoration: InputDecoration(
-                    labelText: 'Mật khẩu',
-                    border: const OutlineInputBorder(),
-                    // Icon để toggle ẩn/hiện mật khẩu
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Army E-commerce',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Đăng nhập để tiếp tục mua bán quân nhu',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                  const SizedBox(height: 36),
+                  AppTextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    label: 'Số điện thoại',
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppTextField(
+                    controller: _passwordController,
+                    obscureText: _isObscure,
+                    label: 'Mật khẩu',
                     suffixIcon: IconButton(
+                      tooltip: _isObscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                       icon: Icon(
                         _isObscure ? Icons.visibility_off : Icons.visibility,
                       ),
@@ -151,58 +162,46 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                   ),
-                ),
-                const SizedBox(height: 30),
-
-                // Nút Đăng nhập
-                SizedBox(
-                  height: 50,
-                  // Nếu đang loading thì vô hiệu hóa nút (null), ngược lại thì gọi _onLoginPressed
-                  child: ElevatedButton(
-                      onPressed: state is AuthLoading ? null : _onLoginPressed,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepOrangeAccent,
-                      ),
-                      child: state is AuthLoading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text(
-                            'Đăng nhập',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
+                  const SizedBox(height: AppSpacing.xl),
+                  AppButton(
+                    label: 'Đăng nhập',
+                    isLoading: state is AuthLoading,
+                    onPressed: _onLoginPressed,
                   ),
-                ),
-
-                const SizedBox(height: 20),
-                // Nút Quên mật khẩu & Đăng ký
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
                         onPressed: () {
                           Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()));
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordScreen(),
+                            ),
+                          );
                         },
                         child: const Text('Quên mật khẩu'),
-                    ),
-                    TextButton(
+                      ),
+                      TextButton(
                         onPressed: () {
                           Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const SignupScreen()),
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SignupScreen(),
+                            ),
                           );
                         },
                         child: const Text('Đăng ký'),
-                    ),
-                  ],
-                ),
-              ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
-      )
+      ),
     );
   }
 }

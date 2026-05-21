@@ -80,6 +80,11 @@ class AuthRemoteDataSource {
         data: {
           'token': token,
         },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ),
       );
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");

@@ -1,22 +1,30 @@
-import 'package:army_ecommerce/ui/auth/change_password_screen.dart';
-import 'package:army_ecommerce/ui/settings/push_settings_screen.dart';
 import 'package:flutter/material.dart';
-import '../../core/services/session_manager.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/core/utils/logger.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/marketplace/marketplace_bloc.dart';
 import '../../blocs/settings/push_setting_bloc.dart';
-import '../auth/login_screen.dart';
+import '../../core/services/session_manager.dart';
+import '../../repositories/marketplace_repository.dart';
+import '../auth/change_password_screen.dart';
+import '../marketplace/marketplace_pages.dart';
 import '../profile/user_profile_screen.dart';
+import '../settings/push_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String username;
   final String token;
   final String? phoneNumber;
 
-  const HomeScreen({super.key, required this.username, required this.token, this.phoneNumber});
+  const HomeScreen({
+    super.key,
+    required this.username,
+    required this.token,
+    this.phoneNumber,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -31,19 +39,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentUsername = widget.username;
-    // Nếu màn gọi không truyền phoneNumber, thử load từ SessionManager
     if (widget.phoneNumber == null) {
-      SessionManager.getPhoneNumber().then((p) {
-        if (mounted) {
-          setState(() => _phoneFromPrefs = p);
-        }
+      SessionManager.getPhoneNumber().then((phone) {
+        if (mounted) setState(() => _phoneFromPrefs = phone);
       });
     }
-    // Load avatar từ SessionManager
     SessionManager.getAvatar().then((avatar) {
-      if (mounted) {
-        setState(() => _avatarUrl = avatar);
-      }
+      if (mounted) setState(() => _avatarUrl = avatar);
     });
   }
 
@@ -56,170 +58,217 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AuthLogoutSuccess) {
-          // Khi logout xong thì đẩy về màn hình Login
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-          );
-        } else if (state is ChangeInfoSuccess) {
-          // Cập nhật avatar và username khi thay đổi thông tin
-          if (mounted) {
-            setState(() {
-              _currentUsername = state.updatedUser.username;
-              _avatarUrl = state.updatedUser.avatar;
-            });
-          }
+        if (state is ChangeInfoSuccess && mounted) {
+          setState(() {
+            _currentUsername = state.updatedUser.username;
+            _avatarUrl = state.updatedUser.avatar;
+          });
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Quân Nhu Tiền Tuyến',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
+      child: BlocProvider(
+        create: (context) => HomeBloc(
+          marketplaceRepository: context.read<MarketplaceRepository>(),
+        )..add(HomeRequested()),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Quân Nhu Tiền Tuyến'),
           ),
-          backgroundColor: const Color(0xFF003366), // Màu Navy quân đội
-          iconTheme: const IconThemeData(color: Colors.white), // Hamburger menu icon màu trắng
-        ),
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              // Phần đầu Menu hiển thị thông tin quân nhân
-              UserAccountsDrawerHeader(
-                decoration: const BoxDecoration(color: Color(0xFF003366)),
-                accountName: Text('Đồng chí: $_displayName'),
-                accountEmail: const Text('Quân binh chủng: Bộ binh'),
-                currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                      ? NetworkImage(_avatarUrl!)
-                      : null,
-                  child: _avatarUrl == null || _avatarUrl!.isEmpty
-                      ? const Icon(Icons.person, size: 50, color: Color(0xFF003366))
-                      : null,
-                ),
-              ),
-
-                // MỤC HỒ SƠ
-               ListTile(
-                 leading: const Icon(Icons.person_outline, color: Colors.blue,),
-                  title: const Text('Hồ sơ của tôi'),
-                 onTap: () {
-                   Navigator.pop(context);
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                        builder: (context) => const UserProfileScreen(),
-                      ),
-                    );
-                 },
-               ),
-
-               // MỤC ĐỔI MẬT KHẨU
-               ListTile(
-                 leading: const Icon(Icons.lock_reset, color: Colors.orange,),
-                 title: Text('Đổi mật khẩu'),
-                 onTap: () {
-                   // 1. Đóng menu trượt trước
-                   Navigator.pop(context);
-
-                   // 2. Chuyển sang màn hình đổi mật khẩu
-                   // Lưu ý: "Truyền tay" AuthBloc hiện tại sang để dùng tiếp
-                   final authBloc = context.read<AuthBloc>();
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (context) => BlocProvider.value(
-                         value: authBloc,
-                         child: const ChangePasswordScreen(),
-                       ),
-                     ),
-                   );
-                 },
-               ),
-
-                // MỤC CÀI ĐẶT THÔNG BÁO
-                ListTile(
-                  leading: const Icon(Icons.notifications_active, color: Colors.purple,),
-                  title: const Text('Cài đặt thông báo'),
-                  onTap: () {
-                    // 1. Đóng menu trượt trước
-                    Navigator.pop(context);
-
-                    // 2. Chuyển sang màn hình cài đặt thông báo
-                    // Lưu ý: "Truyền tay" PushSettingBloc hiện tại sang để dùng tiếp
-                    final pushSettingBloc = context.read<PushSettingBloc>();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BlocProvider.value(
-                          value: pushSettingBloc,
-                          child: const PushSettingsScreen(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-              const Divider(), // Đường kẻ ngăn cách
-              // MỤC ĐĂNG XUẤT
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red,),
-                title: const Text('Đăng xuất'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showLogoutDialog(context);
-                },
-              )
-              //----------------------------------
-            ],
+          drawer: _HomeDrawer(
+            displayName: _displayName,
+            avatarUrl: _avatarUrl,
+            token: widget.token,
           ),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.military_tech, size: 100, color: Colors.lightGreen),
-              const SizedBox(height: 20),
-              Text('Chào đồng chí: $_displayName',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)
-              ),
-              const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: Text('Hệ thống sẵn sàng tiếp nhận yêu cầu quân nhu.',
-                    textAlign: TextAlign.center
-                ),
-              )
-            ],
+          body: MarketplaceHomeBody(
+            username: _displayName.isEmpty ? 'Đồng chí' : _displayName,
+            avatarUrl: _avatarUrl,
           ),
         ),
       ),
     );
   }
+}
+
+class _HomeDrawer extends StatelessWidget {
+  final String displayName;
+  final String? avatarUrl;
+  final String token;
+
+  const _HomeDrawer({
+    required this.displayName,
+    required this.avatarUrl,
+    required this.token,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(color: Color(0xFFE83A14)),
+            accountName: Text('Đồng chí: $displayName'),
+            accountEmail: const Text('Chợ quân nhu nội bộ'),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                  ? NetworkImage(avatarUrl!)
+                  : null,
+              child: avatarUrl == null || avatarUrl!.isEmpty
+                  ? const Icon(Icons.person, size: 42, color: Color(0xFFE83A14))
+                  : null,
+            ),
+          ),
+          _DrawerTile(
+            icon: Icons.person_outline,
+            color: Colors.blue,
+            title: 'Hồ sơ của tôi',
+            onTap: () => _push(context, const UserProfileScreen()),
+          ),
+          _DrawerTile(
+            icon: Icons.lock_reset,
+            color: Colors.orange,
+            title: 'Đổi mật khẩu',
+            onTap: () {
+              Navigator.pop(context);
+              final authBloc = context.read<AuthBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: authBloc,
+                    child: const ChangePasswordScreen(),
+                  ),
+                ),
+              );
+            },
+          ),
+          _DrawerTile(
+            icon: Icons.notifications_active,
+            color: Colors.purple,
+            title: 'Cài đặt thông báo',
+            onTap: () {
+              Navigator.pop(context);
+              final pushSettingBloc = context.read<PushSettingBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: pushSettingBloc,
+                    child: const PushSettingsScreen(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          _DrawerTile(
+            icon: Icons.search,
+            color: Colors.deepOrange,
+            title: 'Tìm kiếm sản phẩm',
+            onTap: () => _push(context, const SearchPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.receipt_long_outlined,
+            color: Colors.teal,
+            title: 'Đơn hàng',
+            onTap: () => _push(context, const OrderListPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.location_on_outlined,
+            color: Colors.green,
+            title: 'Địa chỉ giao hàng',
+            onTap: () => _push(context, const AddressListPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.account_balance_wallet_outlined,
+            color: Colors.brown,
+            title: 'Ví quân nhu',
+            onTap: () => _push(context, const WalletPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.chat_bubble_outline,
+            color: Colors.indigo,
+            title: 'Tin nhắn',
+            onTap: () => _push(context, const ConversationPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.article_outlined,
+            color: Colors.cyan,
+            title: 'Tin tức',
+            onTap: () => _push(context, const NewsPage()),
+          ),
+          const Divider(),
+          _DrawerTile(
+            icon: Icons.logout,
+            color: Colors.red,
+            title: 'Đăng xuất',
+            onTap: () => _showLogoutDialog(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _push(BuildContext context, Widget page) {
+    Navigator.pop(context);
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
 
   void _showLogoutDialog(BuildContext context) {
-    showDialog(
+    logger.i('DEBUG LOGOUT UI: _showLogoutDialog called');
+    // Lấy AuthBloc ngay lập tức khi context của drawer còn đang active và chắc chắn hợp lệ
+    final authBloc = context.read<AuthBloc>();
+
+    showDialog<void>(
       context: context,
       builder: (innerContext) => AlertDialog(
         title: const Text('Xác nhận'),
         content: const Text('Đồng chí muốn đăng xuất khỏi hệ thống?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(innerContext), child: const Text('HỦY')),
           TextButton(
-              onPressed: () {
-                Navigator.pop(innerContext);
-                // Bắn sự kiện Logout
-                context.read<AuthBloc>().add(LogoutButtonPressed(token: widget.token));
-              },
-              child: const Text('ĐĂNG XUẤT', style: TextStyle(color: Colors.red))
+            onPressed: () {
+              logger.i('DEBUG LOGOUT UI: Clicked Cancel');
+              Navigator.pop(innerContext); // Đóng dialog
+              Navigator.pop(context); // Đóng drawer
+            },
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () {
+              logger.i('DEBUG LOGOUT UI: Clicked Confirm Đăng xuất. Token was: "$token"');
+              Navigator.pop(innerContext); // Đóng dialog
+              Navigator.pop(context); // Đóng drawer
+              logger.i('DEBUG LOGOUT UI: Dispatching LogoutButtonPressed event');
+              authBloc.add(LogoutButtonPressed(token: token));
+            },
+            child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DrawerTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final VoidCallback onTap;
+
+  const _DrawerTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(title),
+      onTap: onTap,
     );
   }
 }
