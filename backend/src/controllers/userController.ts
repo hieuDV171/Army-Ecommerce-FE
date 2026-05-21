@@ -47,6 +47,7 @@ export const getUserInfo = async (req: AuthenticatedRequest, res: Response) => {
         online: user.online,
         followed: false,
         is_blocked: false,
+        active: user.username === user.phone_number ? -1 : 1,
       },
     });
   } catch (error) {
@@ -115,6 +116,7 @@ export const setUserInfo = async (req: AuthenticatedRequest, res: Response) => {
         status: updatedUser.status,
         listing: updatedUser.listing,
         online: updatedUser.online,
+        active: updatedUser.username === updatedUser.phone_number ? -1 : 1,
       },
     });
   } catch (error) {

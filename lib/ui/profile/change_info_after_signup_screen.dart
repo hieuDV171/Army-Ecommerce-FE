@@ -103,23 +103,9 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
               navigator.pop(updatedUser);
               return;
             }
-
-            final fallbackToken = await SessionManager.getToken() ?? '';
-            if (!context.mounted) return;
-
-            navigator.pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (_) => HomeScreen(
-                  username: updatedUser.username.isNotEmpty
-                      ? updatedUser.username
-                      : widget.currentUsername,
-                  token: updatedUser.token.isNotEmpty
-                      ? updatedUser.token
-                      : fallbackToken,
-                ),
-              ),
-              (route) => false,
-            );
+            
+            // Nếu là root screen, main.dart sẽ tự động vẽ lại và chuyển sang HomeScreen
+            // nhờ trạng thái AuthSuccess được emit tiếp theo trong AuthBloc.
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
           }

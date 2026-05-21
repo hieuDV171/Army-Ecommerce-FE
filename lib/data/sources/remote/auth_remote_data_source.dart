@@ -334,7 +334,7 @@ class AuthRemoteDataSource {
         data: {
           'token': token,
           'username': username,
-          'avatar': ?avatarUrl,
+          'avatar': avatarUrl,
         },
       );
 

@@ -86,6 +86,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
   }
   void _showSuccessAndGoHome(BuildContext context, UserModel user) {
     final navigator = Navigator.of(context);
+    final authBloc = context.read<AuthBloc>();
 
     showDialog(
         context: context,
@@ -112,15 +113,14 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
 
-      // ĐI THẲNG VÀO HOME SCREEN
-      navigator.pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (_) => HomeScreen(
-                  username: user.username,
-                  token: user.token)
-          ),
-              (route) => false // Xóa sạch lịch sử các màn hình Login/Reset cũ
-      );
+      // Đóng dialog
+      navigator.pop();
+
+      // Quay về root screen (LoginScreen)
+      navigator.popUntil((route) => route.isFirst);
+
+      // Phát sự kiện AppStarted để tự động đăng nhập với token mới và chuyển tới HomeScreen
+      authBloc.add(AppStarted());
     });
   }
 }

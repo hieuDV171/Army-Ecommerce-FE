@@ -70,3 +70,6 @@ constants/api_keys.dart
 /.venv
 /.tools
 backend/node_modules
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/uploads/

@@ -13,9 +13,10 @@ export const uploadFile = (req: Request, res: Response) => {
   try {
     const filename = req.file.filename;
     
-    // Tạo link download public tĩnh
-    const baseUrl = process.env.BASE_URL || `http://${req.hostname}:${process.env.PORT || 3000}`;
-    const fileUrl = `${baseUrl}/uploads/${filename}`;
+    // Tự động nhận diện protocol và host từ request để sinh URL chính xác cho client
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.get('host');
+    const fileUrl = `${protocol}://${host}/uploads/${filename}`;
 
     return res.status(201).json({
       code: '1000',

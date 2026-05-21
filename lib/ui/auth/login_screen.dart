@@ -67,42 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Đăng nhập thành công')),
             );
-
-            if (state.user.active == -1 && RegExp(r'^0[0-9]{9}$').hasMatch(state.user.username)) {
-              final authBloc = context.read<AuthBloc>();
-              navigator
-                  .push(
-                MaterialPageRoute(
-                  builder: (context) => BlocProvider.value(
-                    value: authBloc,
-                    child: ChangeInfoAfterSignupScreen(
-                      currentUsername: state.user.username,
-                    ),
-                  ),
-                ),
-              ).then((updatedUser) {
-                if (updatedUser == null) return;
-                final updated = updatedUser as dynamic;
-                navigator.pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => HomeScreen(
-                      username: updated.username as String,
-                      token: state.user.token,
-                    ),
-                  ),
-                );
-              });
-              return;
-            }
-
-            navigator.pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => HomeScreen(
-                  username: state.user.username,
-                  token: state.user.token,
-                ),
-              ),
-            );
+            // Không thực hiện Navigator.push hay Navigator.pushReplacement nữa.
+            // main.dart đang lắng nghe AuthSuccess ở root và sẽ tự động pop stack phụ 
+            // đồng thời render HomeScreen hoặc ChangeInfoAfterSignupScreen ở root!
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Lỗi: ${state.error}')),

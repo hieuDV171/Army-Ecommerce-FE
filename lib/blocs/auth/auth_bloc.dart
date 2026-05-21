@@ -319,6 +319,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
            }
 
            emit(ChangeInfoSuccess(updatedUser: response.data!));
+
+           // Phát tiếp AuthSuccess để đồng bộ trạng thái hệ thống và tự động chuyển sang HomeScreen
+           final token = await SessionManager.getToken() ?? '';
+           final userWithToken = response.data!.copyWith(token: token, active: 1);
+           emit(AuthSuccess(user: userWithToken));
         } else {
           emit(AuthFailure(error: response.message, code: response.code));
         }
