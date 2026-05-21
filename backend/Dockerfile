@@ -1,5 +1,7 @@
 # Sử dụng node 20 làm base
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
+
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 
@@ -17,7 +19,9 @@ RUN npx prisma generate
 RUN npm run build
 
 # Giai đoạn run
-FROM node:20-alpine
+FROM node:20-slim
+
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 
