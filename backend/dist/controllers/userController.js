@@ -6,8 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.setUserInfo = exports.getUserInfo = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const getUserInfo = async (req, res) => {
-    const { user_id } = req.body;
-    if (!user_id) {
+    const userIdStr = req.body.user_id;
+    const userId = userIdStr ? Number(userIdStr) : req.user?.id;
+    if (!userId) {
         return res.status(200).json({
             code: '1002',
             message: 'Parameter is not enough',
@@ -16,7 +17,7 @@ const getUserInfo = async (req, res) => {
     }
     try {
         const user = await db_1.default.user.findUnique({
-            where: { id: Number(user_id) },
+            where: { id: userId },
         });
         if (!user) {
             return res.status(200).json({
@@ -60,14 +61,6 @@ const getUserInfo = async (req, res) => {
 exports.getUserInfo = getUserInfo;
 const setUserInfo = async (req, res) => {
     const { email, username, status, avatar, firstname, lastname, address, cover_image, cover_image_web, } = req.body;
-    // check parameterNotEnough
-    if (!email || !username || !status || !avatar || !firstname || !lastname || !address || !cover_image || !cover_image_web) {
-        return res.status(200).json({
-            code: '1002',
-            message: 'Parameter is not enough',
-            data: null,
-        });
-    }
     if (!req.user) {
         return res.status(200).json({
             code: '9998',
@@ -76,19 +69,28 @@ const setUserInfo = async (req, res) => {
         });
     }
     try {
+        const updateData = {};
+        if (email !== undefined)
+            updateData.email = email;
+        if (username !== undefined)
+            updateData.username = username;
+        if (status !== undefined)
+            updateData.status = status;
+        if (avatar !== undefined)
+            updateData.avatar = avatar;
+        if (firstname !== undefined)
+            updateData.firstname = firstname;
+        if (lastname !== undefined)
+            updateData.lastname = lastname;
+        if (address !== undefined)
+            updateData.address = address;
+        if (cover_image !== undefined)
+            updateData.cover_image = cover_image;
+        if (cover_image_web !== undefined)
+            updateData.cover_image_web = cover_image_web;
         const updatedUser = await db_1.default.user.update({
             where: { id: req.user.id },
-            data: {
-                email,
-                username,
-                status,
-                avatar,
-                firstname,
-                lastname,
-                address,
-                cover_image,
-                cover_image_web,
-            },
+            data: updateData,
         });
         return res.status(200).json({
             code: '1000',
