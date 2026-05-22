@@ -29,29 +29,45 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Future<List<ProductModel>> getProducts({
+  Future<ProductListResult> getListProducts({
     int index = 0,
     int count = 20,
     String? keyword,
     String? categoryId,
     String? brandId,
+    int? productSizeId,
     num? priceMin,
     num? priceMax,
     String? order,
-    String? lastId,
+    int? latitude,
+    int? longitude,
+    int? lastId,
   }) async {
-    final response = await remoteDataSource.getProducts(
+    final response = await remoteDataSource.getListProducts(
       index: index,
       count: count,
       keyword: keyword,
       categoryId: categoryId,
       brandId: brandId,
+      productSizeId: productSizeId,
       priceMin: priceMin,
       priceMax: priceMax,
       order: order,
+      latitude: latitude,
+      longitude: longitude,
       lastId: lastId,
     );
-    return parseListFromData(response.data, ProductModel.fromJson);
+    final products = parseListFromData(response.data, ProductModel.fromJson);
+    final map = parseMapFromData(response.data);
+    int? last;
+    final rawLast = map['last_id'] ?? map['lastId'] ?? map['last'];
+    if (rawLast is int) {
+      last = rawLast;
+    } else if (rawLast != null) {
+      last = int.tryParse(rawLast.toString());
+    }
+
+    return ProductListResult(products: products, lastId: last);
   }
 
   @override
@@ -61,6 +77,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     String? brandId,
     num? priceMin,
     num? priceMax,
+    String? condition,
     int index = 0,
     int count = 20,
   }) async {
@@ -75,6 +92,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     if (brandId != null && brandId.isNotEmpty) request['brand_id'] = _idValue(brandId);
     if (priceMin != null) request['price_min'] = priceMin;
     if (priceMax != null) request['price_max'] = priceMax;
+    if (condition != null) request['condition'] = condition;
 
     final response = await remoteDataSource.post(
       ApiPaths.search,
@@ -169,15 +187,12 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     String keyword = '',
     String categoryId = '0',
   }) async {
-    final response = await remoteDataSource.post(
-      '/api/get_user_listings',
-      data: {
-        'user_id': userId,
-        'index': index,
-        'count': count,
-        'keyword': keyword,
-        'category_id': categoryId,
-      },
+    final response = await remoteDataSource.getUserListings(
+      userId: userId,
+      index: index,
+      count: count,
+      keyword: keyword.isEmpty ? null : keyword,
+      categoryId: categoryId == '0' ? null : categoryId,
     );
     return parseListFromData(response.data, MarketplaceItem.fromJson);
   }

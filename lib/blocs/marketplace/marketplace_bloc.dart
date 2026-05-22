@@ -1,83 +1,9 @@
-import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../models/marketplace_models.dart';
 import '../../repositories/marketplace_repository.dart';
-
-abstract class HomeEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class HomeRequested extends HomeEvent {}
-
-class HomeRefreshed extends HomeEvent {}
-
-class HomeLoadMoreRequested extends HomeEvent {}
-
-class HomeState extends Equatable {
-  final List<CategoryModel> categories;
-  final List<ProductModel> products;
-  final bool isInitialLoading;
-  final bool isRefreshing;
-  final bool isLoadingMore;
-  final bool hasReachedEnd;
-  final String? errorMessage;
-  final int index;
-  final int count;
-
-  const HomeState({
-    this.categories = const [],
-    this.products = const [],
-    this.isInitialLoading = false,
-    this.isRefreshing = false,
-    this.isLoadingMore = false,
-    this.hasReachedEnd = false,
-    this.errorMessage,
-    this.index = 0,
-    this.count = 20,
-  });
-
-  bool get isEmpty => !isInitialLoading && products.isEmpty;
-
-  HomeState copyWith({
-    List<CategoryModel>? categories,
-    List<ProductModel>? products,
-    bool? isInitialLoading,
-    bool? isRefreshing,
-    bool? isLoadingMore,
-    bool? hasReachedEnd,
-    String? errorMessage,
-    bool clearError = false,
-    int? index,
-    int? count,
-  }) {
-    return HomeState(
-      categories: categories ?? this.categories,
-      products: products ?? this.products,
-      isInitialLoading: isInitialLoading ?? this.isInitialLoading,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      index: index ?? this.index,
-      count: count ?? this.count,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        categories,
-        products,
-        isInitialLoading,
-        isRefreshing,
-        isLoadingMore,
-        hasReachedEnd,
-        errorMessage,
-        index,
-        count,
-      ];
-}
+import 'marketplace_event.dart';
+import 'marketplace_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final MarketplaceRepository marketplaceRepository;
@@ -92,14 +18,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(state.copyWith(isInitialLoading: true, clearError: true, index: 0));
     try {
       final categories = await marketplaceRepository.getCategories(parentId: 0);
-      final products = await marketplaceRepository.getProducts(index: 0, count: state.count);
+      final result = await marketplaceRepository.getListProducts(index: 0, count: state.count);
       emit(
         state.copyWith(
           categories: categories,
-          products: _deduplicateProducts(products),
+          products: _deduplicateProducts(result.products),
           isInitialLoading: false,
-          hasReachedEnd: products.length < state.count,
+          hasReachedEnd: result.products.length < state.count,
           index: 1,
+          lastId: result.lastId,
           clearError: true,
         ),
       );
@@ -112,14 +39,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(state.copyWith(isRefreshing: true, clearError: true, index: 0));
     try {
       final categories = await marketplaceRepository.getCategories(parentId: 0);
-      final products = await marketplaceRepository.getProducts(index: 0, count: state.count);
+      final result = await marketplaceRepository.getListProducts(index: 0, count: state.count);
       emit(
         state.copyWith(
           categories: categories,
-          products: _deduplicateProducts(products),
+          products: _deduplicateProducts(result.products),
           isRefreshing: false,
-          hasReachedEnd: products.length < state.count,
+          hasReachedEnd: result.products.length < state.count,
           index: 1,
+          lastId: result.lastId,
           clearError: true,
         ),
       );
@@ -136,16 +64,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     try {
-      final products = await marketplaceRepository.getProducts(
+      final result = await marketplaceRepository.getListProducts(
         index: state.index,
         count: state.count,
+        lastId: state.lastId,
       );
+      final products = result.products;
       emit(
         state.copyWith(
           products: _deduplicateProducts([...state.products, ...products]),
           isLoadingMore: false,
           hasReachedEnd: products.length < state.count,
           index: state.index + 1,
+          lastId: result.lastId,
           clearError: true,
         ),
       );
@@ -163,88 +94,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 }
 
-abstract class ProductDetailEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class ProductDetailRequested extends ProductDetailEvent {
-  final String productId;
-
-  ProductDetailRequested(this.productId);
-
-  @override
-  List<Object?> get props => [productId];
-}
-
-class ProductLikeToggled extends ProductDetailEvent {}
-
-class ProductCommentSent extends ProductDetailEvent {
-  final String content;
-
-  ProductCommentSent(this.content);
-
-  @override
-  List<Object?> get props => [content];
-}
-
-class ProductReported extends ProductDetailEvent {
-  final String subject;
-  final String details;
-
-  ProductReported({required this.subject, required this.details});
-
-  @override
-  List<Object?> get props => [subject, details];
-}
-
-class ProductDetailState extends Equatable {
-  final ProductModel? product;
-  final List<CommentModel> comments;
-  final bool isLoading;
-  final bool isSubmitting;
-  final String? errorMessage;
-  final String? successMessage;
-
-  const ProductDetailState({
-    this.product,
-    this.comments = const [],
-    this.isLoading = false,
-    this.isSubmitting = false,
-    this.errorMessage,
-    this.successMessage,
-  });
-
-  ProductDetailState copyWith({
-    ProductModel? product,
-    List<CommentModel>? comments,
-    bool? isLoading,
-    bool? isSubmitting,
-    String? errorMessage,
-    String? successMessage,
-    bool clearMessages = false,
-  }) {
-    return ProductDetailState(
-      product: product ?? this.product,
-      comments: comments ?? this.comments,
-      isLoading: isLoading ?? this.isLoading,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        product,
-        comments,
-        isLoading,
-        isSubmitting,
-        errorMessage,
-        successMessage,
-      ];
-}
-
+//----------------------------------------
 class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
   final MarketplaceRepository marketplaceRepository;
   String? _productId;
@@ -344,124 +194,17 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
   }
 }
 
-abstract class ProductSearchEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class ProductSearchRequested extends ProductSearchEvent {
-  final String keyword;
-  final String? categoryId;
-  final String? brandId;
-  final num? priceMin;
-  final num? priceMax;
-
-  ProductSearchRequested({
-    this.keyword = '',
-    this.categoryId,
-    this.brandId,
-    this.priceMin,
-    this.priceMax,
-  });
-
-  @override
-  List<Object?> get props => [keyword, categoryId, brandId, priceMin, priceMax];
-}
-
-class ProductSearchRefreshed extends ProductSearchEvent {}
-
-class ProductSearchLoadMoreRequested extends ProductSearchEvent {}
-
-class ProductSearchState extends Equatable {
-  final List<ProductModel> products;
-  final String keyword;
-  final String? categoryId;
-  final String? brandId;
-  final num? priceMin;
-  final num? priceMax;
-  final bool isInitialLoading;
-  final bool isRefreshing;
-  final bool isLoadingMore;
-  final bool hasReachedEnd;
-  final String? errorMessage;
-  final int index;
-  final int count;
-
-  const ProductSearchState({
-    this.products = const [],
-    this.keyword = '',
-    this.categoryId,
-    this.brandId,
-    this.priceMin,
-    this.priceMax,
-    this.isInitialLoading = false,
-    this.isRefreshing = false,
-    this.isLoadingMore = false,
-    this.hasReachedEnd = false,
-    this.errorMessage,
-    this.index = 0,
-    this.count = 20,
-  });
-
-  ProductSearchState copyWith({
-    List<ProductModel>? products,
-    String? keyword,
-    String? categoryId,
-    String? brandId,
-    num? priceMin,
-    num? priceMax,
-    bool? isInitialLoading,
-    bool? isRefreshing,
-    bool? isLoadingMore,
-    bool? hasReachedEnd,
-    String? errorMessage,
-    int? index,
-    int? count,
-    bool clearError = false,
-  }) {
-    return ProductSearchState(
-      products: products ?? this.products,
-      keyword: keyword ?? this.keyword,
-      categoryId: categoryId ?? this.categoryId,
-      brandId: brandId ?? this.brandId,
-      priceMin: priceMin ?? this.priceMin,
-      priceMax: priceMax ?? this.priceMax,
-      isInitialLoading: isInitialLoading ?? this.isInitialLoading,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      index: index ?? this.index,
-      count: count ?? this.count,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        products,
-        keyword,
-        categoryId,
-        brandId,
-        priceMin,
-        priceMax,
-        isInitialLoading,
-        isRefreshing,
-        isLoadingMore,
-        hasReachedEnd,
-        errorMessage,
-        index,
-        count,
-      ];
-}
-
+//-----------------------------------
 class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
   final MarketplaceRepository marketplaceRepository;
 
   ProductSearchBloc({required this.marketplaceRepository})
       : super(const ProductSearchState()) {
     on<ProductSearchRequested>(_onRequested);
+    on<ProductSearchFiltered>(_onFiltered);
     on<ProductSearchRefreshed>(_onRefreshed);
     on<ProductSearchLoadMoreRequested>(_onLoadMoreRequested);
+    on<ProductSearchBrandsRequested>(_onBrandsRequested);
   }
 
   Future<void> _onRequested(
@@ -475,6 +218,8 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         brandId: event.brandId,
         priceMin: event.priceMin,
         priceMax: event.priceMax,
+        useListProductsApi: false,
+        lastId: null,
         products: const [],
         index: 0,
         isInitialLoading: true,
@@ -482,6 +227,41 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         clearError: true,
       ),
     );
+
+    // Tải danh sách thương hiệu nếu có categoryId
+    if (event.categoryId != null) {
+      add(ProductSearchBrandsRequested(categoryId: event.categoryId));
+    }
+
+    await _loadPage(emit, index: 0, replace: true);
+  }
+
+  Future<void> _onFiltered(
+    ProductSearchFiltered event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        keyword: event.keyword,
+        categoryId: event.categoryId,
+        brandId: event.brandId,
+        priceMin: event.priceMin,
+        priceMax: event.priceMax,
+        useListProductsApi: true,
+        lastId: null,
+        products: const [],
+        index: 0,
+        isInitialLoading: true,
+        hasReachedEnd: false,
+        clearError: true,
+      ),
+    );
+
+    // Tải danh sách thương hiệu nếu có categoryId
+    if (event.categoryId != null) {
+      add(ProductSearchBrandsRequested(categoryId: event.categoryId));
+    }
+
     await _loadPage(emit, index: 0, replace: true);
   }
 
@@ -489,7 +269,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchRefreshed event,
     Emitter<ProductSearchState> emit,
   ) async {
-    emit(state.copyWith(isRefreshing: true, index: 0, clearError: true));
+    emit(state.copyWith(isRefreshing: true, index: 0, lastId: null, clearError: true));
     await _loadPage(emit, index: 0, replace: true);
   }
 
@@ -502,21 +282,54 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     await _loadPage(emit, index: state.index, replace: false);
   }
 
+  Future<void> _onBrandsRequested(
+    ProductSearchBrandsRequested event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    emit(state.copyWith(isBrandsLoading: true));
+    try {
+      final brands = await marketplaceRepository.getBrands(
+        categoryId: event.categoryId,
+      );
+      emit(state.copyWith(brands: brands, isBrandsLoading: false));
+    } catch (error) {
+      // Lỗi tải thương hiệu không ảnh hưởng đến tải sản phẩm
+      emit(state.copyWith(isBrandsLoading: false));
+    }
+  }
+
   Future<void> _loadPage(
     Emitter<ProductSearchState> emit, {
     required int index,
     required bool replace,
   }) async {
     try {
-      final products = await marketplaceRepository.searchProducts(
-        keyword: state.keyword,
-        categoryId: state.categoryId,
-        brandId: state.brandId,
-        priceMin: state.priceMin,
-        priceMax: state.priceMax,
-        index: index,
-        count: state.count,
-      );
+      List<ProductModel> products;
+      int? lastId;
+      if (state.useListProductsApi) {
+        final result = await marketplaceRepository.getListProducts(
+          keyword: state.keyword,
+          categoryId: state.categoryId,
+          brandId: state.brandId,
+          priceMin: state.priceMin,
+          priceMax: state.priceMax,
+          index: index,
+          count: state.count,
+          lastId: state.lastId,
+        );
+        products = result.products;
+        lastId = result.lastId;
+      } else {
+        products = await marketplaceRepository.searchProducts(
+          keyword: state.keyword,
+          categoryId: state.categoryId,
+          brandId: state.brandId,
+          priceMin: state.priceMin,
+          priceMax: state.priceMax,
+          index: index,
+          count: state.count,
+        );
+      }
       final merged = replace ? products : _deduplicate([...state.products, ...products]);
       emit(
         state.copyWith(
@@ -524,8 +337,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
           isInitialLoading: false,
           isRefreshing: false,
           isLoadingMore: false,
-          hasReachedEnd: products.length < state.count,
-          index: index + 1,
+           hasReachedEnd: products.length < state.count,
+           index: index + 1,
+          lastId: lastId ?? state.lastId,
           clearError: true,
         ),
       );
@@ -550,94 +364,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
   }
 }
 
-abstract class SimpleListEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class SimpleListRequested extends SimpleListEvent {}
-
-class SimpleListRefreshed extends SimpleListEvent {}
-
-class SimpleListLoadMoreRequested extends SimpleListEvent {}
-
-class SimpleActionRequested extends SimpleListEvent {
-  final String path;
-  final Map<String, dynamic> data;
-
-  SimpleActionRequested({required this.path, required this.data});
-
-  @override
-  List<Object?> get props => [path, data];
-}
-
-class SimpleListState extends Equatable {
-  final List<MarketplaceItem> items;
-  final bool isInitialLoading;
-  final bool isRefreshing;
-  final bool isLoadingMore;
-  final bool isSubmitting;
-  final bool hasReachedEnd;
-  final String? errorMessage;
-  final String? successMessage;
-  final int index;
-  final int count;
-
-  const SimpleListState({
-    this.items = const [],
-    this.isInitialLoading = false,
-    this.isRefreshing = false,
-    this.isLoadingMore = false,
-    this.isSubmitting = false,
-    this.hasReachedEnd = false,
-    this.errorMessage,
-    this.successMessage,
-    this.index = 0,
-    this.count = 20,
-  });
-
-  SimpleListState copyWith({
-    List<MarketplaceItem>? items,
-    bool? isInitialLoading,
-    bool? isRefreshing,
-    bool? isLoadingMore,
-    bool? isSubmitting,
-    bool? hasReachedEnd,
-    String? errorMessage,
-    String? successMessage,
-    int? index,
-    int? count,
-    bool clearMessages = false,
-  }) {
-    return SimpleListState(
-      items: items ?? this.items,
-      isInitialLoading: isInitialLoading ?? this.isInitialLoading,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
-      errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
-      index: index ?? this.index,
-      count: count ?? this.count,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        items,
-        isInitialLoading,
-        isRefreshing,
-        isLoadingMore,
-        isSubmitting,
-        hasReachedEnd,
-        errorMessage,
-        successMessage,
-        index,
-        count,
-      ];
-}
-
+//---------------------------------------------
 typedef SimpleListLoader = Future<List<MarketplaceItem>> Function(int index, int count);
 
 class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
@@ -742,44 +469,7 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
   }
 }
 
-abstract class WalletEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class WalletRequested extends WalletEvent {}
-
-class WalletState extends Equatable {
-  final WalletBalanceModel? balance;
-  final List<MarketplaceItem> history;
-  final bool isLoading;
-  final String? errorMessage;
-
-  const WalletState({
-    this.balance,
-    this.history = const [],
-    this.isLoading = false,
-    this.errorMessage,
-  });
-
-  WalletState copyWith({
-    WalletBalanceModel? balance,
-    List<MarketplaceItem>? history,
-    bool? isLoading,
-    String? errorMessage,
-  }) {
-    return WalletState(
-      balance: balance ?? this.balance,
-      history: history ?? this.history,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
-    );
-  }
-
-  @override
-  List<Object?> get props => [balance, history, isLoading, errorMessage];
-}
-
+//----------------------------------------------
 class WalletBloc extends Bloc<WalletEvent, WalletState> {
   final MarketplaceRepository marketplaceRepository;
 
@@ -805,82 +495,7 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
   }
 }
 
-abstract class CheckoutEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class CheckoutRequested extends CheckoutEvent {}
-
-class CheckoutAddressSelected extends CheckoutEvent {
-  final MarketplaceItem address;
-
-  CheckoutAddressSelected(this.address);
-
-  @override
-  List<Object?> get props => [address];
-}
-
-class CheckoutSubmitted extends CheckoutEvent {
-  final String productId;
-  final int quantity;
-
-  CheckoutSubmitted({
-    required this.productId,
-    required this.quantity,
-  });
-
-  @override
-  List<Object?> get props => [productId, quantity];
-}
-
-class CheckoutState extends Equatable {
-  final List<MarketplaceItem> addresses;
-  final MarketplaceItem? selectedAddress;
-  final bool isLoading;
-  final bool isSubmitting;
-  final String? errorMessage;
-  final String? successMessage;
-
-  const CheckoutState({
-    this.addresses = const [],
-    this.selectedAddress,
-    this.isLoading = false,
-    this.isSubmitting = false,
-    this.errorMessage,
-    this.successMessage,
-  });
-
-  CheckoutState copyWith({
-    List<MarketplaceItem>? addresses,
-    MarketplaceItem? selectedAddress,
-    bool? isLoading,
-    bool? isSubmitting,
-    String? errorMessage,
-    String? successMessage,
-    bool clearMessages = false,
-  }) {
-    return CheckoutState(
-      addresses: addresses ?? this.addresses,
-      selectedAddress: selectedAddress ?? this.selectedAddress,
-      isLoading: isLoading ?? this.isLoading,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
-      errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        addresses,
-        selectedAddress,
-        isLoading,
-        isSubmitting,
-        errorMessage,
-        successMessage,
-      ];
-}
-
+//---------------------------------------------
 class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   final MarketplaceRepository marketplaceRepository;
 
@@ -952,74 +567,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   }
 }
 
-abstract class ConversationEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class ConversationsRequested extends ConversationEvent {}
-
-class ConversationsRefreshed extends ConversationEvent {}
-
-class ConversationsLoadMoreRequested extends ConversationEvent {}
-
-class ConversationState extends Equatable {
-  final List<ConversationModel> conversations;
-  final bool isInitialLoading;
-  final bool isRefreshing;
-  final bool isLoadingMore;
-  final bool hasReachedEnd;
-  final String? errorMessage;
-  final int index;
-  final int count;
-
-  const ConversationState({
-    this.conversations = const [],
-    this.isInitialLoading = false,
-    this.isRefreshing = false,
-    this.isLoadingMore = false,
-    this.hasReachedEnd = false,
-    this.errorMessage,
-    this.index = 0,
-    this.count = 20,
-  });
-
-  ConversationState copyWith({
-    List<ConversationModel>? conversations,
-    bool? isInitialLoading,
-    bool? isRefreshing,
-    bool? isLoadingMore,
-    bool? hasReachedEnd,
-    String? errorMessage,
-    int? index,
-    int? count,
-    bool clearError = false,
-  }) {
-    return ConversationState(
-      conversations: conversations ?? this.conversations,
-      isInitialLoading: isInitialLoading ?? this.isInitialLoading,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      index: index ?? this.index,
-      count: count ?? this.count,
-    );
-  }
-
-  @override
-  List<Object?> get props => [
-        conversations,
-        isInitialLoading,
-        isRefreshing,
-        isLoadingMore,
-        hasReachedEnd,
-        errorMessage,
-        index,
-        count,
-      ];
-}
-
+//------------------------------------------
 class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
   final MarketplaceRepository marketplaceRepository;
 
@@ -1089,54 +637,7 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
   }
 }
 
-abstract class ChatEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
-}
-
-class ChatRequested extends ChatEvent {}
-
-class ChatMessageSubmitted extends ChatEvent {
-  final String message;
-
-  ChatMessageSubmitted(this.message);
-
-  @override
-  List<Object?> get props => [message];
-}
-
-class ChatState extends Equatable {
-  final List<MessageModel> messages;
-  final bool isLoading;
-  final bool isSending;
-  final String? errorMessage;
-
-  const ChatState({
-    this.messages = const [],
-    this.isLoading = false,
-    this.isSending = false,
-    this.errorMessage,
-  });
-
-  ChatState copyWith({
-    List<MessageModel>? messages,
-    bool? isLoading,
-    bool? isSending,
-    String? errorMessage,
-    bool clearError = false,
-  }) {
-    return ChatState(
-      messages: messages ?? this.messages,
-      isLoading: isLoading ?? this.isLoading,
-      isSending: isSending ?? this.isSending,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-    );
-  }
-
-  @override
-  List<Object?> get props => [messages, isLoading, isSending, errorMessage];
-}
-
+//---------------------------------------------------
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final MarketplaceRepository marketplaceRepository;
   final ConversationModel conversation;

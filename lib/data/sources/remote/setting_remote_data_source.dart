@@ -52,7 +52,7 @@ class SettingRemoteDataSource {
       if (soundDefault != null) request['sound_default'] = soundDefault;
 
       final response = await _dioClient.dio.post(
-          'push_settings/set_push_setting',
+          '/push_settings/set_push_setting',
           data: request
       );
 

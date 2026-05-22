@@ -542,7 +542,7 @@ Tai lieu tong hop day du request/response theo schema tu OpenAPI (api-docs-json)
 - Response:
   - 201: (khong co schema)
 
-### POST /api/get_products
+### POST /api/get_product
 
 - Auth: Bearer JWT
 - Request body (application/json):

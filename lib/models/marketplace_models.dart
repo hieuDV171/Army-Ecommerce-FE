@@ -36,27 +36,73 @@ class ProductModel {
   final String id;
   final String title;
   final num price;
-  final String description;
+  final String? priceNew;
+  final String? priceDiscount;
+  final String described;
   final List<String> imageUrls;
+  final List<ProductImageModel> images;
+  final List<ProductVideoModel> videos;
+  final List<ProductSizeModel> sizes;
+  final ProductBrandInfo? brand;
+  final ProductSellerInfo? seller;
+  final ProductCategoryInfo? category;
+  final String? shipsFrom;
+  final String? shipsFromId;
+  final String? condition;
+  final String? created;
+  final String? like;
+  final String? comment;
   final String? sellerName;
   final String? sellerLocation;
   final double? rating;
   final int? soldCount;
+  final String? bestOffers;
   final int likeCount;
   final bool isLiked;
+  final String? state;
+  final String? isBlocked;
+  final String? canEdit;
+  final String? banned;
+  final String? shareUrl;
+  final String? weight;
+  final List<String> dimension;
+  final List<String> messages;
 
   const ProductModel({
     required this.id,
     required this.title,
     required this.price,
-    required this.description,
+    this.priceNew,
+    this.priceDiscount,
+    required this.described,
     required this.imageUrls,
+    this.images = const [],
+    this.videos = const [],
+    this.sizes = const [],
+    this.brand,
+    this.seller,
+    this.category,
+    this.shipsFrom,
+    this.shipsFromId,
+    this.condition,
+    this.created,
+    this.like,
+    this.comment,
     this.sellerName,
     this.sellerLocation,
     this.rating,
     this.soldCount,
+    this.bestOffers,
     this.likeCount = 0,
     this.isLiked = false,
+    this.state,
+    this.isBlocked,
+    this.canEdit,
+    this.banned,
+    this.shareUrl,
+    this.weight,
+    this.dimension = const [],
+    this.messages = const [],
   });
 
   ProductModel copyWith({
@@ -67,38 +113,199 @@ class ProductModel {
       id: id,
       title: title,
       price: price,
-      description: description,
+      priceNew: priceNew,
+      priceDiscount: priceDiscount,
+      described: described,
       imageUrls: imageUrls,
+      images: images,
+      videos: videos,
+      sizes: sizes,
+      brand: brand,
+      seller: seller,
+      category: category,
+      shipsFrom: shipsFrom,
+      shipsFromId: shipsFromId,
+      condition: condition,
+      created: created,
+      like: like,
+      comment: comment,
       sellerName: sellerName,
       sellerLocation: sellerLocation,
       rating: rating,
       soldCount: soldCount,
+      bestOffers: bestOffers,
       likeCount: likeCount ?? this.likeCount,
       isLiked: isLiked ?? this.isLiked,
+      state: state,
+      isBlocked: isBlocked,
+      canEdit: canEdit,
+      banned: banned,
+      shareUrl: shareUrl,
+      weight: weight,
+      dimension: dimension,
+      messages: messages,
     );
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    final images = _readStringList(json, [
+    final sellerJson = _readMap(json, ['seller']);
+    final brandJson = _readMap(json, ['brand']);
+    final categoryJson = _readMap(json, ['category']);
+
+    final parsedImages = _readProductImageList(json, ['image', 'images']);
+    final fallbackImageUrls = _readStringList(json, [
       'image_urls',
-      'images',
-      'image',
       'image_url',
       'thumbnail',
     ]);
+    final imageUrls = parsedImages.isNotEmpty
+        ? parsedImages
+            .map((item) => item.url)
+            .where((url) => url.isNotEmpty)
+            .toList()
+        : fallbackImageUrls;
+
+    final parsedVideos = _readProductVideoList(json, ['video', 'videos']);
+    final parsedSizes = _readProductSizeList(json, ['size', 'sizes', 'variants']);
+
+    final likeText = _readOptionalString(json, ['like', 'like_count', 'likes']);
 
     return ProductModel(
       id: _readString(json, ['id', 'product_id']),
       title: _readString(json, ['title', 'name'], fallback: 'Sản phẩm'),
       price: _readNum(json, ['price', 'price_discount']),
-      description: _readString(json, ['description', 'details'], fallback: ''),
-      imageUrls: images,
-      sellerName: _readOptionalString(json, ['seller_name', 'username', 'seller']),
-      sellerLocation: _readOptionalString(json, ['location', 'seller_location', 'city']),
-      rating: _readDouble(json, ['rating', 'rate', 'avg_rate']),
-      soldCount: _readInt(json, ['sold', 'sold_count', 'total_sold']),
-      likeCount: _readInt(json, ['like_count', 'likes']) ?? 0,
+      priceNew: _readOptionalString(json, ['price_new']),
+      priceDiscount: _readOptionalString(json, ['price_discount']),
+      described: _readString(json, ['described', 'description', 'details'], fallback: ''),
+      imageUrls: imageUrls,
+      images: parsedImages,
+      videos: parsedVideos,
+      sizes: parsedSizes,
+      brand: brandJson == null ? null : ProductBrandInfo.fromJson(brandJson),
+      seller: sellerJson == null ? null : ProductSellerInfo.fromJson(sellerJson),
+      category: categoryJson == null ? null : ProductCategoryInfo.fromJson(categoryJson),
+      shipsFrom: _readOptionalString(json, ['ships_from']),
+      shipsFromId: _readOptionalString(json, ['ships_from_id']),
+      condition: _readOptionalString(json, ['condition']),
+      created: _readOptionalString(json, ['created', 'created_at']),
+      like: likeText,
+      comment: _readOptionalString(json, ['comment', 'comment_count']),
+      sellerName: _readOptionalString(sellerJson ?? json, ['name', 'username', 'seller_name', 'seller']),
+      sellerLocation: _readOptionalString(json, ['location', 'seller_location', 'city', 'ships_from']),
+      rating: _readDouble(sellerJson ?? json, ['score', 'rating', 'rate', 'avg_rate']),
+      soldCount: _readInt(sellerJson ?? json, ['listing', 'sold', 'sold_count', 'total_sold']),
+      bestOffers: _readOptionalString(json, ['best_offers']),
+      likeCount: _readInt(json, ['like_count', 'likes', 'like']) ?? int.tryParse(likeText ?? '') ?? 0,
       isLiked: _readBool(json, ['is_liked', 'liked']) ?? false,
+      state: _readOptionalString(json, ['state']),
+      isBlocked: _readOptionalString(json, ['is_blocked']),
+      canEdit: _readOptionalString(json, ['can_edit']),
+      banned: _readOptionalString(json, ['banned']),
+      shareUrl: _readOptionalString(json, ['url']),
+      weight: _readOptionalString(json, ['weight']),
+      dimension: _readStringList(json, ['dimension']),
+      messages: _readStringList(json, ['messages']),
+    );
+  }
+}
+
+class ProductImageModel {
+  final String id;
+  final String url;
+
+  const ProductImageModel({required this.id, required this.url});
+
+  factory ProductImageModel.fromJson(Map<String, dynamic> json) {
+    return ProductImageModel(
+      id: _readString(json, ['id']),
+      url: _readString(json, ['url', 'image_url', 'image'], fallback: ''),
+    );
+  }
+}
+
+class ProductVideoModel {
+  final String url;
+
+  const ProductVideoModel({required this.url});
+
+  factory ProductVideoModel.fromJson(Map<String, dynamic> json) {
+    return ProductVideoModel(url: _readString(json, ['url', 'video_url'], fallback: ''));
+  }
+}
+
+class ProductSizeModel {
+  final String id;
+  final String name;
+
+  const ProductSizeModel({required this.id, required this.name});
+
+  factory ProductSizeModel.fromJson(Map<String, dynamic> json) {
+    return ProductSizeModel(
+      id: _readString(json, ['id', 'size_id']),
+      name: _readString(json, ['size_name', 'size', 'name'], fallback: ''),
+    );
+  }
+}
+
+class ProductBrandInfo {
+  final String id;
+  final String name;
+
+  const ProductBrandInfo({required this.id, required this.name});
+
+  factory ProductBrandInfo.fromJson(Map<String, dynamic> json) {
+    return ProductBrandInfo(
+      id: _readString(json, ['id', 'brand_id']),
+      name: _readString(json, ['brand_name', 'name'], fallback: ''),
+    );
+  }
+}
+
+class ProductSellerInfo {
+  final String id;
+  final String name;
+  final String? avatar;
+  final String? score;
+  final String? listing;
+
+  const ProductSellerInfo({
+    required this.id,
+    required this.name,
+    this.avatar,
+    this.score,
+    this.listing,
+  });
+
+  factory ProductSellerInfo.fromJson(Map<String, dynamic> json) {
+    return ProductSellerInfo(
+      id: _readString(json, ['id', 'user_id']),
+      name: _readString(json, ['name', 'username'], fallback: ''),
+      avatar: _readOptionalString(json, ['avatar']),
+      score: _readOptionalString(json, ['score']),
+      listing: _readOptionalString(json, ['listing']),
+    );
+  }
+}
+
+class ProductCategoryInfo {
+  final String id;
+  final String name;
+  final String? hasBrand;
+  final String? hasName;
+
+  const ProductCategoryInfo({
+    required this.id,
+    required this.name,
+    this.hasBrand,
+    this.hasName,
+  });
+
+  factory ProductCategoryInfo.fromJson(Map<String, dynamic> json) {
+    return ProductCategoryInfo(
+      id: _readString(json, ['id', 'category_id']),
+      name: _readString(json, ['name', 'category_name'], fallback: ''),
+      hasBrand: _readOptionalString(json, ['has_brand']),
+      hasName: _readOptionalString(json, ['has_name']),
     );
   }
 }
@@ -479,6 +686,13 @@ int? _readInt(Map<String, dynamic> json, List<String> keys) {
   return null;
 }
 
+class ProductListResult {
+  final List<ProductModel> products;
+  final int? lastId;
+
+  ProductListResult({required this.products, this.lastId});
+}
+
 double? _readDouble(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {
     final value = json[key];
@@ -511,3 +725,51 @@ List<String> _readStringList(Map<String, dynamic> json, List<String> keys) {
   }
   return const [];
 }
+
+Map<String, dynamic>? _readMap(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is Map) return Map<String, dynamic>.from(value);
+  }
+  return null;
+}
+
+List<ProductImageModel> _readProductImageList(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is List) {
+      return value.map((item) {
+        if (item is Map) return ProductImageModel.fromJson(Map<String, dynamic>.from(item));
+        return ProductImageModel(id: '', url: item?.toString() ?? '');
+      }).toList();
+    }
+  }
+  return const [];
+}
+
+List<ProductVideoModel> _readProductVideoList(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is List) {
+      return value.map((item) {
+        if (item is Map) return ProductVideoModel.fromJson(Map<String, dynamic>.from(item));
+        return ProductVideoModel(url: item?.toString() ?? '');
+      }).toList();
+    }
+  }
+  return const [];
+}
+
+List<ProductSizeModel> _readProductSizeList(Map<String, dynamic> json, List<String> keys) {
+  for (final key in keys) {
+    final value = json[key];
+    if (value is List) {
+      return value.map((item) {
+        if (item is Map) return ProductSizeModel.fromJson(Map<String, dynamic>.from(item));
+        return ProductSizeModel(id: '', name: item?.toString() ?? '');
+      }).toList();
+    }
+  }
+  return const [];
+}
+

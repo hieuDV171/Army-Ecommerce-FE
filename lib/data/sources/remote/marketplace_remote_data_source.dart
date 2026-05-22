@@ -81,16 +81,19 @@ class MarketplaceRemoteDataSource {
     );
   }
 
-  Future<ApiResponse<dynamic>> getProducts({
+  Future<ApiResponse<dynamic>> getListProducts({
     int index = 0,
     int count = 20,
     String? keyword,
     String? categoryId,
     String? brandId,
+    int? productSizeId,
     num? priceMin,
     num? priceMax,
     String? order,
-    String? lastId,
+    int? latitude,
+    int? longitude,
+    int? lastId,
   }) {
     final request = <String, dynamic>{
       'index': index,
@@ -99,18 +102,48 @@ class MarketplaceRemoteDataSource {
     if (keyword != null && keyword.isNotEmpty) request['keyword'] = keyword;
     if (categoryId != null && categoryId.isNotEmpty) request['category_id'] = categoryId;
     if (brandId != null && brandId.isNotEmpty) request['brand_id'] = brandId;
+    if (productSizeId != null) request['product_size_id'] = productSizeId;
     if (priceMin != null) request['price_min'] = priceMin;
     if (priceMax != null) request['price_max'] = priceMax;
     if (order != null && order.isNotEmpty) request['order'] = order;
-    if (lastId != null && lastId.isNotEmpty) request['last_id'] = lastId;
+    if (latitude != null) request['latitude'] = latitude;
+    if (longitude != null) request['longitude'] = longitude;
+    if (lastId != null) request['last_id'] = lastId;
 
     return post(
-      ApiPaths.products,
+      ApiPaths.listProducts,
       data: request,
     );
   }
 
   Future<ApiResponse<dynamic>> getProductDetail(String productId) {
     return post(ApiPaths.productDetail, data: {'id': int.tryParse(productId) ?? productId});
+  }
+
+  Future<ApiResponse<dynamic>> getUserListings({
+    required String userId,
+    int index = 0,
+    int count = 20,
+    String? keyword,
+    String? categoryId,
+    int? type,
+    int? state,
+    String? token,
+  }) {
+    final request = <String, dynamic>{
+      'user_id': userId,
+      'index': index,
+      'count': count,
+    };
+    if (keyword != null && keyword.isNotEmpty) request['keyword'] = keyword;
+    if (categoryId != null && categoryId.isNotEmpty) request['category_id'] = categoryId;
+    if (type != null) request['type'] = type;
+    if (state != null) request['state'] = state;
+    if (token != null && token.isNotEmpty) request['token'] = token;
+
+    return post(
+      '/api/get_user_listings',
+      data: request,
+    );
   }
 }

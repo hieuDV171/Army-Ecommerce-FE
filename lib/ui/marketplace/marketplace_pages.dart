@@ -2,35 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/marketplace/marketplace_bloc.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_radius.dart';
-import '../../core/constants/app_spacing.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/app_bottom_sheet.dart';
-import '../../core/widgets/app_button.dart';
-import '../../core/widgets/app_text_field.dart';
-import '../../core/widgets/empty_state.dart';
-import '../../core/widgets/error_state.dart';
-import '../../core/widgets/gradient_header.dart';
-import '../../core/widgets/loading_overlay.dart';
-import '../../core/widgets/price_text.dart';
-import '../../core/widgets/product_card.dart';
-import '../../core/widgets/rating_stars.dart';
-import '../../core/widgets/search_pill.dart';
-import '../../core/widgets/section_header.dart';
-import '../../core/widgets/shimmer_product_grid.dart';
+import '../../blocs/marketplace/marketplace_event.dart';
+import '../../blocs/marketplace/marketplace_state.dart';
 import '../../models/marketplace_models.dart';
 import '../../repositories/marketplace_repository.dart';
+import '../../repositories/auth_repository.dart';
+import '../../models/user_model.dart';
+import 'package:army_ecommerce/core/services/session_manager.dart';
+import '../constants/app_colors.dart';
+import '../constants/app_radius.dart';
+import '../constants/app_spacing.dart';
+import '../theme/app_text_styles.dart';
+import '../widgets/app_bottom_sheet.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_text_field.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_state.dart';
+import '../widgets/gradient_header.dart';
+import '../widgets/loading_overlay.dart';
+import '../widgets/price_text.dart';
+import '../widgets/product_card.dart';
+import '../widgets/rating_stars.dart';
+import '../widgets/search_pill.dart';
+import '../widgets/section_header.dart';
+import '../widgets/shimmer_product_grid.dart';
 
 ProductCardData productCardDataFromModel(ProductModel product) {
+  final primaryImage = product.images.isNotEmpty
+      ? product.images.first.url
+      : (product.imageUrls.isEmpty ? null : product.imageUrls.first);
+  final sellerScore = double.tryParse(product.seller?.score ?? '');
+  final sellerListing = int.tryParse(product.seller?.listing ?? '');
+
   return ProductCardData(
     id: product.id,
     title: product.title,
     price: product.price,
-    imageUrl: product.imageUrls.isEmpty ? null : product.imageUrls.first,
-    rating: product.rating,
-    soldCount: product.soldCount,
-    sellerLocation: product.sellerLocation,
+    imageUrl: (primaryImage != null && primaryImage.isNotEmpty) ? primaryImage : null,
+    rating: product.rating ?? sellerScore,
+    soldCount: product.soldCount ?? sellerListing,
+    sellerLocation: product.sellerLocation ?? product.shipsFrom,
     isLiked: product.isLiked,
   );
 }
@@ -122,8 +133,6 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                 sliver: SliverToBoxAdapter(
                   child: SectionHeader(
                     title: 'Gợi ý hôm nay',
-                    actionLabel: 'Lọc',
-                    onActionTap: () => _openSearch(context),
                   ),
                 ),
               ),
@@ -171,13 +180,6 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
           ),
         );
       },
-    );
-  }
-
-  void _openSearch(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SearchPage()),
     );
   }
 
@@ -356,6 +358,16 @@ class ProductDetailPage extends StatelessWidget {
 class _ProductDetailView extends StatelessWidget {
   const _ProductDetailView();
 
+  List<String> _collectDisplayImages(ProductModel product) {
+    if (product.images.isNotEmpty) {
+      return product.images
+          .map((item) => item.url)
+          .where((url) => url.isNotEmpty)
+          .toList();
+    }
+    return product.imageUrls.where((url) => url.isNotEmpty).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProductDetailBloc, ProductDetailState>(
@@ -439,7 +451,24 @@ class _ProductDetailView extends StatelessWidget {
       return const EmptyState(title: 'Không tìm thấy sản phẩm');
     }
 
-    final imageUrl = product.imageUrls.isEmpty ? null : product.imageUrls.first;
+    final images = _collectDisplayImages(product);
+    final primaryImage = images.isEmpty ? null : images.first;
+    final sellerName = product.seller?.name ?? product.sellerName ?? 'Người bán';
+    final sellerScore = product.seller?.score ?? (product.rating?.toStringAsFixed(1));
+    final sellerListing = product.seller?.listing ?? (product.soldCount?.toString());
+    final displayRating = product.rating ?? double.tryParse(product.seller?.score ?? '');
+
+    final priceNewNumber = num.tryParse(product.priceNew ?? '');
+    final hasPriceNew = priceNewNumber != null && priceNewNumber > 0;
+    final hasDiscountText = (product.priceDiscount ?? '').isNotEmpty;
+
+    final likeText = (product.like ?? '').isNotEmpty
+        ? product.like!
+        : product.likeCount.toString();
+    final commentText = (product.comment ?? '').isNotEmpty
+        ? product.comment!
+        : state.comments.length.toString();
+
     return ListView(
       padding: const EdgeInsets.only(bottom: 96),
       children: [
@@ -447,14 +476,36 @@ class _ProductDetailView extends StatelessWidget {
           aspectRatio: 1,
           child: Hero(
             tag: 'product-image-${product.id}',
-            child: imageUrl == null
+            child: primaryImage == null
                 ? const ColoredBox(
                     color: AppColors.border,
                     child: Icon(Icons.image_outlined, size: 56),
                   )
-                : Image.network(imageUrl, fit: BoxFit.cover),
+                : Image.network(primaryImage, fit: BoxFit.cover),
           ),
         ),
+        if (images.length > 1)
+          SizedBox(
+            height: 84,
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, index) {
+                final image = images[index];
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  child: Image.network(
+                    image,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                  ),
+                );
+              },
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
+              itemCount: images.length,
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -462,11 +513,43 @@ class _ProductDetailView extends StatelessWidget {
             children: [
               Text(product.title, style: AppTextStyles.screenTitle),
               const SizedBox(height: AppSpacing.sm),
-              PriceText(price: product.price),
+              Row(
+                children: [
+                  PriceText(price: product.price),
+                  if (hasPriceNew) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      '${priceNewNumber.toStringAsFixed(0)}đ',
+                      style: const TextStyle(
+                        decoration: TextDecoration.lineThrough,
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  if (hasDiscountText) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      '-${product.priceDiscount}',
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if ((product.bestOffers ?? '').isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Ưu đãi: ${product.bestOffers}',
+                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
-                  if (product.rating != null) RatingStars(rating: product.rating!),
+                  if (displayRating != null) RatingStars(rating: displayRating),
                   const Spacer(),
                   IconButton(
                     tooltip: product.isLiked ? 'Bỏ thích' : 'Thích',
@@ -476,22 +559,136 @@ class _ProductDetailView extends StatelessWidget {
                       color: product.isLiked ? AppColors.danger : AppColors.textSecondary,
                     ),
                   ),
-                  Text('${product.likeCount}'),
+                  Text(likeText),
+                  const SizedBox(width: AppSpacing.md),
+                  const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(commentText),
                 ],
               ),
+              if (product.sizes.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                const SectionHeader(title: 'Phân loại / Kích thước'),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: product.sizes
+                      .map(
+                        (size) => Chip(
+                          label: Text(size.name.isEmpty ? size.id : size.name),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
               const Divider(height: 32),
               const SectionHeader(title: 'Mô tả'),
               const SizedBox(height: AppSpacing.sm),
-              Text(product.description.isEmpty ? 'Chưa có mô tả.' : product.description),
+              Text(product.described.isEmpty ? 'Chưa có mô tả.' : product.described),
+              const Divider(height: 32),
+              const SectionHeader(title: 'Thông tin sản phẩm'),
+              const SizedBox(height: AppSpacing.sm),
+              if (product.brand != null)
+                _MetaRow(label: 'Thương hiệu', value: product.brand!.name),
+              if (product.category != null)
+                _MetaRow(label: 'Danh mục', value: product.category!.name),
+              if ((product.condition ?? '').isNotEmpty)
+                _MetaRow(label: 'Tình trạng', value: product.condition!),
+              if ((product.shipsFrom ?? '').isNotEmpty)
+                _MetaRow(label: 'Gửi từ', value: product.shipsFrom!),
+              if ((product.weight ?? '').isNotEmpty)
+                _MetaRow(label: 'Khối lượng', value: product.weight!),
+              if (product.dimension.isNotEmpty)
+                _MetaRow(label: 'Kích thước', value: product.dimension.join(' x ')),
+              if ((product.state ?? '').isNotEmpty)
+                _MetaRow(label: 'Trạng thái', value: product.state!),
+              if ((product.canEdit ?? '').isNotEmpty)
+                _MetaRow(label: 'Có thể sửa', value: product.canEdit!),
+              if ((product.isBlocked ?? '').isNotEmpty)
+                _MetaRow(label: 'Bị chặn', value: product.isBlocked!),
+              if ((product.banned ?? '').isNotEmpty)
+                _MetaRow(label: 'Bị cấm', value: product.banned!),
+              if ((product.shareUrl ?? '').isNotEmpty)
+                _MetaRow(label: 'Link chia sẻ', value: product.shareUrl!),
               const Divider(height: 32),
               const SectionHeader(title: 'Người bán'),
               const SizedBox(height: AppSpacing.sm),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(child: Icon(Icons.storefront)),
-                title: Text(product.sellerName ?? 'Người bán'),
-                subtitle: Text(product.sellerLocation ?? 'Chưa có vị trí'),
+                leading: product.seller?.avatar != null && product.seller!.avatar!.isNotEmpty
+                    ? CircleAvatar(backgroundImage: NetworkImage(product.seller!.avatar!))
+                    : const CircleAvatar(child: Icon(Icons.storefront)),
+                title: Text(sellerName),
+                subtitle: Text(product.sellerLocation ?? product.shipsFrom ?? 'Chưa có vị trí'),
+                trailing: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if ((sellerScore ?? '').isNotEmpty) Text('Điểm: $sellerScore'),
+                    if ((sellerListing ?? '').isNotEmpty) Text('Listing: $sellerListing'),
+                  ],
+                ),
+                onTap: () {
+                  final userId = product.seller?.id ?? '';
+                  if (userId.isEmpty) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SellerInfoPage(
+                        userId: userId,
+                        productId: product.id,
+                        sellerName: sellerName,
+                        avatarUrl: product.seller?.avatar,
+                        sellerScore: sellerScore,
+                        sellerListing: sellerListing,
+                      ),
+                    ),
+                  );
+                },
               ),
+              if (product.videos.isNotEmpty) ...[
+                const Divider(height: 32),
+                const SectionHeader(title: 'Video'),
+                const SizedBox(height: AppSpacing.sm),
+                ...product.videos.map(
+                  (video) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.play_circle_outline, size: 18),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            video.url,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              if (product.messages.isNotEmpty) ...[
+                const Divider(height: 32),
+                const SectionHeader(title: 'Thông báo từ hệ thống'),
+                const SizedBox(height: AppSpacing.sm),
+                ...product.messages.map(
+                  (message) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('- '),
+                        Expanded(child: Text(message)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const Divider(height: 32),
               SectionHeader(
                 title: 'Bình luận',
@@ -568,6 +765,38 @@ class _ProductDetailView extends StatelessWidget {
   }
 }
 
+class _MetaRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MetaRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    if (value.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+}
+
 class SearchPage extends StatelessWidget {
   final String? categoryId;
 
@@ -618,6 +847,13 @@ class _SearchViewState extends State<_SearchView> {
     }
   }
 
+  Future<void> _openFilterSheet(BuildContext context, ProductSearchState state) async {
+    await AppBottomSheet.show<void>(
+      context: context,
+      child: _ProductSearchFilterSheet(state: state),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProductSearchBloc, ProductSearchState>(
@@ -649,9 +885,33 @@ class _SearchViewState extends State<_SearchView> {
                       },
                       icon: const Icon(Icons.search),
                     ),
+                    const SizedBox(width: AppSpacing.xs),
+                    IconButton(
+                      tooltip: 'Lọc kết quả',
+                      onPressed: () => _openFilterSheet(context, state),
+                      icon: const Icon(Icons.tune),
+                    ),
                   ],
                 ),
               ),
+              // Hiển thị danh sách thương hiệu nếu có categoryId
+              if (state.categoryId != null)
+                _BrandsList(
+                  brands: state.brands,
+                  isLoading: state.isBrandsLoading,
+                  selectedBrandId: state.brandId,
+                  onBrandSelected: (brandId) {
+                    context.read<ProductSearchBloc>().add(
+                          ProductSearchFiltered(
+                            keyword: state.keyword,
+                            categoryId: state.categoryId,
+                            brandId: brandId,
+                            priceMin: state.priceMin,
+                            priceMax: state.priceMax,
+                          ),
+                        );
+                  },
+                ),
               Expanded(child: _buildResult(context, state)),
             ],
           ),
@@ -671,13 +931,21 @@ class _SearchViewState extends State<_SearchView> {
       return ErrorState(
         message: state.errorMessage!,
         onRetry: () => context.read<ProductSearchBloc>().add(
-              ProductSearchRequested(
-                keyword: state.keyword,
-                categoryId: state.categoryId,
-                brandId: state.brandId,
-                priceMin: state.priceMin,
-                priceMax: state.priceMax,
-              ),
+              state.useListProductsApi
+                  ? ProductSearchFiltered(
+                      keyword: state.keyword,
+                      categoryId: state.categoryId,
+                      brandId: state.brandId,
+                      priceMin: state.priceMin,
+                      priceMax: state.priceMax,
+                    )
+                  : ProductSearchRequested(
+                      keyword: state.keyword,
+                      categoryId: state.categoryId,
+                      brandId: state.brandId,
+                      priceMin: state.priceMin,
+                      priceMax: state.priceMax,
+                    ),
             ),
       );
     }
@@ -690,7 +958,23 @@ class _SearchViewState extends State<_SearchView> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ProductSearchBloc>().add(ProductSearchRefreshed());
+        context.read<ProductSearchBloc>().add(
+              state.useListProductsApi
+                  ? ProductSearchFiltered(
+                      keyword: state.keyword,
+                      categoryId: state.categoryId,
+                      brandId: state.brandId,
+                      priceMin: state.priceMin,
+                      priceMax: state.priceMax,
+                    )
+                  : ProductSearchRequested(
+                      keyword: state.keyword,
+                      categoryId: state.categoryId,
+                      brandId: state.brandId,
+                      priceMin: state.priceMin,
+                      priceMax: state.priceMax,
+                    ),
+            );
       },
       child: GridView.builder(
         controller: _scrollController,
@@ -715,6 +999,121 @@ class _SearchViewState extends State<_SearchView> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _ProductSearchFilterSheet extends StatefulWidget {
+  final ProductSearchState state;
+
+  const _ProductSearchFilterSheet({required this.state});
+
+  @override
+  State<_ProductSearchFilterSheet> createState() => _ProductSearchFilterSheetState();
+}
+
+class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
+  late final TextEditingController _brandController;
+  late final TextEditingController _minPriceController;
+  late final TextEditingController _maxPriceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _brandController = TextEditingController(text: widget.state.brandId ?? '');
+    _minPriceController = TextEditingController(text: widget.state.priceMin?.toString() ?? '');
+    _maxPriceController = TextEditingController(text: widget.state.priceMax?.toString() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _brandController.dispose();
+    _minPriceController.dispose();
+    _maxPriceController.dispose();
+    super.dispose();
+  }
+
+  num? _parseNumber(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    return num.tryParse(trimmed);
+  }
+
+  void _applyFilter() {
+    context.read<ProductSearchBloc>().add(
+          ProductSearchFiltered(
+            keyword: widget.state.keyword,
+            categoryId: widget.state.categoryId,
+            brandId: _brandController.text.trim().isEmpty ? null : _brandController.text.trim(),
+            priceMin: _parseNumber(_minPriceController.text),
+            priceMax: _parseNumber(_maxPriceController.text),
+          ),
+        );
+    Navigator.of(context).pop();
+  }
+
+  void _clearFilter() {
+    context.read<ProductSearchBloc>().add(
+          ProductSearchRequested(
+            keyword: widget.state.keyword,
+            categoryId: widget.state.categoryId,
+          ),
+        );
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Bộ lọc tìm kiếm', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _brandController,
+              label: 'Brand ID',
+              hint: 'Nhập brand ID nếu cần lọc',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _minPriceController,
+              label: 'Giá tối thiểu',
+              hint: 'Ví dụ: 100000',
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _maxPriceController,
+              label: 'Giá tối đa',
+              hint: 'Ví dụ: 500000',
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _clearFilter,
+                    child: const Text('Xóa lọc'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppButton(
+                    label: 'Áp dụng',
+                    onPressed: _applyFilter,
+                    icon: Icons.filter_alt,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1370,6 +1769,182 @@ class SellerListingsPage extends StatelessWidget {
   }
 }
 
+class SellerInfoPage extends StatefulWidget {
+  final String userId;
+  final String? productId;
+  final String sellerName;
+  final String? avatarUrl;
+  final String? sellerScore;
+  final String? sellerListing;
+
+  const SellerInfoPage({
+    super.key,
+    required this.userId,
+    this.productId,
+    required this.sellerName,
+    this.avatarUrl,
+    this.sellerScore,
+    this.sellerListing,
+  });
+
+  @override
+  State<SellerInfoPage> createState() => _SellerInfoPageState();
+}
+
+class _SellerInfoPageState extends State<SellerInfoPage> {
+  bool _isLoading = true;
+  String? _error;
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final token = await SessionManager.getToken();
+      if (token == null || token.isEmpty) {
+        setState(() {
+          _error = 'Bạn cần đăng nhập để xem thông tin người dùng.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final authRepo = context.read<AuthRepository>();
+      final response = await authRepo.getUserInfo(token: token, userId: widget.userId);
+      if (response.data != null) {
+        setState(() {
+          _user = response.data;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = response.message.isNotEmpty ? response.message : 'Không tìm thấy người dùng.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _openSellerListings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SellerListingsPage(userId: widget.userId)),
+    );
+  }
+
+  void _openChat() {
+    final partnerId = widget.userId;
+    final partnerName = widget.sellerName;
+    final conversationId = widget.productId ?? partnerId;
+    final productId = widget.productId ?? '';
+
+    final conversation = ConversationModel(
+      id: conversationId,
+      partnerId: partnerId,
+      partnerName: partnerName,
+      lastMessage: '',
+      productId: productId.isEmpty ? null : productId,
+      unread: false,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChatDetailPage(conversation: conversation)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final displayAvatar = _user?.avatar ?? widget.avatarUrl;
+    final displayName = _user?.username ?? widget.sellerName;
+    final displayListing = _user?.listing?.toString() ?? widget.sellerListing;
+    final displayScore = widget.sellerScore;
+
+    return Scaffold(
+      appBar: AppBar(title: Text(displayName)),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? ErrorState(
+                  message: _error!,
+                  onRetry: _loadUser,
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  children: [
+                    Row(
+                      children: [
+                        displayAvatar != null && displayAvatar.isNotEmpty
+                            ? CircleAvatar(radius: 36, backgroundImage: NetworkImage(displayAvatar))
+                            : const CircleAvatar(radius: 36, child: Icon(Icons.storefront)),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(displayName, style: AppTextStyles.screenTitle),
+                              const SizedBox(height: AppSpacing.xs),
+                              if (displayScore != null && displayScore.isNotEmpty) Text('Điểm: $displayScore'),
+                              if (displayListing != null && displayListing.isNotEmpty) Text('Listing: $displayListing'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            label: 'Chat',
+                            icon: Icons.chat_bubble_outline,
+                            onPressed: _openChat,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: AppButton(
+                            label: 'Xem sản phẩm của người bán',
+                            icon: Icons.inventory_2_outlined,
+                            onPressed: _openSellerListings,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const SectionHeader(title: 'Thông tin người bán'),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (_user != null) ...[
+                      if ((_user!.email ?? '').isNotEmpty) _MetaRow(label: 'Email', value: _user!.email!),
+                      if ((_user!.phoneNumber ?? '').isNotEmpty) _MetaRow(label: 'Số điện thoại', value: _user!.phoneNumber!),
+                      if ((_user!.address ?? '').isNotEmpty) _MetaRow(label: 'Địa chỉ', value: _user!.address!),
+                      if ((_user!.city ?? '').isNotEmpty) _MetaRow(label: 'Thành phố', value: _user!.city!),
+                      if ((_user!.status ?? '').isNotEmpty) _MetaRow(label: 'Trạng thái', value: _user!.status!),
+                      if ((_user!.firstName ?? '').isNotEmpty || (_user!.lastName ?? '').isNotEmpty)
+                        _MetaRow(label: 'Tên', value: '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'.trim()),
+                    ]
+                    else
+                      const Text('Thông tin chi tiết người bán chưa có.'),
+                  ],
+                ),
+    );
+  }
+}
+
 class CheckoutPage extends StatelessWidget {
   final ProductModel product;
 
@@ -1483,7 +2058,7 @@ class _CheckoutViewState extends State<_CheckoutView> {
         const SizedBox(height: AppSpacing.sm),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
+          leading: _CheckoutProductAvatar(product: widget.product),
           title: Text(widget.product.title),
           subtitle: PriceText(price: widget.product.price),
           trailing: _QuantityStepper(
@@ -1505,6 +2080,25 @@ class _CheckoutViewState extends State<_CheckoutView> {
         ),
       ],
     );
+  }
+}
+
+class _CheckoutProductAvatar extends StatelessWidget {
+  final ProductModel product;
+
+  const _CheckoutProductAvatar({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = product.images.isNotEmpty
+        ? product.images.first.url
+        : (product.imageUrls.isNotEmpty ? product.imageUrls.first : null);
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return const CircleAvatar(child: Icon(Icons.inventory_2_outlined));
+    }
+
+    return CircleAvatar(backgroundImage: NetworkImage(imageUrl));
   }
 }
 
@@ -1537,3 +2131,119 @@ class _QuantityStepper extends StatelessWidget {
     );
   }
 }
+
+// Widget hiển thị danh sách thương hiệu nằm ngang có thể cuộn
+class _BrandsList extends StatelessWidget {
+  final List<BrandModel> brands;
+  final bool isLoading;
+  final String? selectedBrandId;
+  final Function(String?) onBrandSelected;
+
+  const _BrandsList({
+    required this.brands,
+    required this.isLoading,
+    required this.selectedBrandId,
+    required this.onBrandSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (brands.isEmpty && !isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Thương hiệu',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            height: 40,
+            child: isLoading
+                ? const Center(child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ))
+                : ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: brands.length + 1,
+                    separatorBuilder: (_, i) => const SizedBox(width: AppSpacing.sm),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        // Nút "Tất cả" để xóa filter thương hiệu
+                        return _BrandChip(
+                          label: 'Tất cả',
+                          isSelected: selectedBrandId == null,
+                          onTap: () => onBrandSelected(null),
+                        );
+                      }
+                      final brand = brands[index - 1];
+                      return _BrandChip(
+                        label: brand.name,
+                        isSelected: selectedBrandId == brand.id,
+                        onTap: () => onBrandSelected(brand.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Widget hiển thị từng thương hiệu dưới dạng chip bấm được
+class _BrandChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _BrandChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: isSelected ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

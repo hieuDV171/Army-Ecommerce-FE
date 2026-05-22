@@ -5,16 +5,19 @@ abstract class MarketplaceRepository {
 
   Future<List<BrandModel>> getBrands({String? categoryId, int index = 0, int count = 20});
 
-  Future<List<ProductModel>> getProducts({
+  Future<ProductListResult> getListProducts({
     int index = 0,
     int count = 20,
     String? keyword,
     String? categoryId,
     String? brandId,
+    int? productSizeId,
     num? priceMin,
     num? priceMax,
     String? order,
-    String? lastId,
+    int? latitude,
+    int? longitude,
+    int? lastId,
   });
 
   Future<List<ProductModel>> searchProducts({
@@ -23,6 +26,7 @@ abstract class MarketplaceRepository {
     String? brandId,
     num? priceMin,
     num? priceMax,
+    String? condition,
     int index = 0,
     int count = 20,
   });

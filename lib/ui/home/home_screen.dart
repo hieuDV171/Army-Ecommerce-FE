@@ -6,6 +6,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/marketplace/marketplace_bloc.dart';
+import '../../blocs/marketplace/marketplace_event.dart';
 import '../../blocs/settings/push_setting_bloc.dart';
 import '../../core/services/session_manager.dart';
 import '../../repositories/marketplace_repository.dart';

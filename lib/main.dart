@@ -3,6 +3,7 @@ import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/marketplace_repository_impl.dart';
 import 'data/sources/remote/auth_remote_data_source.dart';
@@ -21,8 +22,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/api/dio_client.dart';
 import 'core/services/firebase_notification_service.dart';
-import 'core/theme/app_theme.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'ui/theme/app_theme.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   // Đảm bảo Flutter binding được khởi tạo trước khi chạy các setup bất đồng bộ
@@ -33,7 +36,14 @@ Future<void> main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   // Khởi tạo Firebase
-  await FirebaseNotificationService.initializeFirebase();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Đăng ký background message handler. The handler is a top-level
+  // function in `firebase_notification_service.dart` and will initialize
+  // Firebase again inside the background isolate if necessary.
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Load file .env
   await dotenv.load(fileName: ".env");
@@ -57,6 +67,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     // Setup Firebase message handlers
+    FirebaseNotificationService.initializeFirebase();
     FirebaseNotificationService.setupForegroundMessageHandler();
     FirebaseNotificationService.setupNotificationTapHandler();
   }

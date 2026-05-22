@@ -153,7 +153,7 @@ Endpoints:
 - `POST /api/get_categories`
 - `POST /api/get_list_brands`
 - `POST /api/get_list_products`
-- `POST /api/get_products`
+- `POST /api/get_product`
 - `POST /api/get_user_listings`
 - `POST /api/add_product`
 - `PATCH /api/update/{id}`
