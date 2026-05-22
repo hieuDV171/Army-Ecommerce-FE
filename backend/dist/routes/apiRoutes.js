@@ -59,7 +59,9 @@ router.post('/auth/check_code_reset_password', authCtrl.checkCodeResetPassword);
 router.post('/auth/reset_password', authCtrl.resetPassword);
 router.post('/auth/set_dev_token', auth_1.authenticateToken, authCtrl.setDevToken);
 router.post('/auth/get_push_setting', auth_1.authenticateToken, authCtrl.getPushSetting);
+router.post('/push_settings/get_push_setting', auth_1.authenticateToken, authCtrl.getPushSetting);
 router.post('/auth/set_push_setting', auth_1.authenticateToken, authCtrl.setPushSetting);
+router.post('/push_settings/set_push_setting', auth_1.authenticateToken, authCtrl.setPushSetting);
 router.get('/auth/me', auth_1.authenticateToken, authCtrl.getMe);
 // ================= USER ROUTES =================
 router.post('/users/get_user_info', auth_1.authenticateToken, userCtrl.getUserInfo);
@@ -87,6 +89,7 @@ router.post('/api/set_rates', auth_1.authenticateToken, productCtrl.setRates);
 // ================= ORDER / ADDRESS ROUTES =================
 router.post('/order/add_order_address', auth_1.authenticateToken, orderCtrl.addOrderAddress);
 router.get('/order/get_list_order_address', auth_1.authenticateToken, orderCtrl.getListOrderAddress);
+router.post('/order/get_list_order_address', auth_1.authenticateToken, orderCtrl.getListOrderAddress);
 router.get('/order/get_ship_from', auth_1.authenticateToken, orderCtrl.getShipFrom);
 router.patch('/order/update/:id', auth_1.authenticateToken, orderCtrl.updateOrderAddress);
 router.delete('/order/delete/:id', auth_1.authenticateToken, orderCtrl.deleteOrderAddress);

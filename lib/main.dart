@@ -103,8 +103,7 @@ class _MyAppState extends State<MyApp> {
             theme: AppTheme.light,
             home: BlocConsumer<AuthBloc, AuthState>(
                 listenWhen: (previous, current) {
-                  // Lắng nghe khi user login thành công để đăng ký device token
-                  return current is AuthSuccess;
+                  return current is AuthSuccess || current is AuthLogoutSuccess || current is Unauthenticated;
                 },
                 listener: (context, state) {
                   if (state is AuthSuccess) {
@@ -118,28 +117,35 @@ class _MyAppState extends State<MyApp> {
                       authRepository: authRepo,
                     );
                   }
+
+                  if (state is AuthSuccess || state is AuthLogoutSuccess || state is Unauthenticated) {
+                    logger.i('DEBUG MAIN LISTENER: State changed to $state. Popping navigation stack to root.');
+                    // Pop toàn bộ các screen con về root screen
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
                 },
                 buildWhen: (previous, current) {
                   logger.i('DEBUG MAIN BUILDWHEN: previousState=$previous, currentState=$current');
-                  // Chỉ vẽ lại màn hình chính khi trạng thái chuyển sang Success, Unauthenticated, hoặc LogoutSuccess
                   return current is AuthSuccess || current is Unauthenticated || current is AuthInitial || current is AuthLogoutSuccess;
                 },
                 builder: (context, state) {
                   logger.i('DEBUG MAIN BUILDER: currentState=$state');
-                  // 1. Nếu xác định đã đăng nhập thành công từ token cũ hoặc mới
+                  
                   if (state is AuthSuccess) {
+                    final user = state.user;
+                    
                     // Nếu backend trả active == -1 (yêu cầu hoàn tất thông tin) và username vẫn là định dạng số điện thoại -> hiển thị màn cập nhật hồ sơ
-                    if (state.user.active == -1 && RegExp(r'^0[0-9]{9}$').hasMatch(state.user.username)) {
+                    if (user.active == -1 && RegExp(r'^0[0-9]{9}$').hasMatch(user.username)) {
                       final authBloc = BlocProvider.of<AuthBloc>(context);
                       return BlocProvider.value(
                         value: authBloc,
-                        child: ChangeInfoAfterSignupScreen(currentUsername: state.user.username),
+                        child: ChangeInfoAfterSignupScreen(currentUsername: user.username),
                       );
                     }
 
                     return HomeScreen(
-                      username: state.user.username,
-                      token: state.user.token,
+                      username: user.username,
+                      token: user.token,
                     );
                   }
 

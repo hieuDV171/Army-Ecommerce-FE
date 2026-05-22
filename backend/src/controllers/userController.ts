@@ -3,9 +3,10 @@ import prisma from '../config/db';
 import { AuthenticatedRequest } from '../middlewares/auth';
 
 export const getUserInfo = async (req: AuthenticatedRequest, res: Response) => {
-  const { user_id } = req.body;
+  const userIdStr = req.body.user_id;
+  const userId = userIdStr ? Number(userIdStr) : req.user?.id;
 
-  if (!user_id) {
+  if (!userId) {
     return res.status(200).json({
       code: '1002',
       message: 'Parameter is not enough',
@@ -15,7 +16,7 @@ export const getUserInfo = async (req: AuthenticatedRequest, res: Response) => {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: Number(user_id) },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -46,6 +47,7 @@ export const getUserInfo = async (req: AuthenticatedRequest, res: Response) => {
         online: user.online,
         followed: false,
         is_blocked: false,
+        active: user.username === user.phone_number ? -1 : 1,
       },
     });
   } catch (error) {
@@ -71,15 +73,6 @@ export const setUserInfo = async (req: AuthenticatedRequest, res: Response) => {
     cover_image_web,
   } = req.body;
 
-  // check parameterNotEnough
-  if (!email || !username || !status || !avatar || !firstname || !lastname || !address || !cover_image || !cover_image_web) {
-    return res.status(200).json({
-      code: '1002',
-      message: 'Parameter is not enough',
-      data: null,
-    });
-  }
-
   if (!req.user) {
     return res.status(200).json({
       code: '9998',
@@ -89,19 +82,20 @@ export const setUserInfo = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
+    const updateData: any = {};
+    if (email !== undefined) updateData.email = email;
+    if (username !== undefined) updateData.username = username;
+    if (status !== undefined) updateData.status = status;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (firstname !== undefined) updateData.firstname = firstname;
+    if (lastname !== undefined) updateData.lastname = lastname;
+    if (address !== undefined) updateData.address = address;
+    if (cover_image !== undefined) updateData.cover_image = cover_image;
+    if (cover_image_web !== undefined) updateData.cover_image_web = cover_image_web;
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
-      data: {
-        email,
-        username,
-        status,
-        avatar,
-        firstname,
-        lastname,
-        address,
-        cover_image,
-        cover_image_web,
-      },
+      data: updateData,
     });
 
     return res.status(200).json({
@@ -122,6 +116,7 @@ export const setUserInfo = async (req: AuthenticatedRequest, res: Response) => {
         status: updatedUser.status,
         listing: updatedUser.listing,
         online: updatedUser.online,
+        active: updatedUser.username === updatedUser.phone_number ? -1 : 1,
       },
     });
   } catch (error) {

@@ -62,6 +62,7 @@ export const signup = async (req: Request, res: Response) => {
         id: user.id,
         phone_number: user.phone_number,
         username: user.username,
+        active: -1,
         token: token,
       },
     });
@@ -138,6 +139,7 @@ export const login = async (req: Request, res: Response) => {
         status: user.status,
         listing: user.listing,
         online: 1,
+        active: user.username === user.phone_number ? -1 : 1,
         token: token,
       },
     });
@@ -205,6 +207,7 @@ export const changeInfoAfterSignup = async (req: AuthenticatedRequest, res: Resp
         phonenumber: updatedUser.phone_number,
         username: updatedUser.username,
         avatar: updatedUser.avatar,
+        active: 1,
       },
     });
   } catch (error) {
@@ -344,6 +347,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         status: updatedUser.status,
         listing: updatedUser.listing,
         online: 1,
+        active: updatedUser.username === updatedUser.phone_number ? -1 : 1,
         token: token,
       },
     });
@@ -618,6 +622,7 @@ export const getMe = async (req: AuthenticatedRequest, res: Response) => {
         status: user.status,
         listing: user.listing,
         online: user.online,
+        active: user.username === user.phone_number ? -1 : 1,
       },
     });
   } catch (error) {
