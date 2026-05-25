@@ -290,17 +290,21 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   Future<MessageModel?> sendMessage({
     required String toId,
     required String message,
-    required String productId,
+    String? productId,
     String typeMessage = 'text',
   }) async {
+    final request = <String, dynamic>{
+      'to_id': _idValue(toId),
+      'message': message,
+      'type_message': typeMessage,
+    };
+    if (productId != null && productId.isNotEmpty) {
+      request['product_id'] = _idValue(productId);
+    }
+
     final response = await remoteDataSource.post(
       '/conversation/send_message',
-      data: {
-        'to_id': _idValue(toId),
-        'message': message,
-        'type_message': typeMessage,
-        'product_id': _idValue(productId),
-      },
+      data: request,
     );
     final map = parseMapFromData(response.data);
     if (map.isEmpty) return null;

@@ -83,7 +83,7 @@ abstract class MarketplaceRepository {
   Future<MessageModel?> sendMessage({
     required String toId,
     required String message,
-    required String productId,
+    String? productId,
     String typeMessage = 'text',
   });
 

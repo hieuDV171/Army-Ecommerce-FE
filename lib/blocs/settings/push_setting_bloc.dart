@@ -54,23 +54,30 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
       final responseCode = ResponseCode.fromCode(response.code);
       if (responseCode == ResponseCode.ok) {
         // Cập nhật cache bằng cách merge settings cũ + thay đổi mới
-        if (_cachedSettings != null) {
-          final updatedSettings = _cachedSettings!.copyWith(
-            like: event.like != null ? int.parse(event.like!) : null,
-            comment: event.comment != null ? int.parse(event.comment!) : null,
-            transaction: event.transaction != null ? int.parse(event.transaction!) : null,
-            announcement: event.announcement != null ? int.parse(event.announcement!) : null,
-            soundOn: event.soundOn != null ? int.parse(event.soundOn!) : null,
-            soundDefault: event.soundDefault != null ? int.parse(event.soundDefault!) : null,
-          );
-          _cachedSettings = updatedSettings;
-        }
+        final base = _cachedSettings ??
+            PushSettingModel(
+              like: 0,
+              comment: 0,
+              transaction: 0,
+              announcement: 0,
+              soundOn: 0,
+              soundDefault: 1,
+            );
+        final updatedSettings = base.copyWith(
+          like: _parseSetting(event.like),
+          comment: _parseSetting(event.comment),
+          transaction: _parseSetting(event.transaction),
+          announcement: _parseSetting(event.announcement),
+          soundOn: _parseSetting(event.soundOn),
+          soundDefault: _parseSetting(event.soundDefault),
+        );
+        _cachedSettings = updatedSettings;
 
         // Emit Success ngay với dữ liệu local đã update
         emit(PushSettingSuccess(
           code: response.code,
           message: response.message,
-          data: _cachedSettings!,
+          data: updatedSettings,
         ));
 
         // Tự động fetch lại từ server ở background để sync dữ liệu mới nhất
@@ -99,5 +106,10 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
     } catch (e) {
       // Im lặng nếu sync fail, user đã quá tải rồi
     }
+  }
+
+  int? _parseSetting(String? value) {
+    if (value == null) return null;
+    return int.tryParse(value);
   }
 }

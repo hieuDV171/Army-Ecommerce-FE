@@ -172,7 +172,7 @@ class _HomeDrawer extends StatelessWidget {
             icon: Icons.receipt_long_outlined,
             color: Colors.teal,
             title: 'Đơn hàng',
-            onTap: () => _push(context, const OrderListPage()),
+            onTap: () => _push(context, const OrderHubPage()),
           ),
           _DrawerTile(
             icon: Icons.location_on_outlined,
