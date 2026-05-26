@@ -19,6 +19,7 @@ import 'package:army_ecommerce/models/user_model.dart';
 import 'package:dio/dio.dart';
 
 import '../../../core/api/dio_client.dart';
+import '../../../core/constants/api_paths.dart';
 
 class AuthRemoteDataSource {
   final DioClient _dioClient;
@@ -279,7 +280,7 @@ class AuthRemoteDataSource {
       final token = await SessionManager.getToken();
 
       final response = await _dioClient.dio.post(
-        '/dev_tokens/set_devtoken',
+        ApiPaths.setDevToken,
         data: {
           'token': token,
           'devtype': devType,

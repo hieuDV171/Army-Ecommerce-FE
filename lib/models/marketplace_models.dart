@@ -38,6 +38,7 @@ class ProductModel {
   final num price;
   final String description;
   final List<String> imageUrls;
+  final String? sellerId;
   final String? sellerName;
   final String? sellerLocation;
   final double? rating;
@@ -51,6 +52,7 @@ class ProductModel {
     required this.price,
     required this.description,
     required this.imageUrls,
+    this.sellerId,
     this.sellerName,
     this.sellerLocation,
     this.rating,
@@ -69,6 +71,7 @@ class ProductModel {
       price: price,
       description: description,
       imageUrls: imageUrls,
+      sellerId: sellerId,
       sellerName: sellerName,
       sellerLocation: sellerLocation,
       rating: rating,
@@ -79,6 +82,8 @@ class ProductModel {
   }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final seller = json['seller'];
+    final sellerMap = seller is Map ? Map<String, dynamic>.from(seller) : null;
     final images = _readStringList(json, [
       'image_urls',
       'images',
@@ -93,7 +98,10 @@ class ProductModel {
       price: _readNum(json, ['price', 'price_discount']),
       description: _readString(json, ['description', 'details'], fallback: ''),
       imageUrls: images,
-      sellerName: _readOptionalString(json, ['seller_name', 'username', 'seller']),
+      sellerId: _readOptionalString(json, ['seller_id']) ??
+          (sellerMap == null ? null : _readOptionalString(sellerMap, ['id', 'user_id'])),
+      sellerName: _readOptionalString(json, ['seller_name', 'username']) ??
+          (sellerMap == null ? null : _readOptionalString(sellerMap, ['username', 'name'])),
       sellerLocation: _readOptionalString(json, ['location', 'seller_location', 'city']),
       rating: _readDouble(json, ['rating', 'rate', 'avg_rate']),
       soldCount: _readInt(json, ['sold', 'sold_count', 'total_sold']),
@@ -164,7 +172,7 @@ class WalletBalanceModel {
 
   factory WalletBalanceModel.fromJson(Map<String, dynamic> json) {
     return WalletBalanceModel(
-      available: _readNum(json, ['available', 'balance', 'current_balance']),
+      available: _readNum(json, ['available_balance', 'available', 'balance', 'current_balance']),
       pending: _readNum(json, ['pending', 'pending_balance']),
     );
   }
@@ -225,12 +233,28 @@ class OrderModel {
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final items = json['items'];
+    final itemSummary = items is List && items.isNotEmpty
+        ? items
+            .whereType<Map>()
+            .map((item) {
+              final product = item['product'];
+              if (product is Map && product['title'] != null) {
+                return product['title'].toString();
+              }
+              return null;
+            })
+            .whereType<String>()
+            .take(2)
+            .join(', ')
+        : '';
+
     return OrderModel(
       id: _readString(json, ['id', 'purchase_id', 'order_id']),
       status: _readString(json, ['state', 'status'], fallback: 'pending'),
       total: _readNum(json, ['total', 'total_price', 'amount']),
       createdAt: _readOptionalString(json, ['created_at', 'createdAt']),
-      summary: _readString(
+      summary: itemSummary.isNotEmpty ? itemSummary : _readString(
         json,
         ['name', 'title', 'description', 'products'],
         fallback: 'Đơn hàng',
@@ -306,12 +330,13 @@ class MessageModel {
   });
 
   MessageModel copyWith({
+    String? senderId,
     bool? isLocalPending,
     bool? isFailed,
   }) {
     return MessageModel(
       id: id,
-      senderId: senderId,
+      senderId: senderId ?? this.senderId,
       content: content,
       type: type,
       createdAt: createdAt,
@@ -345,6 +370,16 @@ class NotificationModel {
     this.createdAt,
     this.read = false,
   });
+
+  NotificationModel copyWith({bool? read}) {
+    return NotificationModel(
+      id: id,
+      title: title,
+      message: message,
+      createdAt: createdAt,
+      read: read ?? this.read,
+    );
+  }
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
