@@ -1412,7 +1412,7 @@ class _AddressListView extends StatelessWidget {
       child: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.lg),
         itemCount: state.addresses.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final address = state.addresses[index];
           return _AddressCard(
@@ -1741,7 +1741,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
                   onChanged: (value) => setState(() => _isDefault = value),
                   title: const Text('Đặt làm địa chỉ mặc định'),
                   subtitle: const Text('Tự động chọn khi đặt hàng'),
-                  activeColor: AppColors.primary,
+                  activeThumbColor: AppColors.primary,
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: AppSpacing.xl),
