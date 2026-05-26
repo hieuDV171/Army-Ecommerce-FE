@@ -180,7 +180,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Future<List<MarketplaceItem>> getUserListings({
+  Future<List<ProductModel>> getUserListings({
     required String userId,
     int index = 0,
     int count = 20,
@@ -194,7 +194,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       keyword: keyword.isEmpty ? null : keyword,
       categoryId: categoryId == '0' ? null : categoryId,
     );
-    return parseListFromData(response.data, MarketplaceItem.fromJson);
+    return parseListFromData(response.data, ProductModel.fromJson);
   }
 
   @override

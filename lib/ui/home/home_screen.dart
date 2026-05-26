@@ -11,7 +11,10 @@ import '../../blocs/settings/push_setting_bloc.dart';
 import '../../core/services/session_manager.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../auth/change_password_screen.dart';
-import '../marketplace/marketplace_pages.dart';
+import '../marketplace/marketplace_chat_pages.dart';
+import '../marketplace/marketplace_home_page.dart';
+import '../marketplace/marketplace_list_pages.dart';
+import '../marketplace/marketplace_product_pages.dart';
 import '../profile/user_profile_screen.dart';
 import '../settings/push_settings_screen.dart';
 

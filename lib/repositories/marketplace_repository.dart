@@ -49,7 +49,7 @@ abstract class MarketplaceRepository {
 
   Future<MarketplaceItem?> getNewsDetail(String id);
 
-  Future<List<MarketplaceItem>> getUserListings({
+  Future<List<ProductModel>> getUserListings({
     required String userId,
     int index = 0,
     int count = 20,
