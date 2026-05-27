@@ -371,7 +371,7 @@ class WalletBalanceModel {
 
   factory WalletBalanceModel.fromJson(Map<String, dynamic> json) {
     return WalletBalanceModel(
-      available: _readNum(json, ['available', 'balance', 'current_balance']),
+      available: _readNum(json, ['available_balance', 'available', 'balance', 'current_balance']),
       pending: _readNum(json, ['pending', 'pending_balance']),
     );
   }
@@ -432,12 +432,28 @@ class OrderModel {
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final items = json['items'];
+    final itemSummary = items is List && items.isNotEmpty
+        ? items
+            .whereType<Map>()
+            .map((item) {
+              final product = item['product'];
+              if (product is Map && product['title'] != null) {
+                return product['title'].toString();
+              }
+              return null;
+            })
+            .whereType<String>()
+            .take(2)
+            .join(', ')
+        : '';
+
     return OrderModel(
       id: _readString(json, ['id', 'purchase_id', 'order_id']),
       status: _readString(json, ['state', 'status'], fallback: 'pending'),
       total: _readNum(json, ['total', 'total_price', 'amount']),
       createdAt: _readOptionalString(json, ['created_at', 'createdAt']),
-      summary: _readString(
+      summary: itemSummary.isNotEmpty ? itemSummary : _readString(
         json,
         ['name', 'title', 'description', 'products'],
         fallback: 'Đơn hàng',
@@ -513,12 +529,13 @@ class MessageModel {
   });
 
   MessageModel copyWith({
+    String? senderId,
     bool? isLocalPending,
     bool? isFailed,
   }) {
     return MessageModel(
       id: id,
-      senderId: senderId,
+      senderId: senderId ?? this.senderId,
       content: content,
       type: type,
       createdAt: createdAt,
@@ -552,6 +569,16 @@ class NotificationModel {
     this.createdAt,
     this.read = false,
   });
+
+  NotificationModel copyWith({bool? read}) {
+    return NotificationModel(
+      id: id,
+      title: title,
+      message: message,
+      createdAt: createdAt,
+      read: read ?? this.read,
+    );
+  }
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(

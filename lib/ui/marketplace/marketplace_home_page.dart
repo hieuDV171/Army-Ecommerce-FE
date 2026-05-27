@@ -193,7 +193,7 @@ class _HomeHeader extends StatelessWidget {
                 tooltip: 'Thông báo',
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const NotificationPage()),
+                  MaterialPageRoute(builder: (_) => const NotificationListPage()),
                 ),
                 icon: const Icon(Icons.notifications_none, color: Colors.white),
               ),

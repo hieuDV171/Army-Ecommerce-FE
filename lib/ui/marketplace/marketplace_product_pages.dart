@@ -88,7 +88,24 @@ class _ProductDetailView extends StatelessWidget {
                         children: [
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () {},
+                              onPressed: product.seller?.id == null || product.seller!.id.isEmpty
+                                  ? null
+                                  : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ChatDetailPage(
+                                      conversation: ConversationModel(
+                                        id: '0',
+                                        partnerId: product.seller!.id,
+                                        partnerName: product.sellerName ?? 'Người bán',
+                                        lastMessage: '',
+                                        productId: product.id,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                               icon: const Icon(Icons.chat_bubble_outline),
                               label: const Text('Chat'),
                             ),

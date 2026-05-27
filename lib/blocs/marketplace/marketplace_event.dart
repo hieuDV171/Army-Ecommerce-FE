@@ -194,3 +194,84 @@ class ChatMessageSubmitted extends ChatEvent {
   @override
   List<Object?> get props => [message];
 }
+
+abstract class NotificationEvent extends Equatable {
+  @override
+  List<Object?> get props => [];
+}
+
+class NotificationsRequested extends NotificationEvent {}
+
+class NotificationsRefreshed extends NotificationEvent {}
+
+class NotificationsLoadMoreRequested extends NotificationEvent {}
+
+class NotificationReadRequested extends NotificationEvent {
+  final String notificationId;
+
+  NotificationReadRequested(this.notificationId);
+
+  @override
+  List<Object?> get props => [notificationId];
+}
+
+abstract class AddressEvent extends Equatable {
+  @override
+  List<Object?> get props => [];
+}
+
+class AddressListRequested extends AddressEvent {}
+
+class AddressAdded extends AddressEvent {
+  final String address;
+  final String fullAddress;
+  final String receiverName;
+  final String phone;
+  final bool isDefault;
+  final String? addressDetail;
+
+  AddressAdded({
+    required this.address,
+    required this.fullAddress,
+    required this.receiverName,
+    required this.phone,
+    this.isDefault = false,
+    this.addressDetail,
+  });
+
+  @override
+  List<Object?> get props => [address, fullAddress, receiverName, phone, isDefault, addressDetail];
+}
+
+class AddressUpdated extends AddressEvent {
+  final String id;
+  final String address;
+  final String fullAddress;
+  final String receiverName;
+  final String phone;
+  final bool isDefault;
+  final String? addressDetail;
+
+  AddressUpdated({
+    required this.id,
+    required this.address,
+    required this.fullAddress,
+    required this.receiverName,
+    required this.phone,
+    this.isDefault = false,
+    this.addressDetail,
+  });
+
+  @override
+  List<Object?> get props => [id, address, fullAddress, receiverName, phone, isDefault, addressDetail];
+}
+
+class AddressDeleted extends AddressEvent {
+  final String id;
+
+  AddressDeleted(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+

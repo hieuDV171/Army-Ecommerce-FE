@@ -25,8 +25,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           products: _deduplicateProducts(result.products),
           isInitialLoading: false,
           hasReachedEnd: result.products.length < state.count,
-          index: 1,
           lastId: result.lastId,
+          index: result.products.length,
           clearError: true,
         ),
       );
@@ -46,8 +46,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           products: _deduplicateProducts(result.products),
           isRefreshing: false,
           hasReachedEnd: result.products.length < state.count,
-          index: 1,
           lastId: result.lastId,
+          index: result.products.length,
           clearError: true,
         ),
       );
@@ -70,13 +70,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         lastId: state.lastId,
       );
       final products = result.products;
+      final merged = _deduplicateProducts([...state.products, ...products]);
       emit(
         state.copyWith(
-          products: _deduplicateProducts([...state.products, ...products]),
+          products: merged,
           isLoadingMore: false,
           hasReachedEnd: products.length < state.count,
-          index: state.index + 1,
           lastId: result.lastId,
+          index: merged.length,
           clearError: true,
         ),
       );
@@ -337,9 +338,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
           isInitialLoading: false,
           isRefreshing: false,
           isLoadingMore: false,
-           hasReachedEnd: products.length < state.count,
-           index: index + 1,
           lastId: lastId ?? state.lastId,
+          hasReachedEnd: products.length < state.count,
+          index: merged.length,
           clearError: true,
         ),
       );
@@ -393,7 +394,7 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
           items: _deduplicateItems(items),
           isInitialLoading: false,
           hasReachedEnd: items.length < state.count,
-          index: 1,
+          index: items.length,
           clearMessages: true,
         ),
       );
@@ -414,7 +415,7 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
           items: _deduplicateItems(items),
           isRefreshing: false,
           hasReachedEnd: items.length < state.count,
-          index: 1,
+          index: items.length,
           clearMessages: true,
         ),
       );
@@ -432,12 +433,13 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
     emit(state.copyWith(isLoadingMore: true, clearMessages: true));
     try {
       final items = await loader(state.index, state.count);
+      final merged = _deduplicateItems([...state.items, ...items]);
       emit(
         state.copyWith(
-          items: _deduplicateItems([...state.items, ...items]),
+          items: merged,
           isLoadingMore: false,
           hasReachedEnd: items.length < state.count,
-          index: state.index + 1,
+          index: merged.length,
           clearMessages: true,
         ),
       );
@@ -613,14 +615,17 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
         index: index,
         count: state.count,
       );
+      final merged = replace ? conversations : _deduplicateConversations(
+        [...state.conversations, ...conversations],
+      );
       emit(
         state.copyWith(
-          conversations: replace ? conversations : [...state.conversations, ...conversations],
+          conversations: merged,
           isInitialLoading: false,
           isRefreshing: false,
           isLoadingMore: false,
           hasReachedEnd: conversations.length < state.count,
-          index: index + 1,
+          index: merged.length,
           clearError: true,
         ),
       );
@@ -634,6 +639,16 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
       );
     }
+  }
+
+  List<ConversationModel> _deduplicateConversations(
+    List<ConversationModel> conversations,
+  ) {
+    final map = <String, ConversationModel>{};
+    for (final conversation in conversations) {
+      map[conversation.id] = conversation;
+    }
+    return map.values.toList();
   }
 }
 
@@ -658,7 +673,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         partnerId: conversation.partnerId,
         conversationId: conversation.id,
       );
-      emit(state.copyWith(messages: messages, isLoading: false, clearError: true));
+      emit(state.copyWith(messages: messages.reversed.toList(), isLoading: false, clearError: true));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
@@ -670,7 +685,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     final content = event.message.trim();
     final productId = conversation.productId;
-    if (content.isEmpty || productId == null || productId.isEmpty) return;
+    if (content.isEmpty) return;
 
     final localMessage = MessageModel(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -689,7 +704,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final messages = [...state.messages]..removeWhere((item) => item.id == localMessage.id);
       emit(
         state.copyWith(
-          messages: [...messages, ?sent],
+          messages: [...messages, if (sent != null) sent.copyWith(senderId: 'me')],
           isSending: false,
           clearError: true,
         ),
@@ -701,6 +716,226 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
               : item)
           .toList();
       emit(state.copyWith(messages: messages, isSending: false, errorMessage: error.toString()));
+    }
+  }
+}
+
+class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
+  final MarketplaceRepository marketplaceRepository;
+
+  NotificationBloc({required this.marketplaceRepository})
+      : super(const NotificationState()) {
+    on<NotificationsRequested>(_onRequested);
+    on<NotificationsRefreshed>(_onRefreshed);
+    on<NotificationsLoadMoreRequested>(_onLoadMoreRequested);
+    on<NotificationReadRequested>(_onReadRequested);
+  }
+
+  Future<void> _onRequested(
+    NotificationsRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    emit(state.copyWith(isInitialLoading: true, index: 0, clearMessages: true));
+    await _loadPage(emit, index: 0, replace: true);
+  }
+
+  Future<void> _onRefreshed(
+    NotificationsRefreshed event,
+    Emitter<NotificationState> emit,
+  ) async {
+    emit(state.copyWith(isRefreshing: true, index: 0, clearMessages: true));
+    await _loadPage(emit, index: 0, replace: true);
+  }
+
+  Future<void> _onLoadMoreRequested(
+    NotificationsLoadMoreRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) return;
+    emit(state.copyWith(isLoadingMore: true, clearMessages: true));
+    await _loadPage(emit, index: state.index, replace: false);
+  }
+
+  Future<void> _onReadRequested(
+    NotificationReadRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    final current = state.notifications;
+    emit(
+      state.copyWith(
+        isSubmitting: true,
+        notifications: current
+            .map((item) => item.id == event.notificationId ? item.copyWith(read: true) : item)
+            .toList(),
+        clearMessages: true,
+      ),
+    );
+
+    try {
+      await marketplaceRepository.markNotificationRead(event.notificationId);
+      emit(state.copyWith(isSubmitting: false, successMessage: 'Da danh dau da doc'));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          notifications: current,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadPage(
+    Emitter<NotificationState> emit, {
+    required int index,
+    required bool replace,
+  }) async {
+    try {
+      final notifications = await marketplaceRepository.getNotifications(
+        index: index,
+        count: state.count,
+      );
+      final merged = replace
+          ? notifications
+          : _deduplicate([...state.notifications, ...notifications]);
+      emit(
+        state.copyWith(
+          notifications: merged,
+          isInitialLoading: false,
+          isRefreshing: false,
+          isLoadingMore: false,
+          hasReachedEnd: notifications.length < state.count,
+          index: merged.length,
+          clearMessages: true,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          isInitialLoading: false,
+          isRefreshing: false,
+          isLoadingMore: false,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  List<NotificationModel> _deduplicate(List<NotificationModel> notifications) {
+    final map = <String, NotificationModel>{};
+    for (final notification in notifications) {
+      map[notification.id] = notification;
+    }
+    return map.values.toList();
+  }
+}
+
+class AddressBloc extends Bloc<AddressEvent, AddressState> {
+  final MarketplaceRepository marketplaceRepository;
+
+  AddressBloc({required this.marketplaceRepository}) : super(const AddressState()) {
+    on<AddressListRequested>(_onListRequested);
+    on<AddressAdded>(_onAdded);
+    on<AddressUpdated>(_onUpdated);
+    on<AddressDeleted>(_onDeleted);
+  }
+
+  Future<void> _onListRequested(
+    AddressListRequested event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true, clearMessages: true));
+    try {
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isLoading: false,
+          clearMessages: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onAdded(
+    AddressAdded event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      final data = <String, dynamic>{
+        'address': event.address,
+        'full_address': event.fullAddress,
+        'receiver_name': event.receiverName,
+        'phone': event.phone,
+        'is_default': event.isDefault,
+      };
+      if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
+        data['address_detail'] = event.addressDetail;
+      }
+      await marketplaceRepository.addAddress(data);
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã thêm địa chỉ',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onUpdated(
+    AddressUpdated event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      final data = <String, dynamic>{
+        'address': event.address,
+        'full_address': event.fullAddress,
+        'receiver_name': event.receiverName,
+        'phone': event.phone,
+        'is_default': event.isDefault,
+      };
+      if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
+        data['address_detail'] = event.addressDetail;
+      }
+      await marketplaceRepository.updateAddress(event.id, data);
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã cập nhật địa chỉ',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onDeleted(
+    AddressDeleted event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      await marketplaceRepository.deleteAddress(event.id);
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã xóa địa chỉ',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
     }
   }
 }

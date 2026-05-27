@@ -1,5 +1,6 @@
 import 'package:army_ecommerce/models/api_response.dart';
 import 'package:army_ecommerce/models/push_setting_model.dart';
+import '../../../core/constants/api_paths.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/services/session_manager.dart';
 import 'package:dio/dio.dart';
@@ -14,7 +15,7 @@ class SettingRemoteDataSource {
       final token = await SessionManager.getToken();
 
       final response = await _dioClient.dio.post(
-        '/push_settings/get_push_setting',
+        ApiPaths.getPushSetting,
         data: {
           'token': token
         },
@@ -52,7 +53,7 @@ class SettingRemoteDataSource {
       if (soundDefault != null) request['sound_default'] = soundDefault;
 
       final response = await _dioClient.dio.post(
-          '/push_settings/set_push_setting',
+          ApiPaths.setPushSetting,
           data: request
       );
 

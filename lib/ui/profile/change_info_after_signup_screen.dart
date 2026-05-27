@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
-import '../home/home_screen.dart';
 import '../../core/services/session_manager.dart';
 
 class ChangeInfoAfterSignupScreen extends StatefulWidget {
@@ -103,23 +102,9 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
               navigator.pop(updatedUser);
               return;
             }
-
-            final fallbackToken = await SessionManager.getToken() ?? '';
-            if (!context.mounted) return;
-
-            navigator.pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (_) => HomeScreen(
-                  username: updatedUser.username.isNotEmpty
-                      ? updatedUser.username
-                      : widget.currentUsername,
-                  token: updatedUser.token.isNotEmpty
-                      ? updatedUser.token
-                      : fallbackToken,
-                ),
-              ),
-              (route) => false,
-            );
+            
+            // Nếu là root screen, main.dart sẽ tự động vẽ lại và chuyển sang HomeScreen
+            // nhờ trạng thái AuthSuccess được emit tiếp theo trong AuthBloc.
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
           }
