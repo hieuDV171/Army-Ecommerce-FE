@@ -15,6 +15,10 @@ class ChatScreen extends StatefulWidget {
   // Truyền conversationId nếu đã có, hoặc partnerId + productId nếu mở từ sản phẩm
   final String? conversationId;
   final String? productId;
+  // Thông tin sản phẩm để hiển thị trên banner (tùy chọn)
+  final String? productTitle;
+  final num? productPrice;
+  final String? productImageUrl;
 
   const ChatScreen({
     super.key,
@@ -24,6 +28,9 @@ class ChatScreen extends StatefulWidget {
     required this.currentUserId,
     this.conversationId,
     this.productId,
+    this.productTitle,
+    this.productPrice,
+    this.productImageUrl,
   });
 
   @override
@@ -253,27 +260,81 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Banner hiển thị sản phẩm đang trao đổi
+  // Banner hiển thị thông tin sản phẩm đang trao đổi
   Widget _buildProductBanner() {
     return Container(
       width: double.infinity,
       color: const Color(0xFFFFF3F0),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          const Icon(Icons.inventory_2_outlined, size: 16, color: _shopeeOrange),
-          const SizedBox(width: 6),
+          // Thumbnail sản phẩm
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: widget.productImageUrl != null && widget.productImageUrl!.isNotEmpty
+                ? Image.network(
+                    widget.productImageUrl!,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, st) => _buildProductIconBox(),
+                  )
+                : _buildProductIconBox(),
+          ),
+          const SizedBox(width: 10),
+          // Tên và giá sản phẩm
           Expanded(
-            child: Text(
-              'Đang trao đổi về sản phẩm',
-              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.productTitle ?? 'Đang trao đổi về sản phẩm',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (widget.productPrice != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      _formatPrice(widget.productPrice!),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: _shopeeOrange,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  // Hộp icon dự phòng khi không có ảnh sản phẩm
+  Widget _buildProductIconBox() {
+    return Container(
+      width: 48,
+      height: 48,
+      color: const Color(0xFFFFEBE8),
+      child: const Icon(Icons.inventory_2_outlined, size: 22, color: _shopeeOrange),
+    );
+  }
+
+  // Định dạng giá tiền theo kiểu Việt Nam (₫1.500.000)
+  String _formatPrice(num price) {
+    final formatted = price.toInt().toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+    return '₫$formatted';
   }
 
   // Vùng nhập và gửi tin nhắn

@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
+import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
+import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
+import 'package:army_ecommerce/repositories/chat_repository.dart';
+import 'package:army_ecommerce/ui/chat/chat_screen.dart';
 import '../../blocs/block/block_bloc.dart';
 import '../../blocs/block/block_event.dart';
 import '../../blocs/block/block_state.dart';
 import '../../blocs/follow/follow_bloc.dart';
 import '../../blocs/follow/follow_event.dart';
 import '../../blocs/follow/follow_state.dart';
-import '../../blocs/marketplace/marketplace_bloc.dart';
+import '../../blocs/marketplace/marketplace_bloc.dart' show ProductDetailBloc, ProductSearchBloc, CheckoutBloc;
 import '../../blocs/marketplace/marketplace_event.dart';
-import '../../blocs/marketplace/marketplace_state.dart';
+import '../../blocs/marketplace/marketplace_state.dart' show ProductDetailState, ProductSearchState, CheckoutState;
 import '../../models/marketplace_models.dart';
 import '../../models/user_model.dart';
 import '../../repositories/auth_repository.dart';
@@ -31,7 +36,6 @@ import '../widgets/product_card.dart';
 import '../widgets/rating_stars.dart';
 import '../widgets/section_header.dart';
 import '../widgets/shimmer_product_grid.dart';
-import 'marketplace_chat_pages.dart';
 import 'marketplace_shared.dart';
 
 class ProductDetailPage extends StatelessWidget {
@@ -41,10 +45,20 @@ class ProductDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ProductDetailBloc(
-        marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(ProductDetailRequested(productId)),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => ProductDetailBloc(
+            marketplaceRepository: context.read<MarketplaceRepository>(),
+          )..add(ProductDetailRequested(productId)),
+        ),
+        // ChatBloc riêng cho trang sản phẩm — dùng khi nhấn nút Chat với người bán
+        BlocProvider(
+          create: (context) => ChatBloc(
+            chatRepository: context.read<ChatRepository>(),
+          ),
+        ),
+      ],
       child: const _ProductDetailView(),
     );
   }
@@ -99,16 +113,28 @@ class _ProductDetailView extends StatelessWidget {
                               onPressed: product.seller?.id == null || product.seller!.id.isEmpty
                                   ? null
                                   : () {
+                                final authState = context.read<AuthBloc>().state;
+                                final currentUserId =
+                                    authState is AuthSuccess ? authState.user.id : '';
+                                final chatBloc = context.read<ChatBloc>();
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => ChatDetailPage(
-                                      conversation: ConversationModel(
-                                        id: '0',
+                                    builder: (_) => BlocProvider.value(
+                                      value: chatBloc,
+                                      child: ChatScreen(
                                         partnerId: product.seller!.id,
-                                        partnerName: product.sellerName ?? 'Người bán',
-                                        lastMessage: '',
+                                        partnerUsername:
+                                            product.sellerName ?? 'Người bán',
+                                        partnerAvatar: product.seller?.avatar,
+                                        currentUserId: currentUserId,
                                         productId: product.id,
+                                        // Truyền thông tin sản phẩm để hiển thị trên banner
+                                        productTitle: product.title,
+                                        productPrice: product.price,
+                                        productImageUrl: product.imageUrls.isNotEmpty
+                                            ? product.imageUrls.first
+                                            : null,
                                       ),
                                     ),
                                   ),
@@ -1016,9 +1042,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   String? _error;
   UserModel? _user;
 
-  // BLoC follow và block — tạo riêng cho màn hình này
+  // BLoC follow, block và chat — tạo riêng cho màn hình này
   late final FollowBloc _followBloc;
   late final BlockBloc _blockBloc;
+  late final ChatBloc _chatBloc;
   // Trạng thái nút — optimistic update ngay khi người dùng bấm
   bool _isFollowed = false;
   bool _isBlocked = false;
@@ -1028,6 +1055,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     super.initState();
     _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
+    _chatBloc = ChatBloc(chatRepository: context.read<ChatRepository>());
     _loadUser();
   }
 
@@ -1035,6 +1063,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   void dispose() {
     _followBloc.close();
     _blockBloc.close();
+    _chatBloc.close();
     super.dispose();
   }
 
@@ -1206,23 +1235,25 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   }
 
   void _openChat() {
-    final partnerId = widget.userId;
-    final partnerName = widget.sellerName;
-    final conversationId = widget.productId ?? partnerId;
-    final productId = widget.productId ?? '';
-
-    final conversation = ConversationModel(
-      id: conversationId,
-      partnerId: partnerId,
-      partnerName: partnerName,
-      lastMessage: '',
-      productId: productId.isEmpty ? null : productId,
-      unread: false,
-    );
+    // Lấy userId của người dùng hiện tại từ AuthBloc để xác định bong bóng tin nhắn
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState is AuthSuccess ? authState.user.id : '';
 
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ChatDetailPage(conversation: conversation)),
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: _chatBloc,
+          child: ChatScreen(
+            partnerId: widget.userId,
+            partnerUsername: _user?.username ?? widget.sellerName,
+            partnerAvatar: _user?.avatar ?? widget.avatarUrl,
+            currentUserId: currentUserId,
+            // Chat từ trang người bán không đính kèm sản phẩm cụ thể → không hiện banner
+            productId: null,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1237,6 +1268,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       providers: [
         BlocProvider.value(value: _followBloc),
         BlocProvider.value(value: _blockBloc),
+        BlocProvider.value(value: _chatBloc),
       ],
       child: MultiBlocListener(
         listeners: [
