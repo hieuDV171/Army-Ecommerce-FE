@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
+import '../../blocs/block/block_bloc.dart';
+import '../../blocs/block/block_event.dart';
+import '../../blocs/block/block_state.dart';
+import '../../blocs/follow/follow_bloc.dart';
+import '../../blocs/follow/follow_event.dart';
+import '../../blocs/follow/follow_state.dart';
 import '../../blocs/marketplace/marketplace_bloc.dart';
 import '../../blocs/marketplace/marketplace_event.dart';
 import '../../blocs/marketplace/marketplace_state.dart';
 import '../../models/marketplace_models.dart';
 import '../../models/user_model.dart';
 import '../../repositories/auth_repository.dart';
+import '../../repositories/block_repository.dart';
+import '../../repositories/follow_repository.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
@@ -1008,10 +1016,26 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   String? _error;
   UserModel? _user;
 
+  // BLoC follow và block — tạo riêng cho màn hình này
+  late final FollowBloc _followBloc;
+  late final BlockBloc _blockBloc;
+  // Trạng thái nút — optimistic update ngay khi người dùng bấm
+  bool _isFollowed = false;
+  bool _isBlocked = false;
+
   @override
   void initState() {
     super.initState();
+    _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
+    _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
     _loadUser();
+  }
+
+  @override
+  void dispose() {
+    _followBloc.close();
+    _blockBloc.close();
+    super.dispose();
   }
 
   Future<void> _loadUser() async {
@@ -1036,6 +1060,9 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         setState(() {
           _user = response.data;
           _isLoading = false;
+          // Khởi tạo trạng thái nút từ dữ liệu API trả về
+          _isFollowed = response.data!.followed ?? false;
+          _isBlocked = response.data!.isBlocked ?? false;
         });
       } else {
         setState(() {
@@ -1056,6 +1083,126 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       context,
       MaterialPageRoute(builder: (_) => SellerListingsPage(userId: widget.userId)),
     );
+  }
+
+  // Bật/tắt follow người bán
+  void _toggleFollow() {
+    if (_isFollowed) {
+      _showUnfollowDialog();
+    } else {
+      setState(() => _isFollowed = true);
+      _followBloc.add(FollowUserRequested(
+        followeeId: widget.userId,
+        username: widget.sellerName,
+        action: 'follow',
+      ));
+    }
+  }
+
+  // Dialog xác nhận hủy theo dõi
+  Future<void> _showUnfollowDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text('Hủy theo dõi'),
+        content: Text('Bỏ theo dõi "${widget.sellerName}"?'),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      setState(() => _isFollowed = false);
+      _followBloc.add(FollowUserRequested(
+        followeeId: widget.userId,
+        username: widget.sellerName,
+        action: 'unfollow',
+      ));
+    }
+  }
+
+  // Bật/tắt chặn người bán
+  void _toggleBlock() {
+    if (_isBlocked) {
+      _showUnblockDialog();
+    } else {
+      _showBlockDialog();
+    }
+  }
+
+  // Dialog xác nhận chặn người bán
+  Future<void> _showBlockDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text('Chặn người dùng'),
+        content: Text(
+          'Chặn "${widget.sellerName}"? Người này sẽ không thể xem trang cá nhân hay liên hệ với bạn.',
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.black87),
+            child: const Text('Chặn', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      setState(() => _isBlocked = true);
+      _blockBloc.add(BlockUserRequested(
+        userId: widget.userId,
+        username: widget.sellerName,
+        action: 'block',
+      ));
+    }
+  }
+
+  // Dialog xác nhận bỏ chặn người bán
+  Future<void> _showUnblockDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text('Bỏ chặn người dùng'),
+        content: Text(
+          'Bỏ chặn "${widget.sellerName}"? Người này sẽ có thể xem trang và liên hệ với bạn.',
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      setState(() => _isBlocked = false);
+      _blockBloc.add(BlockUserRequested(
+        userId: widget.userId,
+        username: widget.sellerName,
+        action: 'unblock',
+      ));
+    }
   }
 
   void _openChat() {
@@ -1086,7 +1233,53 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     final displayListing = _user?.listing?.toString() ?? widget.sellerListing;
     final displayScore = widget.sellerScore;
 
-    return Scaffold(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _followBloc),
+        BlocProvider.value(value: _blockBloc),
+      ],
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<FollowBloc, FollowState>(
+            listenWhen: (_, current) =>
+                current is FollowActionSuccess || current is FollowFailure,
+            listener: (context, state) {
+              if (state is FollowActionSuccess) {
+                setState(() => _isFollowed = state.isFollowed);
+                final msg = state.isFollowed
+                    ? 'Theo dõi ${state.username} thành công'
+                    : 'Đã hủy theo dõi ${state.username}';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(msg), backgroundColor: AppColors.primary),
+                );
+              } else if (state is FollowFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi: ${state.error}')),
+                );
+              }
+            },
+          ),
+          BlocListener<BlockBloc, BlockState>(
+            listenWhen: (_, current) =>
+                current is BlockActionSuccess || current is BlockFailure,
+            listener: (context, state) {
+              if (state is BlockActionSuccess) {
+                setState(() => _isBlocked = state.isBlocked);
+                final msg = state.isBlocked
+                    ? 'Đã chặn ${state.username}'
+                    : 'Đã bỏ chặn ${state.username}';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(msg)),
+                );
+              } else if (state is BlockFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi: ${state.error}')),
+                );
+              }
+            },
+          ),
+        ],
+        child: Scaffold(
       appBar: AppBar(title: Text(displayName)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -1118,6 +1311,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
+                    // Hàng 1: Chat + Xem sản phẩm
                     Row(
                       children: [
                         Expanded(
@@ -1133,6 +1327,31 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                             label: 'Xem sản phẩm của người bán',
                             icon: Icons.inventory_2_outlined,
                             onPressed: _openSellerListings,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    // Hàng 2: Theo dõi + Chặn
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SellerActionButton(
+                            label: _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
+                            icon: _isFollowed ? Icons.check : Icons.person_add_outlined,
+                            isActive: _isFollowed,
+                            activeColor: AppColors.primary,
+                            onTap: _toggleFollow,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _SellerActionButton(
+                            label: _isBlocked ? 'Đã chặn' : 'Chặn',
+                            icon: Icons.block,
+                            isActive: _isBlocked,
+                            activeColor: Colors.black87,
+                            onTap: _toggleBlock,
                           ),
                         ),
                       ],
@@ -1153,6 +1372,8 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                       const Text('Thông tin chi tiết người bán chưa có.'),
                   ],
                 ),
+        ),
+      ),
     );
   }
 }
@@ -1340,6 +1561,58 @@ class _QuantityStepper extends StatelessWidget {
           icon: const Icon(Icons.add_circle_outline),
         ),
       ],
+    );
+  }
+}
+
+// Nút hành động với người bán (Theo dõi / Chặn) — đổi màu theo trạng thái active
+class _SellerActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final Color activeColor;
+  final VoidCallback onTap;
+
+  const _SellerActionButton({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.activeColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: isActive ? activeColor : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: isActive ? activeColor : Colors.grey[400]!,
+            width: 1,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isActive ? Colors.white : Colors.grey[700]),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isActive ? Colors.white : Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
