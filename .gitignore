@@ -49,6 +49,7 @@ app.*.map.json
 **/android/app/google-services.json
 **/ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
+firebase.json
 
 # Cloudinary & APIs
 .env
@@ -67,3 +68,11 @@ constants/api_keys.dart
 *.p12
 *.pem
 /CLAUDE.md
+
+############## Virtual Environments
+/.venv
+/.tools
+backend/node_modules
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/uploads/

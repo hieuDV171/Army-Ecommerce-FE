@@ -2,7 +2,6 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
-import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -87,18 +86,11 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                 )
             );
           } else if (state is AuthSuccess && !widget.isForgotPassword) {
-            // XÁC THỰC THÀNH CÔNG -> Vào trang Home
-            Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => HomeScreen(
-                        userId: state.user.id,
-                        username: state.user.username,
-                        token: state.user.token
-                    ),
-                ),
-                (route) => false // Xóa hết lịch sử các màn hình Login/Signup trước đó
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Xác thực OTP thành công!')),
             );
+            // Không thực hiện Navigator.push hay Navigator.pushAndRemoveUntil nữa.
+            // main.dart đang lắng nghe AuthSuccess ở root và sẽ tự động điều hướng.
           } else if (state is AuthFailure) {
             // XÁC THỰC THẤT BẠI -> Hiển thị thông báo lỗi
             ScaffoldMessenger.of(context).showSnackBar(

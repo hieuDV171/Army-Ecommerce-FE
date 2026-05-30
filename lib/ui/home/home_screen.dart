@@ -4,7 +4,6 @@ import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/block/block_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
-import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/blocs/follow/follow_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
@@ -13,18 +12,26 @@ import 'package:army_ecommerce/repositories/block_repository.dart';
 import 'package:army_ecommerce/repositories/chat_repository.dart';
 import 'package:army_ecommerce/repositories/follow_repository.dart';
 import 'package:army_ecommerce/repositories/notification_repository.dart';
-import 'package:army_ecommerce/ui/auth/change_password_screen.dart';
-import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/block/blocked_users_screen.dart';
-import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
 import 'package:army_ecommerce/ui/follow/followers_screen.dart';
 import 'package:army_ecommerce/ui/follow/following_screen.dart';
 import 'package:army_ecommerce/ui/notification/notification_screen.dart';
-import 'package:army_ecommerce/ui/profile/update_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/core/utils/logger.dart';
 
+import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
+import '../../blocs/marketplace/marketplace_event.dart' show HomeRequested;
+import '../../blocs/settings/push_setting_bloc.dart';
 import '../../core/services/session_manager.dart';
+import '../../repositories/marketplace_repository.dart';
+import '../auth/change_password_screen.dart';
+import '../marketplace/marketplace_chat_pages.dart';
+import '../marketplace/marketplace_home_page.dart';
+import '../marketplace/marketplace_list_pages.dart';
+import '../marketplace/marketplace_product_pages.dart';
+import '../profile/user_profile_screen.dart';
+import '../settings/push_settings_screen.dart';
 
 const Color _shopeeOrange = Color(0xFFEE4D2D);
 const Color _navyBlue = Color(0xFF003366);
@@ -33,14 +40,12 @@ class HomeScreen extends StatefulWidget {
   final String userId;
   final String username;
   final String token;
-  final String? phoneNumber;
 
   const HomeScreen({
     super.key,
     required this.userId,
     required this.username,
     required this.token,
-    this.phoneNumber,
   });
 
   @override
@@ -51,10 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   String? _avatarUrl;
   late String _currentUsername;
-  // Cache số tin nhắn mới để badge không nhấp nháy trong lúc ChatBloc đang tải
-  int _chatUnreadCount = 0;
-
-  // BLoC được tạo trong initState và dispose đúng lifecycle
+  // BLoC phụ trách API follow/block/chat/notification — tạo và dispose trong lifecycle
   late final FollowBloc _followBloc;
   late final BlockBloc _blockBloc;
   late final ChatBloc _chatBloc;
@@ -68,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _currentUsername = widget.username;
 
-    // Khởi tạo 4 BLoC mới dùng repository từ MultiRepositoryProvider ở main.dart
+    // Khởi tạo 4 BLoC từ Repository do thành viên đảm nhận
     _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
     _chatBloc = ChatBloc(chatRepository: context.read<ChatRepository>());
@@ -95,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Mở màn hình thông báo và truyền BLoC hiện tại
+  // Mở màn hình thông báo
   void _openNotifications() {
     Navigator.push(
       context,
@@ -105,22 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const NotificationScreen(),
         ),
       ),
-    );
-  }
-
-  // Mở màn hình danh sách hội thoại
-  void _openConversations() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: _chatBloc,
-          child: ConversationListScreen(currentUserId: widget.userId),
-        ),
-      ),
     ).then((_) {
-      // Làm mới badge chat khi quay lại
-      if (mounted) _chatBloc.add(LoadConversationsRequested());
+      // Làm mới badge sau khi đọc thông báo
+      if (mounted) _notificationBloc.add(LoadNotificationsRequested());
     });
   }
 
@@ -152,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Mở màn hình danh sách người đã chặn
   void _openBlockedUsers() {
-    _closeDrawer(); // Đóng Drawer an toàn trước khi navigate
+    _scaffoldKey.currentState?.closeDrawer();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -164,35 +153,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Đóng Drawer an toàn (no-op nếu Drawer không mở)
-  void _closeDrawer() {
-    _scaffoldKey.currentState?.closeDrawer();
-  }
-
-  // Mở màn hình cập nhật hồ sơ
+  // Mở màn hình hồ sơ cá nhân (dùng UserProfileScreen mới của team)
   void _openUpdateProfile() {
-    _closeDrawer();
+    _scaffoldKey.currentState?.closeDrawer();
     final authBloc = context.read<AuthBloc>();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: authBloc,
-          child: UpdateProfileScreen(currentUsername: _currentUsername),
+          child: const UserProfileScreen(),
         ),
       ),
-    ).then((updatedUser) {
-      if (!mounted || updatedUser == null) return;
-      setState(() {
-        _currentUsername = updatedUser.username;
-        _avatarUrl = updatedUser.avatar;
-      });
-    });
+    );
   }
 
   // Mở màn hình đổi mật khẩu
   void _openChangePassword() {
-    _closeDrawer();
+    _scaffoldKey.currentState?.closeDrawer();
     final authBloc = context.read<AuthBloc>();
     Navigator.push(
       context,
@@ -205,10 +183,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
-    // Cung cấp 4 BLoC cho toàn bộ cây widget trong HomeScreen
+    // Cung cấp 4 BLoC phụ trách API cho toàn bộ cây widget trong HomeScreen
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _followBloc),
@@ -216,48 +193,60 @@ class _HomeScreenState extends State<HomeScreen> {
         BlocProvider.value(value: _chatBloc),
         BlocProvider.value(value: _notificationBloc),
       ],
-      child: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthLogoutSuccess) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
-          } else if (state is ChangeInfoSuccess) {
-            if (mounted) {
+      child: BlocProvider<HomeBloc>(
+        // HomeBloc phục vụ MarketplaceHomeBody (giao diện mới của team)
+        create: (ctx) => HomeBloc(
+          marketplaceRepository: ctx.read<MarketplaceRepository>(),
+        )..add(HomeRequested()),
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            // Cập nhật username và avatar khi đổi thông tin thành công
+            if (state is ChangeInfoSuccess && mounted) {
               setState(() {
                 _currentUsername = state.updatedUser.username;
                 _avatarUrl = state.updatedUser.avatar;
               });
             }
-          }
-        },
-        child: Scaffold(
-          key: _scaffoldKey,
-          backgroundColor: const Color(0xFFF5F5F5),
-          appBar: _buildAppBar(),
-          drawer: _buildDrawer(),
-          body: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _HomeTabBody(username: _currentUsername),
-              const _CategoryTabBody(),
-              const _CartTabBody(),
-              _ProfileTabBody(
-                userId: widget.userId,
-                username: _currentUsername,
-                avatarUrl: _avatarUrl,
-                onFollowers: _openFollowers,
-                onFollowing: _openFollowing,
-                onEditProfile: _openUpdateProfile,
-                onChangePassword: _openChangePassword,
-                onBlockedUsers: _openBlockedUsers,
-                onLogout: () => _showLogoutDialog(context),
-              ),
-            ],
+          },
+          child: Scaffold(
+            key: _scaffoldKey,
+            backgroundColor: const Color(0xFFF5F5F5),
+            appBar: _buildAppBar(),
+            drawer: _HomeDrawer(
+              displayName: _currentUsername,
+              avatarUrl: _avatarUrl,
+              token: widget.token,
+              onBlockedUsers: _openBlockedUsers,
+            ),
+            body: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                // Tab 0: Trang chủ marketplace (giao diện mới của team)
+                MarketplaceHomeBody(
+                  username: _currentUsername,
+                  avatarUrl: _avatarUrl,
+                  userId: widget.userId,
+                ),
+                // Tab 1: Danh mục (placeholder)
+                const _CategoryTabBody(),
+                // Tab 2: Giỏ hàng (placeholder)
+                const _CartTabBody(),
+                // Tab 3: Trang cá nhân với links followers/following/blocked
+                _ProfileTabBody(
+                  userId: widget.userId,
+                  username: _currentUsername,
+                  avatarUrl: _avatarUrl,
+                  onFollowers: _openFollowers,
+                  onFollowing: _openFollowing,
+                  onEditProfile: _openUpdateProfile,
+                  onChangePassword: _openChangePassword,
+                  onBlockedUsers: _openBlockedUsers,
+                  onLogout: () => _showLogoutDialog(context),
+                ),
+              ],
+            ),
+            bottomNavigationBar: _buildBottomNavBar(),
           ),
-          bottomNavigationBar: _buildBottomNavBar(),
         ),
       ),
     );
@@ -276,36 +265,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     : 'Trang cá nhân',
         style: const TextStyle(color: Colors.white, fontSize: 16),
       ),
-      actions: [
-        // Nút chat với badge số tin nhắn mới — chỉ rebuild khi ConversationsLoaded
-        // để badge không nhấp nháy về 0 trong lúc tải
-        BlocBuilder<ChatBloc, ChatState>(
-          buildWhen: (_, current) => current is ConversationsLoaded,
-          builder: (context, state) {
-            if (state is ConversationsLoaded) {
-              _chatUnreadCount = state.numNewMessage;
-            }
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                onPressed: _openConversations,
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.chat_bubble_outline, color: Colors.white),
-                    if (_chatUnreadCount > 0)
-                      Positioned(
-                        right: -6,
-                        top: -4,
-                        child: _Badge(count: _chatUnreadCount),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -325,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
           unselectedFontSize: 11,
           onTap: (index) {
             if (index == _selectedIndex) return;
-            // Tab Thông báo → push sang NotificationScreen riêng
+            // Tab Thông báo (index 4) → push sang màn hình riêng
             if (index == 4) {
               _openNotifications();
               return;
@@ -353,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
               activeIcon: Icon(Icons.person),
               label: 'Tôi',
             ),
-            // Thông báo với badge
+            // Thông báo với badge số chưa đọc
             BottomNavigationBarItem(
               icon: Stack(
                 clipBehavior: Clip.none,
@@ -387,74 +346,221 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDrawer() {
+  void _showLogoutDialog(BuildContext ctx) {
+    final authBloc = ctx.read<AuthBloc>();
+    showDialog<void>(
+      context: ctx,
+      builder: (innerCtx) => AlertDialog(
+        title: const Text('Xác nhận'),
+        content: const Text('Đồng chí muốn đăng xuất khỏi hệ thống?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(innerCtx),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () {
+              logger.i('HOME: Dispatching LogoutButtonPressed');
+              Navigator.pop(innerCtx);
+              authBloc.add(LogoutButtonPressed(token: widget.token));
+            },
+            child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Drawer (giao diện mới của team) ────────────────────────────────────────
+
+class _HomeDrawer extends StatelessWidget {
+  final String displayName;
+  final String? avatarUrl;
+  final String token;
+  final VoidCallback onBlockedUsers;
+
+  const _HomeDrawer({
+    required this.displayName,
+    required this.avatarUrl,
+    required this.token,
+    required this.onBlockedUsers,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: _navyBlue),
-            accountName: Text('Đồng chí: $_currentUsername'),
-            accountEmail: const Text('Quân binh chủng: Bộ binh'),
+            decoration: const BoxDecoration(color: Color(0xFFE83A14)),
+            accountName: Text('Đồng chí: $displayName'),
+            accountEmail: const Text('Chợ quân nhu nội bộ'),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                  ? NetworkImage(_avatarUrl!)
+              backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
+                  ? NetworkImage(avatarUrl!)
                   : null,
-              child: _avatarUrl == null || _avatarUrl!.isEmpty
-                  ? const Icon(Icons.person, size: 50, color: _navyBlue)
+              child: avatarUrl == null || avatarUrl!.isEmpty
+                  ? const Icon(Icons.person, size: 42, color: Color(0xFFE83A14))
                   : null,
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.person_outline, color: Colors.blue),
-            title: const Text('Cập nhật hồ sơ'),
-            onTap: _openUpdateProfile,
+          _DrawerTile(
+            icon: Icons.person_outline,
+            color: Colors.blue,
+            title: 'Hồ sơ của tôi',
+            onTap: () => _push(context, const UserProfileScreen()),
           ),
-          ListTile(
-            leading: const Icon(Icons.lock_reset, color: Colors.orange),
-            title: const Text('Đổi mật khẩu'),
-            onTap: _openChangePassword,
-          ),
-          ListTile(
-            leading: const Icon(Icons.block, color: Colors.grey),
-            title: const Text('Người dùng đã chặn'),
-            onTap: _openBlockedUsers,
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Đăng xuất'),
+          _DrawerTile(
+            icon: Icons.lock_reset,
+            color: Colors.orange,
+            title: 'Đổi mật khẩu',
             onTap: () {
               Navigator.pop(context);
-              _showLogoutDialog(context);
+              final authBloc = context.read<AuthBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: authBloc,
+                    child: const ChangePasswordScreen(),
+                  ),
+                ),
+              );
             },
+          ),
+          _DrawerTile(
+            icon: Icons.notifications_active,
+            color: Colors.purple,
+            title: 'Cài đặt thông báo',
+            onTap: () {
+              Navigator.pop(context);
+              final pushSettingBloc = context.read<PushSettingBloc>();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: pushSettingBloc,
+                    child: const PushSettingsScreen(),
+                  ),
+                ),
+              );
+            },
+          ),
+          _DrawerTile(
+            icon: Icons.block,
+            color: Colors.grey,
+            title: 'Người dùng đã chặn',
+            onTap: onBlockedUsers,
+          ),
+          const Divider(),
+          _DrawerTile(
+            icon: Icons.search,
+            color: Colors.deepOrange,
+            title: 'Tìm kiếm sản phẩm',
+            onTap: () => _push(context, const SearchPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.receipt_long_outlined,
+            color: Colors.teal,
+            title: 'Đơn hàng',
+            onTap: () => _push(context, const OrderHubPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.location_on_outlined,
+            color: Colors.green,
+            title: 'Địa chỉ giao hàng',
+            onTap: () => _push(context, const AddressListPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.account_balance_wallet_outlined,
+            color: Colors.brown,
+            title: 'Ví quân nhu',
+            onTap: () => _push(context, const WalletPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.chat_bubble_outline,
+            color: Colors.indigo,
+            title: 'Tin nhắn',
+            onTap: () => _push(context, const ConversationPage()),
+          ),
+          _DrawerTile(
+            icon: Icons.article_outlined,
+            color: Colors.cyan,
+            title: 'Tin tức',
+            onTap: () => _push(context, const NewsPage()),
+          ),
+          const Divider(),
+          _DrawerTile(
+            icon: Icons.logout,
+            color: Colors.red,
+            title: 'Đăng xuất',
+            onTap: () => _showLogoutDialog(context),
           ),
         ],
       ),
     );
   }
 
-  void _showLogoutDialog(BuildContext ctx) {
-    showDialog(
-      context: ctx,
-      builder: (dialogCtx) => AlertDialog(
+  void _push(BuildContext context, Widget page) {
+    Navigator.pop(context);
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    logger.i('HOME DRAWER: _showLogoutDialog called');
+    final authBloc = context.read<AuthBloc>();
+
+    showDialog<void>(
+      context: context,
+      builder: (innerContext) => AlertDialog(
         title: const Text('Xác nhận'),
         content: const Text('Đồng chí muốn đăng xuất khỏi hệ thống?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('HỦY'),
+            onPressed: () {
+              Navigator.pop(innerContext);
+              Navigator.pop(context);
+            },
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogCtx);
-              ctx.read<AuthBloc>().add(LogoutButtonPressed(token: widget.token));
+              logger.i('HOME DRAWER: Dispatching LogoutButtonPressed');
+              Navigator.pop(innerContext);
+              Navigator.pop(context);
+              authBloc.add(LogoutButtonPressed(token: token));
             },
-            child: const Text('ĐĂNG XUẤT', style: TextStyle(color: Colors.red)),
+            child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
+    );
+  }
+}
+
+// Tile menu drawer tái sử dụng
+class _DrawerTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final VoidCallback onTap;
+
+  const _DrawerTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(title),
+      onTap: onTap,
     );
   }
 }
@@ -483,36 +589,6 @@ class _Badge extends StatelessWidget {
 }
 
 // ── Tab bodies ─────────────────────────────────────────────────────────────
-
-// Tab 0: Trang chủ
-class _HomeTabBody extends StatelessWidget {
-  final String username;
-  const _HomeTabBody({required this.username});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.military_tech, size: 100, color: Colors.lightGreen),
-          const SizedBox(height: 20),
-          Text(
-            'Chào đồng chí: $username',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(20),
-            child: Text(
-              'Hệ thống sẵn sàng tiếp nhận yêu cầu quân nhu.',
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // Tab 1: Danh mục (placeholder)
 class _CategoryTabBody extends StatelessWidget {
@@ -552,7 +628,7 @@ class _CartTabBody extends StatelessWidget {
   }
 }
 
-// Tab 3: Trang cá nhân với links tới followers/following/settings
+// Tab 3: Trang cá nhân với links tới followers/following/blocked/settings
 class _ProfileTabBody extends StatelessWidget {
   final String userId;
   final String username;
@@ -613,20 +689,14 @@ class _ProfileTabBody extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _StatButton(
-                      label: 'Người theo dõi',
-                      onTap: onFollowers,
-                    ),
+                    _StatButton(label: 'Người theo dõi', onTap: onFollowers),
                     Container(
                       width: 1,
                       height: 32,
                       color: Colors.grey[300],
                       margin: const EdgeInsets.symmetric(horizontal: 24),
                     ),
-                    _StatButton(
-                      label: 'Đang theo dõi',
-                      onTap: onFollowing,
-                    ),
+                    _StatButton(label: 'Đang theo dõi', onTap: onFollowing),
                   ],
                 ),
               ],
@@ -642,7 +712,7 @@ class _ProfileTabBody extends StatelessWidget {
                 _SettingsTile(
                   icon: Icons.person_outline,
                   iconColor: Colors.blue,
-                  title: 'Cập nhật hồ sơ',
+                  title: 'Hồ sơ của tôi',
                   onTap: onEditProfile,
                 ),
                 const _Divider(),
@@ -697,10 +767,7 @@ class _StatButton extends StatelessWidget {
         children: [
           const Icon(Icons.people_outline, size: 22, color: _shopeeOrange),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: Colors.black87),
-          ),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
         ],
       ),
     );
@@ -739,7 +806,7 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-// Đường kẻ ngăn cách mảnh trong settings
+// Đường kẻ ngăn cách mỏng trong settings
 class _Divider extends StatelessWidget {
   const _Divider();
 

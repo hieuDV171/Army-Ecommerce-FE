@@ -69,22 +69,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
 
     on<LogoutButtonPressed>((event, emit) async {
+      logger.i('DEBUG LOGOUT BLOC: Received LogoutButtonPressed event, token="${event.token}"');
       emit(AuthLoading());
 
-      // Bất kể có mạng hay không, xóa sạch bộ nhớ máy
-      await SessionManager.clearSession();
-      logger.i('Logout: cleared local session');
-
-      // Thử gọi API để server hủy token cũ
-      try {
-        await authRepository.logout(event.token);
-      } catch (_) {
-        // Nếu mất mạng hoặc server chết, đoạn catch này sẽ bắt lỗi.
-        // Nhưng KHÔNG emit(AuthFailure) ở đây.
-        // Thay vào đó, cố tình bỏ qua để thực hiện bước 3.
+      // 1. Gửi request gọi API logout chạy ngầm mà không await để tránh treo UI
+      if (event.token.isNotEmpty) {
+        logger.i('DEBUG LOGOUT BLOC: Requesting backend logout...');
+        authRepository.logout(event.token).then((_) {
+          logger.i('DEBUG LOGOUT BLOC: Backend logout request succeeded.');
+        }).catchError((e) {
+          logger.e('DEBUG LOGOUT BLOC: Backend logout request failed: $e');
+          return null;
+        });
+      } else {
+        logger.w('DEBUG LOGOUT BLOC: Token is empty, skipping backend logout request.');
       }
 
-      // Luôn luôn báo đăng xuất thành công bất chấp tình trạng mạng
+      // 2. Xóa session local lập tức và chuyển trạng thái thành công
+      logger.i('DEBUG LOGOUT BLOC: Clearing local session via SessionManager...');
+      await SessionManager.clearSession();
+      logger.i('DEBUG LOGOUT BLOC: Local session cleared successfully. Emitting AuthLogoutSuccess.');
       emit(AuthLogoutSuccess());
     });
 
@@ -136,7 +140,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
          final localPhone = prefs.getString('phone_number') ?? '';
          logger.d('AutoLogin: local username from SharedPreferences: "$localUsername" phone="$localPhone"');
 
-        final response = await authRepository.getUserInfo(token);
+        final response = await authRepository.getUserInfo(token: token);
         logger.d('AutoLogin: getUserInfo response code=${response.code}, data=${response.data}');
 
         final responseCode = ResponseCode.fromCode(response.code);
@@ -315,6 +319,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
            }
 
            emit(ChangeInfoSuccess(updatedUser: response.data!));
+
+           // Phát tiếp AuthSuccess để đồng bộ trạng thái hệ thống và tự động chuyển sang HomeScreen
+           final token = await SessionManager.getToken() ?? '';
+           final userWithToken = response.data!.copyWith(token: token, active: 1);
+           emit(AuthSuccess(user: userWithToken));
         } else {
           emit(AuthFailure(error: response.message, code: response.code));
         }
@@ -323,6 +332,88 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    on<GetUserInfoRequested>((event, emit) async {
+      emit(GetUserInfoLoading());
+
+      try {
+        final token = await SessionManager.getToken();
+        if (token == null || token.isEmpty) {
+          emit(GetUserInfoFailure(
+            error: ResponseCode.tokenInvalid.message,
+            code: ResponseCode.tokenInvalid.code,
+          ));
+          return;
+        }
+
+        final userId = event.userId;
+        final response = await authRepository.getUserInfo(
+          token: token,
+          userId: userId,
+        );
+        logger.d('GetUserInfo: response code=${response.code}, data=${response.data}');
+
+        final responseCode = ResponseCode.fromCode(response.code);
+
+        if (responseCode == ResponseCode.ok && response.data != null) {
+          emit(GetUserInfoSuccess(user: response.data!));
+        } else {
+          emit(GetUserInfoFailure(
+            error: response.message.isNotEmpty ? response.message : responseCode.message,
+            code: response.code,
+          ));
+        }
+      } catch (e) {
+        emit(GetUserInfoFailure(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ));
+      }
+    });
+
+
+    on<SetUserInfoRequested>((event, emit) async {
+      emit(SetUserInfoLoading());
+
+      try {
+        final response = await authRepository.setUserInfo(
+          currentUser: event.currentUser,
+          email: event.email,
+          username: event.username,
+          status: event.status,
+          avatarFile: event.avatarFile,
+          firstName: event.firstName,
+          lastName: event.lastName,
+          address: event.address,
+          password: event.password,
+          coverImageFile: event.coverImageFile,
+          coverImageWebFile: event.coverImageWebFile,
+        );
+
+        final responseCode = ResponseCode.fromCode(response.code);
+        if (responseCode == ResponseCode.ok && response.data != null) {
+          final updatedUser = response.data!;
+
+          if (updatedUser.username.isNotEmpty) {
+            await SessionManager.setUsername(updatedUser.username);
+          }
+          if (updatedUser.avatar != null && updatedUser.avatar!.isNotEmpty) {
+            await SessionManager.setAvatar(updatedUser.avatar!);
+          }
+
+          emit(SetUserInfoSuccess(user: updatedUser));
+        } else {
+          emit(SetUserInfoFailure(
+            error: response.message.isNotEmpty ? response.message : responseCode.message,
+            code: response.code,
+          ));
+        }
+      } catch (e) {
+        emit(SetUserInfoFailure(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ));
+      }
+    });
+
   }
 }
-

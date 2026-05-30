@@ -1,6 +1,7 @@
 
 import 'dart:io';
 
+import 'package:army_ecommerce/models/user_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AuthEvent extends Equatable {
@@ -110,3 +111,56 @@ class ChangeInfoRequested extends AuthEvent {
   @override
   List<Object?> get props => [username, avatarFile];
 }
+
+class GetUserInfoRequested extends AuthEvent {
+  final int? userId;
+
+  GetUserInfoRequested({this.userId});
+
+  @override
+  List<Object?> get props => [userId];
+}
+
+class SetUserInfoRequested extends AuthEvent {
+  final UserModel currentUser;
+  final String? email;
+  final String? username;
+  final String? status;
+  final File? avatarFile;
+  final String? firstName;
+  final String? lastName;
+  final String? address;
+  final String? password;
+  final File? coverImageFile;
+  final File? coverImageWebFile;
+
+  SetUserInfoRequested({
+    required this.currentUser,
+    this.email,
+    this.username,
+    this.status,
+    this.avatarFile,
+    this.firstName,
+    this.lastName,
+    this.address,
+    this.password,
+    this.coverImageFile,
+    this.coverImageWebFile,
+  });
+
+  @override
+  List<Object?> get props => [
+        currentUser,
+        email,
+        username,
+        status,
+        avatarFile,
+        firstName,
+        lastName,
+        address,
+        password,
+        coverImageFile,
+        coverImageWebFile,
+      ];
+}
+

@@ -2,7 +2,6 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/models/user_model.dart';
-import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,8 +22,6 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
   // Hàm validate mật khẩu
   String? _validatePassword(String pass) {
     if (pass.length < 6 || pass.length > 10) return "Mật khẩu phải từ 6-10 ký tự";
-    // if (!RegExp(r'[A-Z]').hasMatch(pass)) return "Cần ít nhất 1 ký tự viết HOA";
-    // if (!RegExp(r'[a-z]').hasMatch(pass)) return "Cần ít nhất 1 ký tự viết thường";
     return null;
   }
 
@@ -84,8 +81,10 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
         ),
     );
   }
+
   void _showSuccessAndGoHome(BuildContext context, UserModel user) {
     final navigator = Navigator.of(context);
+    final authBloc = context.read<AuthBloc>();
 
     showDialog(
         context: context,
@@ -108,20 +107,18 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
         )
     );
 
-    // Chờ 2 giây để quân nhân kịp đọc thông báo rồi tự động vào Home
+    // Chờ 2 giây để quân nhân kịp đọc thông báo rồi quay về root
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
 
-      // ĐI THẲNG VÀO HOME SCREEN
-      navigator.pushAndRemoveUntil(
-          MaterialPageRoute(
-              builder: (_) => HomeScreen(
-                  userId: user.id,
-                  username: user.username,
-                  token: user.token)
-          ),
-              (route) => false // Xóa sạch lịch sử các màn hình Login/Reset cũ
-      );
+      // Đóng dialog
+      navigator.pop();
+
+      // Quay về root screen (LoginScreen)
+      navigator.popUntil((route) => route.isFirst);
+
+      // Phát sự kiện AppStarted để tự động đăng nhập với token mới và chuyển tới HomeScreen
+      authBloc.add(AppStarted());
     });
   }
 }
