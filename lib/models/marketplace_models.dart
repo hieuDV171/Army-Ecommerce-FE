@@ -127,7 +127,7 @@ class ProductModel {
       shipsFromId: shipsFromId,
       condition: condition,
       created: created,
-      like: like,
+      like: likeCount != null ? likeCount.toString() : like,
       comment: comment,
       sellerName: sellerName,
       sellerLocation: sellerLocation,
@@ -154,6 +154,7 @@ class ProductModel {
 
     final parsedImages = _readProductImageList(json, ['image', 'images']);
     final fallbackImageUrls = _readStringList(json, [
+      'image',
       'image_urls',
       'image_url',
       'thumbnail',
@@ -333,6 +334,35 @@ class CommentModel {
   }
 }
 
+class RateModel {
+  final String id;
+  final String author;
+  final String content;
+  final int level;
+  final String? createdAt;
+  final String? productId;
+
+  const RateModel({
+    required this.id,
+    required this.author,
+    required this.content,
+    required this.level,
+    this.createdAt,
+    this.productId,
+  });
+
+  factory RateModel.fromJson(Map<String, dynamic> json) {
+    return RateModel(
+      id: _readString(json, ['id', 'rate_id']),
+      author: _readString(json, ['username', 'author', 'user_name'], fallback: 'Người dùng'),
+      content: _readString(json, ['content', 'message', 'review'], fallback: ''),
+      level: _readInt(json, ['level', 'rate', 'rating']) ?? 0,
+      createdAt: _readOptionalString(json, ['created_at', 'createdAt', 'time']),
+      productId: _readOptionalString(json, ['product_id', 'productId']),
+    );
+  }
+}
+
 class MarketplaceItem {
   final String id;
   final String title;
@@ -383,6 +413,12 @@ class AddressModel {
   final String phone;
   final String fullAddress;
   final bool isDefault;
+  final String? address;
+  final String? addressDetail;
+  final String? latitude;
+  final String? longitude;
+  final String? province;
+  final String? district;
 
   const AddressModel({
     required this.id,
@@ -390,6 +426,12 @@ class AddressModel {
     required this.phone,
     required this.fullAddress,
     this.isDefault = false,
+    this.address,
+    this.addressDetail,
+    this.latitude,
+    this.longitude,
+    this.province,
+    this.district,
   });
 
   factory AddressModel.fromJson(Map<String, dynamic> json) {
@@ -403,6 +445,12 @@ class AddressModel {
         fallback: 'Chưa có địa chỉ',
       ),
       isDefault: _readBool(json, ['is_default', 'default']) ?? false,
+      address: _readOptionalString(json, ['address_name', 'address']),
+      addressDetail: _readOptionalString(json, ['address_detail']),
+      latitude: _readOptionalString(json, ['lat', 'latitude']),
+      longitude: _readOptionalString(json, ['lng', 'longitude']),
+      province: _readOptionalString(json, ['province']),
+      district: _readOptionalString(json, ['district']),
     );
   }
 
@@ -416,57 +464,150 @@ class AddressModel {
   }
 }
 
+class OrderLineItem {
+  final String productId;
+  final String name;
+  final String? imageUrl;
+  final num price;
+  final int quantity;
+  final num subtotal;
+
+  const OrderLineItem({
+    required this.productId,
+    required this.name,
+    this.imageUrl,
+    required this.price,
+    required this.quantity,
+    required this.subtotal,
+  });
+
+  factory OrderLineItem.fromJson(Map<String, dynamic> json) {
+    final productJson = _readMap(json, ['product']);
+    final unitPrice = _readNum(json, ['price', 'unit_price']);
+    final quantity = _readInt(json, ['quantity']) ?? 0;
+    final resolvedPrice = unitPrice == 0 ? _readNum(productJson ?? json, ['price']) : unitPrice;
+    final resolvedSubtotal = _readNum(json, ['subtotal', 'total_price']);
+
+    return OrderLineItem(
+      productId: _readString(json, ['product_id', 'id', 'productId']),
+      name: _readString(
+        {...?productJson, ...json},
+        ['name', 'title', 'product_name'],
+        fallback: 'Sản phẩm',
+      ),
+      imageUrl: _readOptionalString(
+        {...?productJson, ...json},
+        ['image', 'image_url', 'thumbnail'],
+      ),
+      price: resolvedPrice,
+      quantity: quantity,
+      subtotal: resolvedSubtotal == 0 ? resolvedPrice * quantity : resolvedSubtotal,
+    );
+  }
+}
+
 class OrderModel {
   final String id;
   final String status;
   final num total;
+  final num shipFee;
+  final num finalPrice;
   final String? createdAt;
+  final String? note;
+  final String? sellerName;
+  final String? buyerName;
+  final String? buyerPhone;
+  final String? buyerAddress;
   final String summary;
+  final List<OrderLineItem> items;
 
   const OrderModel({
     required this.id,
     required this.status,
     required this.total,
+    this.shipFee = 0,
+    this.finalPrice = 0,
     this.createdAt,
+    this.note,
+    this.sellerName,
+    this.buyerName,
+    this.buyerPhone,
+    this.buyerAddress,
     required this.summary,
+    this.items = const [],
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
-    final items = json['items'];
-    final itemSummary = items is List && items.isNotEmpty
-        ? items
-            .whereType<Map>()
-            .map((item) {
-              final product = item['product'];
-              if (product is Map && product['title'] != null) {
-                return product['title'].toString();
-              }
-              return null;
-            })
-            .whereType<String>()
-            .take(2)
-            .join(', ')
-        : '';
+    final parsedItems = <OrderLineItem>[];
+    final rawItems = json['items'];
+    if (rawItems is List) {
+      for (final item in rawItems.whereType<Map>()) {
+        parsedItems.add(OrderLineItem.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
+
+    final sellerJson = _readMap(json, ['seller']);
+    final buyerJson = _readMap(json, ['buyer']);
+    final itemSummary = parsedItems.isNotEmpty
+        ? parsedItems.map((item) => item.name).take(2).join(', ')
+        : _readString(
+            json,
+            ['name', 'title', 'description', 'products'],
+            fallback: 'Đơn hàng',
+          );
 
     return OrderModel(
       id: _readString(json, ['id', 'purchase_id', 'order_id']),
       status: _readString(json, ['state', 'status'], fallback: 'pending'),
-      total: _readNum(json, ['total', 'total_price', 'amount']),
+      total: _readNum(json, ['total_price', 'total', 'amount']),
+      shipFee: _readNum(json, ['ship_fee', 'shipping_fee']),
+      finalPrice: (() {
+        final finalPrice = _readNum(json, ['final_price']);
+        return finalPrice > 0
+            ? finalPrice
+            : _readNum(json, ['total_price', 'total', 'amount']) + _readNum(json, ['ship_fee', 'shipping_fee']);
+      })(),
       createdAt: _readOptionalString(json, ['created_at', 'createdAt']),
-      summary: itemSummary.isNotEmpty ? itemSummary : _readString(
-        json,
-        ['name', 'title', 'description', 'products'],
-        fallback: 'Đơn hàng',
-      ),
+      note: _readOptionalString(json, ['note']),
+      sellerName: _readOptionalString(sellerJson ?? json, ['name', 'username', 'seller_name']),
+      buyerName: _readOptionalString(buyerJson ?? json, ['name', 'username', 'buyer_name']),
+      buyerPhone: _readOptionalString(buyerJson ?? json, ['phonenumber', 'phone', 'phone_number']),
+      buyerAddress: _readOptionalString(buyerJson ?? json, ['address', 'full_address']),
+      summary: itemSummary,
+      items: parsedItems,
     );
   }
 
   MarketplaceItem toItem() {
+    final displayTotal = finalPrice > 0 ? finalPrice : total;
     return MarketplaceItem(
       id: id,
       title: summary,
       subtitle: status,
-      trailing: total == 0 ? createdAt : total.toString(),
+      trailing: displayTotal == 0 ? createdAt : displayTotal.toString(),
+    );
+  }
+}
+
+class OrderTimelineModel {
+  final String id;
+  final String state;
+  final String? message;
+  final String? time;
+
+  const OrderTimelineModel({
+    required this.id,
+    required this.state,
+    this.message,
+    this.time,
+  });
+
+  factory OrderTimelineModel.fromJson(Map<String, dynamic> json) {
+    return OrderTimelineModel(
+      id: _readString(json, ['id', 'timeline_id', 'history_id']),
+      state: _readString(json, ['state', 'status', 'action'], fallback: ''),
+      message: _readOptionalString(json, ['message', 'note', 'description']),
+      time: _readOptionalString(json, ['created_at', 'time', 'time_stamp']),
     );
   }
 }
@@ -799,4 +940,19 @@ List<ProductSizeModel> _readProductSizeList(Map<String, dynamic> json, List<Stri
   }
   return const [];
 }
+
+class ShipFeeModel {
+  final num shipFee;
+  final int leatime;
+
+  const ShipFeeModel({required this.shipFee, required this.leatime});
+
+  factory ShipFeeModel.fromJson(Map<String, dynamic> json) {
+    return ShipFeeModel(
+      shipFee: (json['ship_fee'] ?? json['shipfee'] ?? 0) as num,
+      leatime: (json['leatime'] ?? 0) as int,
+    );
+  }
+}
+
 

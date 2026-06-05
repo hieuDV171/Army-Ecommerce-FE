@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-
+import '../../core/services/cart_manager.dart';
 import '../../models/marketplace_models.dart';
 
 abstract class HomeEvent extends Equatable {
@@ -142,7 +142,14 @@ abstract class CheckoutEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class CheckoutRequested extends CheckoutEvent {}
+class CheckoutRequested extends CheckoutEvent {
+  final int? productId;
+
+  CheckoutRequested({this.productId});
+
+  @override
+  List<Object?> get props => [productId];
+}
 
 class CheckoutAddressSelected extends CheckoutEvent {
   final MarketplaceItem address;
@@ -154,16 +161,22 @@ class CheckoutAddressSelected extends CheckoutEvent {
 }
 
 class CheckoutSubmitted extends CheckoutEvent {
-  final String productId;
-  final int quantity;
+  final List<CartItem> items;
 
-  CheckoutSubmitted({
-    required this.productId,
-    required this.quantity,
-  });
+  CheckoutSubmitted({required this.items});
 
   @override
-  List<Object?> get props => [productId, quantity];
+  List<Object?> get props => [items];
+}
+
+class CheckoutShipFeeRequested extends CheckoutEvent {
+  final int productId;
+  final int? addressId;
+
+  CheckoutShipFeeRequested({required this.productId, this.addressId});
+
+  @override
+  List<Object?> get props => [productId, addressId];
 }
 
 //---------------------------------
@@ -229,6 +242,10 @@ class AddressAdded extends AddressEvent {
   final String phone;
   final bool isDefault;
   final String? addressDetail;
+  final String province;
+  final String district;
+  final String latitude;
+  final String longitude;
 
   AddressAdded({
     required this.address,
@@ -237,10 +254,14 @@ class AddressAdded extends AddressEvent {
     required this.phone,
     this.isDefault = false,
     this.addressDetail,
+    required this.province,
+    required this.district,
+    required this.latitude,
+    required this.longitude,
   });
 
   @override
-  List<Object?> get props => [address, fullAddress, receiverName, phone, isDefault, addressDetail];
+  List<Object?> get props => [address, fullAddress, receiverName, phone, isDefault, addressDetail, province, district, latitude, longitude];
 }
 
 class AddressUpdated extends AddressEvent {
@@ -251,6 +272,10 @@ class AddressUpdated extends AddressEvent {
   final String phone;
   final bool isDefault;
   final String? addressDetail;
+  final String province;
+  final String district;
+  final String latitude;
+  final String longitude;
 
   AddressUpdated({
     required this.id,
@@ -260,10 +285,14 @@ class AddressUpdated extends AddressEvent {
     required this.phone,
     this.isDefault = false,
     this.addressDetail,
+    required this.province,
+    required this.district,
+    required this.latitude,
+    required this.longitude,
   });
 
   @override
-  List<Object?> get props => [id, address, fullAddress, receiverName, phone, isDefault, addressDetail];
+  List<Object?> get props => [id, address, fullAddress, receiverName, phone, isDefault, addressDetail, province, district, latitude, longitude];
 }
 
 class AddressDeleted extends AddressEvent {

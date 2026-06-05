@@ -130,13 +130,18 @@ class MarketplaceRemoteDataSource {
     int? state,
     String? token,
   }) {
+    dynamic normalizeId(String? value, {required dynamic fallback}) {
+      if (value == null || value.isEmpty) return fallback;
+      return int.tryParse(value) ?? value;
+    }
+
     final request = <String, dynamic>{
-      'user_id': userId,
+      'user_id': normalizeId(userId, fallback: userId),
       'index': index,
       'count': count,
     };
     if (keyword != null && keyword.isNotEmpty) request['keyword'] = keyword;
-    if (categoryId != null && categoryId.isNotEmpty) request['category_id'] = categoryId;
+    if (categoryId != null && categoryId.isNotEmpty) request['category_id'] = normalizeId(categoryId, fallback: categoryId);
     if (type != null) request['type'] = type;
     if (state != null) request['state'] = state;
     if (token != null && token.isNotEmpty) request['token'] = token;

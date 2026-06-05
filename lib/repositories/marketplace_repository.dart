@@ -41,6 +41,11 @@ abstract class MarketplaceRepository {
 
   Future<void> reportProduct(String productId, String subject, String details);
 
+  // Ratings
+  Future<List<RateModel>> getRates({String? userId, String? productId, int? level, int index = 0, int count = 20});
+
+  Future<void> setRates({required String userId, required int level, required String content, String? productId, String? purchaseId});
+
   Future<List<MarketplaceItem>> getSavedSearches({int index = 0, int count = 20});
 
   Future<void> saveSearch(String keyword);
@@ -69,7 +74,25 @@ abstract class MarketplaceRepository {
 
   Future<OrderModel?> getOrderDetail(String id);
 
-  Future<void> cancelOrder(String id, {int? reason});
+  Future<ShipFeeModel?> getShipFee(int productId, {int? addressId});
+
+  /// Create a new order. Accepts a raw request map to keep flexibility for
+  /// different backend payload shapes.
+  Future<void> createOrder(Map<String, dynamic> data);
+
+  /// Edit purchase (buyer-side) when the order hasn't been shipped yet.
+  Future<void> editOrder(String purchaseId, Map<String, dynamic> data);
+
+  /// Seller marks a purchase as shipped.
+  Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId});
+
+  /// Seller accepts/rejects a buyer's purchase request.
+  Future<void> setAcceptBuyer(String purchaseId, String buyerId, bool accept);
+
+  /// Get order timeline (history of status changes) for a purchase.
+  Future<List<OrderTimelineModel>> getOrderTimeline(String purchaseId);
+
+  Future<void> cancelOrder(String id, {String? reason});
 
   Future<void> confirmReceived(String purchaseId);
 

@@ -31,9 +31,14 @@ import 'ui/theme/app_theme.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'firebase_options.dart';
 
+import 'core/services/cart_manager.dart';
+
 Future<void> main() async {
   // Đảm bảo Flutter binding được khởi tạo trước khi chạy các setup bất đồng bộ
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load saved shopping cart
+  await CartManager().loadCart();
 
   // Ẩn system navigation bar và status bar (Immersive Sticky Mode)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);

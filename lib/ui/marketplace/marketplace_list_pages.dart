@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:latlong2/latlong.dart';
+import 'map_picker_screen.dart';
 import '../../blocs/marketplace/marketplace_bloc.dart';
 import '../../blocs/marketplace/marketplace_event.dart';
 import '../../blocs/marketplace/marketplace_state.dart';
@@ -19,11 +21,13 @@ import '../widgets/section_header.dart';
 class ProductListPage extends StatelessWidget {
   final String title;
   final SimpleListLoader loader;
+  final void Function(BuildContext context, MarketplaceItem item)? onItemTap;
 
   const ProductListPage({
     super.key,
     required this.title,
     required this.loader,
+    this.onItemTap,
   });
 
   @override
@@ -33,7 +37,7 @@ class ProductListPage extends StatelessWidget {
         loader: loader,
         marketplaceRepository: context.read<MarketplaceRepository>(),
       )..add(SimpleListRequested()),
-      child: SimpleListPage(title: title),
+      child: SimpleListPage(title: title, onItemTap: onItemTap),
     );
   }
 }
@@ -42,12 +46,14 @@ class SimpleListPage extends StatefulWidget {
   final String title;
   final Widget? header;
   final String emptyMessage;
+  final void Function(BuildContext context, MarketplaceItem item)? onItemTap;
 
   const SimpleListPage({
     super.key,
     required this.title,
     this.header,
     this.emptyMessage = 'Chưa có dữ liệu',
+    this.onItemTap,
   });
 
   @override
@@ -134,6 +140,7 @@ class _SimpleListPageState extends State<SimpleListPage> {
             title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
             trailing: item.trailing == null ? null : Text(item.trailing!),
+            onTap: widget.onItemTap != null ? () => widget.onItemTap!(context, item) : null,
           );
         },
       ),
@@ -851,8 +858,47 @@ class _AddressFormPageState extends State<AddressFormPage> {
   late final TextEditingController _addressCtrl;
   late final TextEditingController _fullAddressCtrl;
   late final TextEditingController _addressDetailCtrl;
+  late final TextEditingController _latitudeCtrl;
+  late final TextEditingController _longitudeCtrl;
   bool _isDefault = false;
   bool _isSubmitting = false;
+  String? _selectedProvince;
+  String? _selectedDistrict;
+
+  // Mock data for provinces and districts (user can extend with real API later)
+  final Map<String, List<String>> _provincesDistricts = {
+    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 2', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7', 'Quận 8', 'Quận 9', 'Quận 10', 'Quận 11', 'Quận 12', 'Quận Bình Tân', 'Quận Bình Thạnh', 'Quận Gò Vấp', 'Quận Phú Nhuận', 'Quận Tân Bình', 'Quận Tân Phú', 'Quận Thủ Đức', 'Huyện Bình Chánh', 'Huyện Cần Giờ', 'Huyện Củ Chi', 'Huyện Hóc Môn', 'Huyện Nhà Bè'],
+    'Hà Nội': ['Quận Ba Đình', 'Quận Hoàn Kiếm', 'Quận Tây Hồ', 'Quận Long Biên', 'Quận Đống Đa', 'Quận Hai Bà Trưng', 'Quận Hoàng Mai', 'Quận Thanh Xuân', 'Huyện Sóc Sơn', 'Huyện Đông Anh', 'Huyện Gia Lâm', 'Huyện thanh trì'],
+    'Đà Nẵng': ['Quận Hải Châu', 'Quận Cẩm Lệ', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn', 'Huyện Hoàng Sa'],
+  };
+
+  final List<Map<String, dynamic>> _presetLocations = const [
+    {
+      'name': 'Hồ Hoàn Kiếm, Hà Nội',
+      'lat': 21.0285,
+      'lng': 105.8542,
+    },
+    {
+      'name': 'Dinh Độc Lập, TP. Hồ Chí Minh',
+      'lat': 10.7770,
+      'lng': 106.6953,
+    },
+    {
+      'name': 'Cầu Rồng, Đà Nẵng',
+      'lat': 16.0613,
+      'lng': 108.2274,
+    },
+    {
+      'name': 'Chợ Bến Thành, TP. Hồ Chí Minh',
+      'lat': 10.7725,
+      'lng': 106.6980,
+    },
+    {
+      'name': 'Lăng Bác, Hà Nội',
+      'lat': 21.0368,
+      'lng': 105.8346,
+    },
+  ];
 
   bool get _isEditMode => widget.address != null;
 
@@ -861,10 +907,17 @@ class _AddressFormPageState extends State<AddressFormPage> {
     super.initState();
     _receiverNameCtrl = TextEditingController(text: widget.address?.receiverName ?? '');
     _phoneCtrl = TextEditingController(text: widget.address?.phone ?? '');
-    _addressCtrl = TextEditingController();
+    _addressCtrl = TextEditingController(text: widget.address?.address ?? '');
     _fullAddressCtrl = TextEditingController(text: widget.address?.fullAddress ?? '');
-    _addressDetailCtrl = TextEditingController();
+    _addressDetailCtrl = TextEditingController(text: widget.address?.addressDetail ?? '');
+    _latitudeCtrl = TextEditingController(text: widget.address?.latitude ?? '');
+    _longitudeCtrl = TextEditingController(text: widget.address?.longitude ?? '');
     _isDefault = widget.address?.isDefault ?? false;
+    // Set default province if needed
+    if (_provincesDistricts.isNotEmpty && _selectedProvince == null) {
+      _selectedProvince = _provincesDistricts.keys.first;
+      _selectedDistrict = _provincesDistricts[_selectedProvince]?.first;
+    }
   }
 
   @override
@@ -874,7 +927,78 @@ class _AddressFormPageState extends State<AddressFormPage> {
     _addressCtrl.dispose();
     _fullAddressCtrl.dispose();
     _addressDetailCtrl.dispose();
+    _latitudeCtrl.dispose();
+    _longitudeCtrl.dispose();
     super.dispose();
+  }
+
+  void _showLocationPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Text(
+                  'Chọn nhanh vị trí để lấy tọa độ',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _presetLocations.length,
+                  itemBuilder: (context, index) {
+                    final loc = _presetLocations[index];
+                    return ListTile(
+                      leading: const Icon(Icons.location_on, color: AppColors.primary),
+                      title: Text(loc['name'] as String),
+                      subtitle: Text('Vĩ độ: ${loc['lat']}, Kinh độ: ${loc['lng']}'),
+                      onTap: () {
+                        setState(() {
+                          _latitudeCtrl.text = loc['lat'].toString();
+                          _longitudeCtrl.text = loc['lng'].toString();
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openMapPicker(BuildContext context) async {
+    final double? initialLat = double.tryParse(_latitudeCtrl.text);
+    final double? initialLng = double.tryParse(_longitudeCtrl.text);
+
+    final LatLng? result = await Navigator.push<LatLng>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MapPickerScreen(
+          initialLat: initialLat,
+          initialLng: initialLng,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _latitudeCtrl.text = result.latitude.toString();
+        _longitudeCtrl.text = result.longitude.toString();
+      });
+    }
   }
 
   void _onSubmit() {
@@ -883,11 +1007,33 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final address = _addressCtrl.text.trim();
     final fullAddress = _fullAddressCtrl.text.trim();
     final addressDetail = _addressDetailCtrl.text.trim();
+    final latitude = _latitudeCtrl.text.trim();
+    final longitude = _longitudeCtrl.text.trim();
 
-    if (receiverName.isEmpty || phone.isEmpty || fullAddress.isEmpty) {
+    if (receiverName.isEmpty || phone.isEmpty || fullAddress.isEmpty || addressDetail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ'),
+          content: Text('Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedProvince == null || _selectedDistrict == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn Tỉnh/Thành phố và Quận/Huyện'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    if (latitude.isEmpty || longitude.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập Độ rộng (Lat) và Độ dài (Lng)'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -904,7 +1050,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
         receiverName: receiverName,
         phone: phone,
         isDefault: _isDefault,
-        addressDetail: addressDetail.isEmpty ? null : addressDetail,
+        addressDetail: addressDetail,
+        province: _selectedProvince!,
+        district: _selectedDistrict!,
+        latitude: latitude,
+        longitude: longitude,
       ));
     } else {
       bloc.add(AddressAdded(
@@ -913,7 +1063,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
         receiverName: receiverName,
         phone: phone,
         isDefault: _isDefault,
-        addressDetail: addressDetail.isEmpty ? null : addressDetail,
+        addressDetail: addressDetail,
+        province: _selectedProvince!,
+        district: _selectedDistrict!,
+        latitude: latitude,
+        longitude: longitude,
       ));
     }
   }
@@ -965,6 +1119,73 @@ class _AddressFormPageState extends State<AddressFormPage> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: AppSpacing.lg),
+                // Province dropdown
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    underline: SizedBox(),
+                    value: _selectedProvince,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    items: _provincesDistricts.keys.map((province) {
+                      return DropdownMenuItem(
+                        value: province,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: Text(province),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedProvince = value;
+                          _selectedDistrict = _provincesDistricts[value]?.first;
+                        });
+                      }
+                    },
+                    hint: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text('Chọn Tỉnh/Thành phố *'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                // District dropdown
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    underline: SizedBox(),
+                    value: _selectedDistrict,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    items: (_provincesDistricts[_selectedProvince] ?? []).map((district) {
+                      return DropdownMenuItem(
+                        value: district,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: Text(district),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedDistrict = value);
+                      }
+                    },
+                    hint: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text('Chọn Quận/Huyện *'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
                 AppTextField(
                   controller: _fullAddressCtrl,
                   label: 'Địa chỉ đầy đủ *',
@@ -979,8 +1200,61 @@ class _AddressFormPageState extends State<AddressFormPage> {
                 const SizedBox(height: AppSpacing.lg),
                 AppTextField(
                   controller: _addressDetailCtrl,
-                  label: 'Chi tiết thêm (tùy chọn)',
+                  label: 'Chi tiết thêm *',
                   hint: 'VD: Tầng 3, phòng 301',
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Tọa độ GPS *',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _openMapPicker(context),
+                          icon: const Icon(Icons.map, size: 16),
+                          label: const Text('Chọn từ bản đồ'),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            foregroundColor: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        TextButton.icon(
+                          onPressed: () => _showLocationPicker(context),
+                          icon: const Icon(Icons.list, size: 16),
+                          label: const Text('Chọn nhanh'),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            foregroundColor: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                // Latitude input
+                AppTextField(
+                  controller: _latitudeCtrl,
+                  label: 'Vĩ độ (Latitude) *',
+                  hint: 'VD: 10.7769',
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                // Longitude input
+                AppTextField(
+                  controller: _longitudeCtrl,
+                  label: 'Kinh độ (Longitude) *',
+                  hint: 'VD: 106.7009',
+                  keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 SwitchListTile(
@@ -1016,203 +1290,73 @@ class NewsPage extends StatelessWidget {
     return ProductListPage(
       title: 'Tin tức',
       loader: (index, count) => repository.getNews(index: index, count: count),
-    );
-  }
-}
-
-class CheckoutPage extends StatelessWidget {
-  final ProductModel product;
-
-  const CheckoutPage({super.key, required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => CheckoutBloc(
-        marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(CheckoutRequested()),
-      child: _CheckoutView(product: product),
-    );
-  }
-}
-
-class _CheckoutView extends StatefulWidget {
-  final ProductModel product;
-
-  const _CheckoutView({required this.product});
-
-  @override
-  State<_CheckoutView> createState() => _CheckoutViewState();
-}
-
-class _CheckoutViewState extends State<_CheckoutView> {
-  int _quantity = 1;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<CheckoutBloc, CheckoutState>(
-      listener: (context, state) {
-        final message = state.errorMessage ?? state.successMessage;
-        if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-        }
-        if (state.successMessage != null) {
-          Navigator.pop(context);
-        }
-      },
-      builder: (context, state) {
-        return LoadingOverlay(
-          isLoading: state.isSubmitting,
-          child: Scaffold(
-            appBar: AppBar(title: const Text('Thanh toán')),
-            bottomNavigationBar: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: AppButton(
-                  label: 'Đặt hàng',
-                  icon: Icons.payment,
-                  onPressed: () {
-                    context.read<CheckoutBloc>().add(
-                      CheckoutSubmitted(
-                        productId: widget.product.id,
-                        quantity: _quantity,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            body: _buildBody(context, state),
-          ),
+      onItemTap: (context, item) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => NewsDetailPage(id: item.id)),
         );
       },
     );
   }
-
-  Widget _buildBody(BuildContext context, CheckoutState state) {
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (state.errorMessage != null && state.addresses.isEmpty) {
-      return ErrorState(
-        message: state.errorMessage!,
-        onRetry: () => context.read<CheckoutBloc>().add(CheckoutRequested()),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        SectionHeader(
-          title: 'Địa chỉ nhận hàng',
-          actionLabel: state.addresses.isNotEmpty ? 'Thêm' : null,
-          onActionTap: state.addresses.isNotEmpty ? () => _openAddressForm(context) : null,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (state.addresses.isEmpty) ...[
-          const EmptyState(
-            title: 'Chưa có địa chỉ',
-            message: 'Bạn cần thêm địa chỉ trước khi đặt hàng.',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: 'Thêm địa chỉ mới',
-            icon: Icons.add_location_alt,
-            onPressed: () => _openAddressForm(context),
-          ),
-        ] else
-          ...state.addresses.map(
-                (address) => ListTile(
-              onTap: () {
-                context.read<CheckoutBloc>().add(CheckoutAddressSelected(address));
-              },
-              title: Text(address.title),
-              subtitle: Text(address.subtitle),
-              trailing: Icon(
-                state.selectedAddress?.id == address.id
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: state.selectedAddress?.id == address.id
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
-              ),
-            ),
-          ),
-        const SizedBox(height: AppSpacing.lg),
-        const SectionHeader(title: 'Sản phẩm'),
-        const SizedBox(height: AppSpacing.sm),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
-          title: Text(widget.product.title),
-          subtitle: PriceText(price: widget.product.price),
-          trailing: _QuantityStepper(
-            value: _quantity,
-            onChanged: (value) => setState(() => _quantity = value),
-          ),
-        ),
-        const Divider(height: 32),
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Tổng thanh toán',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            PriceText(price: widget.product.price * _quantity),
-          ],
-        ),
-      ],
-    );
-  }
-
-  void _openAddressForm(BuildContext context) async {
-    final bloc = BlocProvider.of<CheckoutBloc>(context);
-    final repository = context.read<MarketplaceRepository>();
-    final addressBloc = AddressBloc(marketplaceRepository: repository);
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: addressBloc,
-          child: const AddressFormPage(),
-        ),
-      ),
-    );
-    addressBloc.close();
-    if (result == true && context.mounted) {
-      bloc.add(CheckoutRequested());
-    }
-  }
 }
 
-class _QuantityStepper extends StatelessWidget {
-  final int value;
-  final ValueChanged<int> onChanged;
+class NewsDetailPage extends StatelessWidget {
+  final String id;
 
-  const _QuantityStepper({
-    required this.value,
-    required this.onChanged,
-  });
+  const NewsDetailPage({super.key, required this.id});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          tooltip: 'Giảm',
-          onPressed: value <= 1 ? null : () => onChanged(value - 1),
-          icon: const Icon(Icons.remove_circle_outline),
-        ),
-        Text('$value'),
-        IconButton(
-          tooltip: 'Tăng',
-          onPressed: () => onChanged(value + 1),
-          icon: const Icon(Icons.add_circle_outline),
-        ),
-      ],
+    final repository = context.read<MarketplaceRepository>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tin tức')),
+      body: FutureBuilder<MarketplaceItem?>(
+        future: repository.getNewsDetail(id),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return ErrorState(message: snapshot.error.toString(), onRetry: () {});
+          }
+          final item = snapshot.data;
+          if (item == null) {
+            return const Center(child: Text('Không tìm thấy tin tức'));
+          }
+
+          // item.title and item.subtitle (content)
+          String content = item.subtitle;
+          String title = item.title;
+          String? trailing = item.trailing;
+
+          String timeText = '';
+          if (trailing != null && trailing.isNotEmpty) {
+            final ts = int.tryParse(trailing);
+            if (ts != null) {
+              final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
+              timeText = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+            } else {
+              timeText = trailing;
+            }
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                if (timeText.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(timeText, style: const TextStyle(color: AppColors.textSecondary)),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                Text(content),
+              ],
+            ),
+          );
+        },
+      ),
     );
-  }
-}
+  }}
+

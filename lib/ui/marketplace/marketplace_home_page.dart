@@ -255,7 +255,7 @@ class _HomeHeader extends StatelessWidget {
                                 vertical: 1,
                               ),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFEE4D2D),
+                                color: Color.fromARGB(255, 255, 0, 0),
                                 borderRadius: BorderRadius.all(Radius.circular(8)),
                               ),
                               constraints: const BoxConstraints(minWidth: 16),

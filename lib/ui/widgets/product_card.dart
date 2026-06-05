@@ -1,11 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 import '../theme/app_text_styles.dart';
-import 'animated_like_button.dart';
 import 'price_text.dart';
 import 'rating_stars.dart';
 import 'shimmer_box.dart';
@@ -36,13 +34,11 @@ class ProductCardData {
 class ProductCard extends StatelessWidget {
   final ProductCardData product;
   final VoidCallback? onTap;
-  final VoidCallback? onLikeTap;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
-    this.onLikeTap,
   });
 
   @override
@@ -66,7 +62,7 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ProductImage(product: product, onLikeTap: onLikeTap),
+            _ProductImage(product: product),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.sm),
               child: Column(
@@ -94,11 +90,9 @@ class ProductCard extends StatelessWidget {
 
 class _ProductImage extends StatelessWidget {
   final ProductCardData product;
-  final VoidCallback? onLikeTap;
 
   const _ProductImage({
     required this.product,
-    this.onLikeTap,
   });
 
   @override
@@ -119,31 +113,19 @@ class _ProductImage extends StatelessWidget {
                   )
                 : Hero(
                     tag: 'product-image-${product.id}',
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl,
+                    child: Image.network(
+                      imageUrl,
                       fit: BoxFit.cover,
-                      placeholder: (_, _) => const ShimmerBox(height: double.infinity),
-                      errorWidget: (_, _, _) => const ColoredBox(
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const ShimmerBox(height: double.infinity);
+                      },
+                      errorBuilder: (context, error, stackTrace) => const ColoredBox(
                         color: AppColors.border,
                         child: Icon(Icons.broken_image_outlined),
                       ),
                     ),
                   ),
-          ),
-        ),
-        Positioned(
-          top: AppSpacing.xs,
-          right: AppSpacing.xs,
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.white70,
-              shape: BoxShape.circle,
-            ),
-            child: AnimatedLikeButton(
-              isLiked: product.isLiked,
-              onTap: onLikeTap,
-              size: 20,
-            ),
           ),
         ),
       ],

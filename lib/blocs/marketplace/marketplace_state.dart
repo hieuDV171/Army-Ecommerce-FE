@@ -330,6 +330,9 @@ class CheckoutState extends Equatable {
   final bool isSubmitting;
   final String? errorMessage;
   final String? successMessage;
+  final num shippingFee;
+  final int? leatime;
+  final int? productId;
 
   const CheckoutState({
     this.addresses = const [],
@@ -338,6 +341,9 @@ class CheckoutState extends Equatable {
     this.isSubmitting = false,
     this.errorMessage,
     this.successMessage,
+    this.shippingFee = 0,
+    this.leatime,
+    this.productId,
   });
 
   CheckoutState copyWith({
@@ -347,6 +353,9 @@ class CheckoutState extends Equatable {
     bool? isSubmitting,
     String? errorMessage,
     String? successMessage,
+    num? shippingFee,
+    int? leatime,
+    int? productId,
     bool clearMessages = false,
   }) {
     return CheckoutState(
@@ -356,6 +365,9 @@ class CheckoutState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
       successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      shippingFee: shippingFee ?? this.shippingFee,
+      leatime: leatime ?? this.leatime,
+      productId: productId ?? this.productId,
     );
   }
 
@@ -367,6 +379,9 @@ class CheckoutState extends Equatable {
     isSubmitting,
     errorMessage,
     successMessage,
+    shippingFee,
+    leatime,
+    productId,
   ];
 }
 

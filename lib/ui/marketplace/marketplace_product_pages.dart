@@ -21,6 +21,7 @@ import '../../repositories/auth_repository.dart';
 import '../../repositories/block_repository.dart';
 import '../../repositories/follow_repository.dart';
 import '../../repositories/marketplace_repository.dart';
+import '../../core/services/cart_manager.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
@@ -64,8 +65,28 @@ class ProductDetailPage extends StatelessWidget {
   }
 }
 
-class _ProductDetailView extends StatelessWidget {
+class _ProductDetailView extends StatefulWidget {
   const _ProductDetailView();
+
+  @override
+  State<_ProductDetailView> createState() => _ProductDetailViewState();
+}
+
+class _ProductDetailViewState extends State<_ProductDetailView> {
+  late final PageController _pageController;
+  int _currentImageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   List<String> _collectDisplayImages(ProductModel product) {
     if (product.images.isNotEmpty) {
@@ -147,16 +168,9 @@ class _ProductDetailView extends StatelessWidget {
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: AppButton(
-                              label: 'Mua ngay',
-                              icon: Icons.flash_on,
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CheckoutPage(product: product),
-                                  ),
-                                );
-                              },
+                              label: 'Thêm giỏ hàng',
+                              icon: Icons.add_shopping_cart,
+                              onPressed: () => _showAddToCartSheet(context, product),
                             ),
                           ),
                         ],
@@ -190,7 +204,6 @@ class _ProductDetailView extends StatelessWidget {
     }
 
     final images = _collectDisplayImages(product);
-    final primaryImage = images.isEmpty ? null : images.first;
     final sellerName = product.seller?.name ?? product.sellerName ?? 'Người bán';
     final sellerScore = product.seller?.score ?? (product.rating?.toStringAsFixed(1));
     final sellerListing = product.seller?.listing ?? (product.soldCount?.toString());
@@ -210,17 +223,55 @@ class _ProductDetailView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 96),
       children: [
-        AspectRatio(
-          aspectRatio: 1,
-          child: Hero(
-            tag: 'product-image-${product.id}',
-            child: primaryImage == null
-                ? const ColoredBox(
-                    color: AppColors.border,
-                    child: Icon(Icons.image_outlined, size: 56),
-                  )
-                : Image.network(primaryImage, fit: BoxFit.cover),
-          ),
+        Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: Hero(
+                tag: 'product-image-${product.id}',
+                child: images.isEmpty
+                    ? const ColoredBox(
+                        color: AppColors.border,
+                        child: Icon(Icons.image_outlined, size: 56),
+                      )
+                    : PageView.builder(
+                        controller: _pageController,
+                        itemCount: images.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return Image.network(images[index], fit: BoxFit.cover);
+                        },
+                      ),
+              ),
+            ),
+            if (images.length > 1)
+              Positioned(
+                bottom: AppSpacing.sm,
+                right: AppSpacing.md,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Text(
+                    '${_currentImageIndex + 1}/${images.length}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
         if (images.length > 1)
           SizedBox(
@@ -228,20 +279,40 @@ class _ProductDetailView extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
               scrollDirection: Axis.horizontal,
+              itemCount: images.length,
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
               itemBuilder: (context, index) {
                 final image = images[index];
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  child: Image.network(
-                    image,
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
+                final isSelected = index == _currentImageIndex;
+                return GestureDetector(
+                  onTap: () {
+                    _pageController.animateToPage(
+                      index,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.sm + 2),
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      child: Image.network(
+                        image,
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 );
               },
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
-              itemCount: images.length,
             ),
           ),
         Padding(
@@ -428,6 +499,8 @@ class _ProductDetailView extends StatelessWidget {
                 ),
               ],
               const Divider(height: 32),
+              _RatingsSection(productId: product.id),
+              const SizedBox(height: AppSpacing.lg),
               SectionHeader(
                 title: 'Bình luận',
                 actionLabel: 'Viết',
@@ -449,6 +522,186 @@ class _ProductDetailView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showAddToCartSheet(BuildContext context, ProductModel product) {
+    ProductSizeModel? selectedSize;
+    int quantity = 1;
+
+    AppBottomSheet.show<void>(
+      context: context,
+      child: StatefulBuilder(
+        builder: (context, setState) {
+          final firstImg = product.images.isNotEmpty
+              ? product.images.first.url
+              : (product.imageUrls.isNotEmpty ? product.imageUrls.first : null);
+
+          final subtotal = product.price * quantity;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Header
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    child: firstImg != null && firstImg.isNotEmpty
+                        ? Image.network(
+                            firstImg,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            width: 80,
+                            height: 80,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.inventory_2_outlined, color: Colors.grey),
+                          ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.title,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        PriceText(price: product.price),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+
+              // Variation/Size Section
+              if (product.sizes.isNotEmpty) ...[
+                const Text(
+                  'Chọn phân loại / kích thước:',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: product.sizes.map((size) {
+                    final isSelected = selectedSize?.id == size.id;
+                    return ChoiceChip(
+                      label: Text(size.name.isEmpty ? size.id : size.name),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                      onSelected: (selected) {
+                        setState(() {
+                          selectedSize = selected ? size : null;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+
+              // Quantity Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Số lượng:',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: quantity <= 1
+                            ? null
+                            : () => setState(() => quantity--),
+                        icon: const Icon(Icons.remove_circle_outline),
+                      ),
+                      Text(
+                        '$quantity',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        onPressed: () => setState(() => quantity++),
+                        icon: const Icon(Icons.add_circle_outline),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+
+              // Confirm Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Tổng cộng:',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      PriceText(price: subtotal),
+                    ],
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(
+                    child: AppButton(
+                      label: 'Thêm vào giỏ hàng',
+                      icon: Icons.add_shopping_cart,
+                      onPressed: () {
+                        if (product.sizes.isNotEmpty && selectedSize == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Vui lòng chọn phân loại / kích thước'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Appending selected size/variation name to the product ID to distinguish it in the cart
+                        final cartProductId = selectedSize != null
+                            ? "${product.id}-${selectedSize!.id}"
+                            : product.id;
+                        final displayTitle = selectedSize != null
+                            ? "${product.title} (${selectedSize!.name.isEmpty ? selectedSize!.id : selectedSize!.name})"
+                            : product.title;
+
+                        CartManager().addToCart(
+                          cartProductId,
+                          displayTitle,
+                          product.price,
+                          firstImg,
+                          quantity: quantity,
+                        );
+
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Đã thêm $quantity sản phẩm vào giỏ hàng'),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -531,6 +784,143 @@ class _MetaRow extends StatelessWidget {
           Expanded(child: Text(value)),
         ],
       ),
+    );
+  }
+}
+
+class _RatingsSection extends StatefulWidget {
+  final String productId;
+
+  const _RatingsSection({required this.productId});
+
+  @override
+  State<_RatingsSection> createState() => _RatingsSectionState();
+}
+
+class _RatingsSectionState extends State<_RatingsSection> {
+  bool _isLoading = true;
+  String? _error;
+  List<RateModel> _rates = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRates();
+  }
+
+  Future<void> _loadRates() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      _rates = [];
+    });
+    final repo = context.read<MarketplaceRepository>();
+    try {
+      final rates = await repo.getRates(productId: widget.productId, index: 0, count: 20);
+      if (!mounted) return;
+      setState(() {
+        _rates = rates;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _openWriteSheet() {
+    final levelNotifier = ValueNotifier<int>(5);
+    final controller = TextEditingController();
+    AppBottomSheet.show<void>(
+      context: context,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Viết đánh giá', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AppSpacing.sm),
+          ValueListenableBuilder<int>(
+            valueListenable: levelNotifier,
+            builder: (context, level, _) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(5, (i) {
+                final star = i + 1;
+                return IconButton(
+                  icon: Icon(
+                    level >= star ? Icons.star_rounded : Icons.star_border_rounded,
+                    color: AppColors.warning,
+                  ),
+                  onPressed: () => levelNotifier.value = star,
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(controller: controller, label: 'Nội dung đánh giá'),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: 'Gửi đánh giá',
+            onPressed: () async {
+              final authState = context.read<AuthBloc>().state;
+              final userId = authState is AuthSuccess ? authState.user.id : '';
+              if (userId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bạn cần đăng nhập để đánh giá')));
+                return;
+              }
+              final level = levelNotifier.value;
+              final content = controller.text.trim();
+              Navigator.pop(context);
+              try {
+                await context.read<MarketplaceRepository>().setRates(
+                      userId: userId,
+                      level: level,
+                      content: content,
+                      productId: widget.productId,
+                    );
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi đánh giá')));
+                await _loadRates();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+              } finally {
+                if (mounted) {}
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(title: 'Đánh giá', actionLabel: 'Viết', onActionTap: _openWriteSheet),
+        const SizedBox(height: AppSpacing.sm),
+        if (_isLoading) const Center(child: CircularProgressIndicator())
+        else if (_error != null) ErrorState(message: _error!, onRetry: _loadRates)
+        else if (_rates.isEmpty)
+          const Text('Chưa có đánh giá.')
+        else
+        ..._rates.map((r) => ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              title: Text(r.author),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RatingStars(rating: r.level.toDouble()),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(r.content),
+                ],
+              ),
+            )),
+      ],
     );
   }
 }
@@ -1042,6 +1432,11 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   String? _error;
   UserModel? _user;
 
+  String get _sellerUserId {
+    final loadedUserId = _user?.id;
+    return loadedUserId != null && loadedUserId.isNotEmpty ? loadedUserId : widget.userId;
+  }
+
   // BLoC follow, block và chat — tạo riêng cho màn hình này
   late final FollowBloc _followBloc;
   late final BlockBloc _blockBloc;
@@ -1084,7 +1479,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         return;
       }
 
-      final response = await authRepo.getUserInfo(token: token, userId: widget.userId);
+      final response = await authRepo.getUserInfo(token: token, userId: _sellerUserId);
       if (response.data != null) {
         setState(() {
           _user = response.data;
@@ -1110,7 +1505,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   void _openSellerListings() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => SellerListingsPage(userId: widget.userId)),
+      MaterialPageRoute(builder: (_) => SellerListingsPage(userId: _sellerUserId)),
     );
   }
 
@@ -1121,7 +1516,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     } else {
       setState(() => _isFollowed = true);
       _followBloc.add(FollowUserRequested(
-        followeeId: widget.userId,
+        followeeId: _sellerUserId,
         username: widget.sellerName,
         action: 'follow',
       ));
@@ -1152,7 +1547,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     if (confirmed == true) {
       setState(() => _isFollowed = false);
       _followBloc.add(FollowUserRequested(
-        followeeId: widget.userId,
+        followeeId: _sellerUserId,
         username: widget.sellerName,
         action: 'unfollow',
       ));
@@ -1194,7 +1589,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     if (confirmed == true) {
       setState(() => _isBlocked = true);
       _blockBloc.add(BlockUserRequested(
-        userId: widget.userId,
+        userId: _sellerUserId,
         username: widget.sellerName,
         action: 'block',
       ));
@@ -1227,7 +1622,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     if (confirmed == true) {
       setState(() => _isBlocked = false);
       _blockBloc.add(BlockUserRequested(
-        userId: widget.userId,
+        userId: _sellerUserId,
         username: widget.sellerName,
         action: 'unblock',
       ));
@@ -1245,7 +1640,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         builder: (_) => BlocProvider.value(
           value: _chatBloc,
           child: ChatScreen(
-            partnerId: widget.userId,
+            partnerId: _sellerUserId,
             partnerUsername: _user?.username ?? widget.sellerName,
             partnerAvatar: _user?.avatar ?? widget.avatarUrl,
             currentUserId: currentUserId,
@@ -1411,35 +1806,36 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 }
 
 class CheckoutPage extends StatelessWidget {
-  final ProductModel product;
+  final List<CartItem> items;
 
-  const CheckoutPage({super.key, required this.product});
+  const CheckoutPage({super.key, required this.items});
 
   @override
   Widget build(BuildContext context) {
+    final firstItemId = items.isNotEmpty ? int.tryParse(items.first.productId.split('-')[0]) : null;
     return BlocProvider(
       create: (context) => CheckoutBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(CheckoutRequested()),
-      child: _CheckoutView(product: product),
+      )..add(CheckoutRequested(productId: firstItemId)),
+      child: _CheckoutView(items: items),
     );
   }
 }
 
 class _CheckoutView extends StatefulWidget {
-  final ProductModel product;
+  final List<CartItem> items;
 
-  const _CheckoutView({required this.product});
+  const _CheckoutView({required this.items});
 
   @override
   State<_CheckoutView> createState() => _CheckoutViewState();
 }
 
 class _CheckoutViewState extends State<_CheckoutView> {
-  int _quantity = 1;
-
   @override
   Widget build(BuildContext context) {
+    final subtotal = widget.items.fold<num>(0, (sum, item) => sum + item.price * item.quantity);
+
     return BlocConsumer<CheckoutBloc, CheckoutState>(
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
@@ -1447,10 +1843,12 @@ class _CheckoutViewState extends State<_CheckoutView> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
         }
         if (state.successMessage != null) {
+          CartManager().clearCart();
           Navigator.pop(context);
         }
       },
       builder: (context, state) {
+        final total = subtotal + state.shippingFee;
         return LoadingOverlay(
           isLoading: state.isSubmitting,
           child: Scaffold(
@@ -1464,29 +1862,29 @@ class _CheckoutViewState extends State<_CheckoutView> {
                   onPressed: () {
                     context.read<CheckoutBloc>().add(
                           CheckoutSubmitted(
-                            productId: widget.product.id,
-                            quantity: _quantity,
+                            items: widget.items,
                           ),
                         );
                   },
                 ),
               ),
             ),
-            body: _buildBody(context, state),
+            body: _buildBody(context, state, subtotal, total),
           ),
         );
       },
     );
   }
 
-  Widget _buildBody(BuildContext context, CheckoutState state) {
+  Widget _buildBody(BuildContext context, CheckoutState state, num subtotal, num total) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.errorMessage != null && state.addresses.isEmpty) {
+      final firstItemId = widget.items.isNotEmpty ? int.tryParse(widget.items.first.productId) : null;
       return ErrorState(
         message: state.errorMessage!,
-        onRetry: () => context.read<CheckoutBloc>().add(CheckoutRequested()),
+        onRetry: () => context.read<CheckoutBloc>().add(CheckoutRequested(productId: firstItemId)),
       );
     }
 
@@ -1521,15 +1919,32 @@ class _CheckoutViewState extends State<_CheckoutView> {
         const SizedBox(height: AppSpacing.lg),
         const SectionHeader(title: 'Sản phẩm'),
         const SizedBox(height: AppSpacing.sm),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: _CheckoutProductAvatar(product: widget.product),
-          title: Text(widget.product.title),
-          subtitle: PriceText(price: widget.product.price),
-          trailing: _QuantityStepper(
-            value: _quantity,
-            onChanged: (value) => setState(() => _quantity = value),
-          ),
+        ...widget.items.map((item) => _CheckoutItemTile(item: item)),
+        const Divider(height: 32),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Tạm tính'),
+            PriceText(price: subtotal),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Phí vận chuyển'),
+                if (state.leatime != null)
+                  Text(
+                    'Dự kiến giao: ${state.leatime} ngày',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+              ],
+            ),
+            PriceText(price: state.shippingFee),
+          ],
         ),
         const Divider(height: 32),
         Row(
@@ -1540,7 +1955,7 @@ class _CheckoutViewState extends State<_CheckoutView> {
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
-            PriceText(price: widget.product.price * _quantity),
+            PriceText(price: total),
           ],
         ),
       ],
@@ -1548,51 +1963,26 @@ class _CheckoutViewState extends State<_CheckoutView> {
   }
 }
 
-class _CheckoutProductAvatar extends StatelessWidget {
-  final ProductModel product;
+class _CheckoutItemTile extends StatelessWidget {
+  final CartItem item;
 
-  const _CheckoutProductAvatar({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    final imageUrl = product.images.isNotEmpty
-        ? product.images.first.url
-        : (product.imageUrls.isNotEmpty ? product.imageUrls.first : null);
-
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return const CircleAvatar(child: Icon(Icons.inventory_2_outlined));
-    }
-
-    return CircleAvatar(backgroundImage: NetworkImage(imageUrl));
-  }
-}
-
-class _QuantityStepper extends StatelessWidget {
-  final int value;
-  final ValueChanged<int> onChanged;
-
-  const _QuantityStepper({
-    required this.value,
-    required this.onChanged,
-  });
+  const _CheckoutItemTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          tooltip: 'Giảm',
-          onPressed: value <= 1 ? null : () => onChanged(value - 1),
-          icon: const Icon(Icons.remove_circle_outline),
-        ),
-        Text('$value'),
-        IconButton(
-          tooltip: 'Tăng',
-          onPressed: () => onChanged(value + 1),
-          icon: const Icon(Icons.add_circle_outline),
-        ),
-      ],
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundImage: item.imageUrl != null && item.imageUrl!.isNotEmpty
+            ? NetworkImage(item.imageUrl!)
+            : null,
+        child: item.imageUrl == null || item.imageUrl!.isEmpty
+            ? const Icon(Icons.inventory_2_outlined)
+            : null,
+      ),
+      title: Text(item.title),
+      subtitle: PriceText(price: item.price),
+      trailing: Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
     );
   }
 }

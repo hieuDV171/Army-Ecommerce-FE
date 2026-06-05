@@ -1,3 +1,5 @@
+import 'package:army_ecommerce/core/services/session_manager.dart';
+
 import '../../core/constants/api_paths.dart';
 import '../../models/marketplace_models.dart';
 import '../../repositories/marketplace_repository.dart';
@@ -149,6 +151,30 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
+  Future<List<RateModel>> getRates({String? userId, String? productId, int? level, int index = 0, int count = 20}) async {
+    final request = <String, dynamic>{'index': index, 'count': count};
+    if (userId != null && userId.isNotEmpty) request['user_id'] = _idValue(userId);
+    if (productId != null && productId.isNotEmpty) request['product_id'] = _idValue(productId);
+    if (level != null) request['level'] = level;
+
+    final response = await remoteDataSource.post('/api/get_rates', data: request);
+    return parseListFromData(response.data, RateModel.fromJson);
+  }
+
+  @override
+  Future<void> setRates({required String userId, required int level, required String content, String? productId, String? purchaseId}) {
+    final request = <String, dynamic>{
+      'user_id': _idValue(userId),
+      'level': level,
+      'content': content,
+    };
+    if (productId != null && productId.isNotEmpty) request['product_id'] = _idValue(productId);
+    if (purchaseId != null && purchaseId.isNotEmpty) request['purchase_id'] = _idValue(purchaseId);
+
+    return remoteDataSource.post('/api/set_rates', data: request);
+  }
+
+  @override
   Future<List<MarketplaceItem>> getSavedSearches({int index = 0, int count = 20}) async {
     final response = await remoteDataSource.post(
       ApiPaths.savedSearches,
@@ -168,7 +194,14 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       '/News/list_news',
       data: {'index': index, 'count': count},
     );
-    return parseListFromData(response.data, MarketplaceItem.fromJson);
+
+    final raw = response.data;
+    // Some backends return { list_news: [...], total: N } inside data
+    if (raw is Map && raw['list_news'] is List) {
+      return parseListFromData(raw['list_news'], MarketplaceItem.fromJson);
+    }
+
+    return parseListFromData(raw, MarketplaceItem.fromJson);
   }
 
   @override
@@ -187,12 +220,14 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     String keyword = '',
     String categoryId = '0',
   }) async {
+    final token = await SessionManager.getToken();
     final response = await remoteDataSource.getUserListings(
       userId: userId,
       index: index,
       count: count,
       keyword: keyword.isEmpty ? null : keyword,
       categoryId: categoryId == '0' ? null : categoryId,
+      token: token,
     );
     return parseListFromData(response.data, ProductModel.fromJson);
   }
@@ -204,18 +239,27 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Future<void> addAddress(Map<String, dynamic> data) {
-    return remoteDataSource.post('/order/add_order_address', data: data);
+  Future<void> addAddress(Map<String, dynamic> data) async {
+    final response = await remoteDataSource.post('/order/add_order_address', data: data);
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Lỗi thêm địa chỉ (Mã lỗi ${response.code})');
+    }
   }
 
   @override
-  Future<void> updateAddress(String id, Map<String, dynamic> data) {
-    return remoteDataSource.patch('/order/update/$id', data: data);
+  Future<void> updateAddress(String id, Map<String, dynamic> data) async {
+    final response = await remoteDataSource.patch('/order/update/$id', data: data);
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Lỗi cập nhật địa chỉ (Mã lỗi ${response.code})');
+    }
   }
 
   @override
-  Future<void> deleteAddress(String id) {
-    return remoteDataSource.delete('/order/delete/$id');
+  Future<void> deleteAddress(String id) async {
+    final response = await remoteDataSource.delete('/order/delete/$id');
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Lỗi xóa địa chỉ (Mã lỗi ${response.code})');
+    }
   }
 
   @override
@@ -227,8 +271,8 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     final response = await remoteDataSource.post(
       '/order/get_list_purchases',
       data: {
-        'index': index.toString(),
-        'count': count.toString(),
+        'index': index,
+        'count': count,
         if (state != null && state.isNotEmpty) 'state': state,
       },
     );
@@ -244,9 +288,36 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Future<void> cancelOrder(String id, {int? reason}) {
-    final request = <String, dynamic>{'id': id};
-    if (reason != null) request['reason'] = reason;
+  Future<ShipFeeModel?> getShipFee(int productId, {int? addressId}) async {
+    final response = await remoteDataSource.post(
+      '/order/get_ship_fee',
+      data: {
+        'product_id': productId,
+        'address_id': ?addressId,
+      },
+    );
+    final map = parseMapFromData(response.data);
+    if (map.isEmpty) return null;
+    return ShipFeeModel.fromJson(map);
+  }
+
+  @override
+  Future<void> createOrder(Map<String, dynamic> data) {
+    return remoteDataSource.post('/order/create_order', data: data);
+  }
+
+  @override
+  Future<void> editOrder(String purchaseId, Map<String, dynamic> data) {
+    final request = <String, dynamic>{'id': purchaseId, ...data};
+    return remoteDataSource.post('/order/edit_purchase', data: request);
+  }
+
+  @override
+  Future<void> cancelOrder(String id, {String? reason}) {
+    final request = <String, dynamic>{
+      'id': id,
+      'reason': reason ?? '',
+    };
 
     return remoteDataSource.post(
       '/order/cancel_order',
@@ -263,6 +334,13 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
+  Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId}) {
+    final request = <String, dynamic>{'purchase_id': purchaseId};
+    if (buyerId != null) request['buyer_id'] = buyerId;
+    return remoteDataSource.post('/order/seller_mark_as_shipped', data: request);
+  }
+
+  @override
   Future<void> refundOrder(String purchaseId, {String? reason}) {
     final request = <String, dynamic>{'purchase_id': purchaseId};
     if (reason != null) request['reason'] = reason;
@@ -271,6 +349,22 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       '/order/refund_order',
       data: request,
     );
+  }
+
+  @override
+  Future<void> setAcceptBuyer(String purchaseId, String buyerId, bool accept) {
+    final request = <String, dynamic>{
+      'purchase_id': purchaseId,
+      'buyer_id': buyerId,
+      'accept': accept ? 1 : 0,
+    };
+    return remoteDataSource.post('/order/set_accept_buyer', data: request);
+  }
+
+  @override
+  Future<List<OrderTimelineModel>> getOrderTimeline(String purchaseId) async {
+    final response = await remoteDataSource.post('/order/get_order_timeline', data: {'purchase_id': purchaseId});
+    return parseListFromData(response.data, OrderTimelineModel.fromJson);
   }
 
   @override
