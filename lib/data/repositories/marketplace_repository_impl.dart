@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 
 import '../../core/constants/api_paths.dart';
@@ -302,6 +303,22 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
+  Future<List<ShipFromModel>> getShipFrom({
+    required String parentId,
+    int? level,
+    int index = 0,
+    int count = 20,
+  }) async {
+    final response = await remoteDataSource.getShipFrom(
+      parentId: parentId,
+      level: level,
+      index: index,
+      count: count,
+    );
+    return parseListFromData(response.data, ShipFromModel.fromJson);
+  }
+
+  @override
   Future<void> createOrder(Map<String, dynamic> data) {
     return remoteDataSource.post('/order/create_order', data: data);
   }
@@ -482,6 +499,43 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<void> postAction(String path, Map<String, dynamic> data) {
     return remoteDataSource.post(path, data: data);
+  }
+
+  // ─── STUB: BE chưa implement ───────────────────────────────────────────────
+
+  /// [STUB] get_reward_history — endpoint chưa tồn tại trên BE.
+  /// Khi BE sẵn sàng: thay bằng gọi remoteDataSource.post('/rewards/get_reward_history', ...)
+  @override
+  Future<List<RewardHistoryModel>> getRewardHistory({
+    int index = 0,
+    int count = 20,
+  }) async {
+    throw UnimplementedError(
+      'get_reward_history: API chưa được cài đặt phía Backend.',
+    );
+  }
+
+  /// [STUB] create_reward_appeal — endpoint chưa tồn tại trên BE.
+  /// Khi BE sẵn sàng: thay bằng gọi remoteDataSource.post('/rewards/create_reward_appeal', ...)
+  @override
+  Future<RewardAppealModel> createRewardAppeal({
+    required String rewardId,
+    String? reason,
+  }) async {
+    throw UnimplementedError(
+      'create_reward_appeal: API chưa được cài đặt phía Backend.',
+    );
+  }
+
+  /// [STUB] uploadVideo — endpoint chưa tồn tại trên BE.
+  /// Khi BE sẵn sàng: thay bằng gọi remoteDataSource.post('/media/upload_video', ...)
+  @override
+  Future<UploadVideoResponseModel> uploadVideo({
+    required File videoFile,
+  }) async {
+    throw UnimplementedError(
+      'upload_video: API chưa được cài đặt phía Backend.',
+    );
   }
 
   Object _idValue(String value) {

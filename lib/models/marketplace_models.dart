@@ -742,37 +742,52 @@ class NotificationModel {
 }
 
 class WalletHistoryModel {
-  final String id;
+  final int historyId;
+  final String objectId;
   final String title;
-  final num amount;
-  final String? createdAt;
-  final bool income;
+  final String detail;
+  final num balance;
+  final String date;
+  final String type;
 
   const WalletHistoryModel({
-    required this.id,
+    required this.historyId,
+    required this.objectId,
     required this.title,
-    required this.amount,
-    this.createdAt,
-    this.income = true,
+    required this.detail,
+    required this.balance,
+    required this.date,
+    required this.type,
   });
 
   factory WalletHistoryModel.fromJson(Map<String, dynamic> json) {
-    final amount = _readNum(json, ['amount', 'value', 'balance']);
+    final rawHistoryId = json['history_id'] ?? json['id'];
+    int parsedId = 0;
+    if (rawHistoryId is int) {
+      parsedId = rawHistoryId;
+    } else if (rawHistoryId != null) {
+      parsedId = int.tryParse(rawHistoryId.toString()) ?? 0;
+    }
+
+    final balance = _readNum(json, ['balance', 'amount']);
+
     return WalletHistoryModel(
-      id: _readString(json, ['id', 'history_id']),
-      title: _readString(json, ['title', 'description', 'type'], fallback: 'Biến động số dư'),
-      amount: amount,
-      createdAt: _readOptionalString(json, ['created_at', 'createdAt']),
-      income: amount >= 0,
+      historyId: parsedId,
+      objectId: _readString(json, ['object_id']),
+      title: _readString(json, ['title'], fallback: 'Biến động số dư'),
+      detail: _readString(json, ['detail', 'description']),
+      balance: balance,
+      date: _readString(json, ['date', 'created_at', 'createdAt']),
+      type: _readString(json, ['type'], fallback: balance >= 0 ? 'income' : 'expense'),
     );
   }
 
   MarketplaceItem toItem() {
     return MarketplaceItem(
-      id: id,
+      id: historyId.toString(),
       title: title,
-      subtitle: createdAt ?? '',
-      trailing: amount.toString(),
+      subtitle: date,
+      trailing: balance.toString(),
     );
   }
 }
@@ -955,4 +970,100 @@ class ShipFeeModel {
   }
 }
 
+/// Model cho mỗi kho hàng trả về từ GET /order/get_ship_from
+class ShipFromModel {
+  final String id;
+  final String name;
+  final String? pickSupport;
+  final String? messagePickSupport;
 
+  const ShipFromModel({
+    required this.id,
+    required this.name,
+    this.pickSupport,
+    this.messagePickSupport,
+  });
+
+  factory ShipFromModel.fromJson(Map<String, dynamic> json) {
+    return ShipFromModel(
+      id: _readString(json, ['id']),
+      name: _readString(json, ['name'], fallback: 'Kho hàng'),
+      pickSupport: _readOptionalString(json, ['pick_support']),
+      messagePickSupport: _readOptionalString(json, ['message_pick_support']),
+    );
+  }
+}
+
+/// Model cho mỗi bản ghi lịch sử quy đổi điểm thưởng (get_reward_history)
+/// Input: token, index, count  →  Output: array[user_id, reward_id, received_coin, available_balance]
+class RewardHistoryModel {
+  final String userId;
+  final String? rewardId;
+  final int receivedCoin;
+  final int availableBalance;
+
+  const RewardHistoryModel({
+    required this.userId,
+    this.rewardId,
+    required this.receivedCoin,
+    required this.availableBalance,
+  });
+
+  factory RewardHistoryModel.fromJson(Map<String, dynamic> json) {
+    return RewardHistoryModel(
+      userId: _readString(json, ['user_id']),
+      rewardId: _readOptionalString(json, ['reward_id']),
+      receivedCoin: (json['received_coin'] ?? 0) as int,
+      availableBalance: (json['available_balance'] ?? 0) as int,
+    );
+  }
+}
+
+/// Model kết quả tạo yêu cầu khiếu nại điểm thưởng (create_reward_appeal)
+/// Input: token, reward_id, reason  →  Output: {appeal_id, reward_id, video_id, status}
+class RewardAppealModel {
+  final String? appealId;
+  final String? rewardId;
+  final String? videoId;
+  final String? status;
+
+  const RewardAppealModel({
+    this.appealId,
+    this.rewardId,
+    this.videoId,
+    this.status,
+  });
+
+  factory RewardAppealModel.fromJson(Map<String, dynamic> json) {
+    return RewardAppealModel(
+      appealId: _readOptionalString(json, ['appeal_id']),
+      rewardId: _readOptionalString(json, ['reward_id']),
+      videoId: _readOptionalString(json, ['video_id']),
+      status: _readOptionalString(json, ['status']),
+    );
+  }
+}
+
+/// Model kết quả tải video quy đổi (upload_video)
+class UploadVideoResponseModel {
+  final String videoId;
+  final String video; // url_video
+  final String thumb; // url_thumb
+  final int bonusCoin;
+
+  const UploadVideoResponseModel({
+    required this.videoId,
+    required this.video,
+    required this.thumb,
+    required this.bonusCoin,
+  });
+
+  factory UploadVideoResponseModel.fromJson(Map<String, dynamic> json) {
+    return UploadVideoResponseModel(
+      videoId: _readString(json, ['video_id']),
+      video: _readString(json, ['video']),
+      thumb: _readString(json, ['thumb']),
+      bonusCoin: _readInt(json, ['bonus_coin']) ?? 0,
+    );
+  }
+}

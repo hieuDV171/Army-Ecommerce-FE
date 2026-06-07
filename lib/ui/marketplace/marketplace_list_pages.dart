@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_picker_screen.dart';
 import '../../blocs/marketplace/marketplace_bloc.dart';
@@ -91,7 +92,9 @@ class _SimpleListPageState extends State<SimpleListPage> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       },
       builder: (context, state) {
@@ -113,7 +116,8 @@ class _SimpleListPageState extends State<SimpleListPage> {
     if (state.errorMessage != null && state.items.isEmpty) {
       return ErrorState(
         message: state.errorMessage!,
-        onRetry: () => context.read<SimpleListBloc>().add(SimpleListRequested()),
+        onRetry: () =>
+            context.read<SimpleListBloc>().add(SimpleListRequested()),
       );
     }
     if (state.items.isEmpty) {
@@ -136,11 +140,23 @@ class _SimpleListPageState extends State<SimpleListPage> {
           final item = state.items[index];
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
-            title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+            leading: const CircleAvatar(
+              child: Icon(Icons.inventory_2_outlined),
+            ),
+            title: Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              item.subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: item.trailing == null ? null : Text(item.trailing!),
-            onTap: widget.onItemTap != null ? () => widget.onItemTap!(context, item) : null,
+            onTap: widget.onItemTap != null
+                ? () => widget.onItemTap!(context, item)
+                : null,
           );
         },
       ),
@@ -188,7 +204,9 @@ class _SimpleListBodyState extends State<_SimpleListBody> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       },
       builder: (context, state) {
@@ -198,7 +216,8 @@ class _SimpleListBodyState extends State<_SimpleListBody> {
         if (state.errorMessage != null && state.items.isEmpty) {
           return ErrorState(
             message: state.errorMessage!,
-            onRetry: () => context.read<SimpleListBloc>().add(SimpleListRequested()),
+            onRetry: () =>
+                context.read<SimpleListBloc>().add(SimpleListRequested()),
           );
         }
         if (state.items.isEmpty) {
@@ -221,9 +240,19 @@ class _SimpleListBodyState extends State<_SimpleListBody> {
               final item = state.items[index];
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(child: Icon(Icons.receipt_long_outlined)),
-                title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+                leading: const CircleAvatar(
+                  child: Icon(Icons.receipt_long_outlined),
+                ),
+                title: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  item.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 trailing: item.trailing == null ? null : Text(item.trailing!),
               );
             },
@@ -251,6 +280,153 @@ class WalletPage extends StatelessWidget {
 class _WalletView extends StatelessWidget {
   const _WalletView();
 
+  void _showTransactionDetails(BuildContext context, WalletHistoryModel item) {
+    final isPositive = item.type == 'income' || item.balance >= 0;
+    final absBalance = item.balance.abs();
+    final formattedBalance = NumberFormat.decimalPattern(
+      'vi_VN',
+    ).format(absBalance);
+    final balanceText = '${isPositive ? "+" : "-"}$formattedBalance xu';
+    final balanceColor = isPositive ? AppColors.success : AppColors.danger;
+
+    String displayDate = item.date;
+    try {
+      final dt = DateTime.parse(item.date);
+      displayDate = DateFormat('dd/MM/yyyy HH:mm:ss').format(dt.toLocal());
+    } catch (_) {}
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  const Center(
+                    child: Text(
+                      'Chi tiết giao dịch',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Center(
+                    child: Text(
+                      balanceText,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: balanceColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Center(
+                    child: Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  const Divider(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildDetailRow('Mã giao dịch (ID)', '#${item.historyId}'),
+                  _buildDetailRow(
+                    'Mã đối tượng',
+                    item.objectId.isNotEmpty ? item.objectId : 'Không có',
+                  ),
+                  _buildDetailRow(
+                    'Nội dung chi tiết',
+                    item.detail.isNotEmpty ? item.detail : 'Không có chi tiết',
+                  ),
+                  _buildDetailRow(
+                    'Loại giao dịch',
+                    item.type == 'income'
+                        ? 'Cộng xu (Income)'
+                        : 'Trừ xu (Expense)',
+                  ),
+                  _buildDetailRow('Thời gian', displayDate),
+                  const SizedBox(height: AppSpacing.xl),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Đóng',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<WalletBloc, WalletState>(
@@ -260,50 +436,79 @@ class _WalletView extends StatelessWidget {
           body: state.isLoading
               ? const Center(child: CircularProgressIndicator())
               : state.errorMessage != null
-                  ? ErrorState(
-                      message: state.errorMessage!,
-                      onRetry: () => context.read<WalletBloc>().add(WalletRequested()),
-                    )
-                  : ListView(
+              ? ErrorState(
+                  message: state.errorMessage!,
+                  onRetry: () =>
+                      context.read<WalletBloc>().add(WalletRequested()),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  children: [
+                    Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [AppColors.tactical, AppColors.primary],
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Số dư khả dụng',
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              PriceText(price: state.balance?.available ?? 0),
-                              const SizedBox(height: AppSpacing.md),
-                              Text(
-                                'Đang chờ: ${state.balance?.pending ?? 0}',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.tactical, AppColors.primary],
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        const SectionHeader(title: 'Lịch sử số dư'),
-                        ...state.history.map(
-                          (item) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(item.title),
-                            subtitle: Text(item.subtitle),
-                            trailing: item.trailing == null ? null : Text(item.trailing!),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Số dư khả dụng',
+                            style: TextStyle(color: Colors.white70),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: AppSpacing.sm),
+                          PriceText(price: state.balance?.available ?? 0),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            'Đang chờ: ${state.balance?.pending ?? 0}',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const SectionHeader(title: 'Lịch sử số dư'),
+                    ...state.history.map((item) {
+                      final isPositive =
+                          item.type == 'income' || item.balance >= 0;
+                      final absBalance = item.balance.abs();
+                      final formattedBalance = NumberFormat.decimalPattern(
+                        'vi_VN',
+                      ).format(absBalance);
+                      final balanceText =
+                          '${isPositive ? "+" : "-"}$formattedBalance xu';
+                      final balanceColor = isPositive
+                          ? AppColors.success
+                          : AppColors.danger;
+
+                      String displayDate = item.date;
+                      try {
+                        final dt = DateTime.parse(item.date);
+                        displayDate = DateFormat(
+                          'dd/MM/yyyy HH:mm:ss',
+                        ).format(dt.toLocal());
+                      } catch (_) {}
+
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item.title),
+                        subtitle: Text(displayDate),
+                        trailing: Text(
+                          balanceText,
+                          style: TextStyle(
+                            color: balanceColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        onTap: () => _showTransactionDetails(context, item),
+                      );
+                    }),
+                  ],
+                ),
         );
       },
     );
@@ -362,7 +567,9 @@ class _NotificationListViewState extends State<_NotificationListView> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       },
       builder: (context, state) {
@@ -378,11 +585,14 @@ class _NotificationListViewState extends State<_NotificationListView> {
   }
 
   Widget _buildBody(BuildContext context, NotificationState state) {
-    if (state.isInitialLoading) return const Center(child: CircularProgressIndicator());
+    if (state.isInitialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     if (state.errorMessage != null && state.notifications.isEmpty) {
       return ErrorState(
         message: state.errorMessage!,
-        onRetry: () => context.read<NotificationBloc>().add(NotificationsRequested()),
+        onRetry: () =>
+            context.read<NotificationBloc>().add(NotificationsRequested()),
       );
     }
     if (state.notifications.isEmpty) {
@@ -413,7 +623,9 @@ class _NotificationListViewState extends State<_NotificationListView> {
                 notification.read
                     ? Icons.notifications_none
                     : Icons.notifications_active,
-                color: notification.read ? AppColors.textSecondary : AppColors.primary,
+                color: notification.read
+                    ? AppColors.textSecondary
+                    : AppColors.primary,
               ),
             ),
             title: Text(
@@ -421,7 +633,9 @@ class _NotificationListViewState extends State<_NotificationListView> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontWeight: notification.read ? FontWeight.w500 : FontWeight.w700,
+                fontWeight: notification.read
+                    ? FontWeight.w500
+                    : FontWeight.w700,
               ),
             ),
             subtitle: Text(
@@ -434,16 +648,15 @@ class _NotificationListViewState extends State<_NotificationListView> {
                 : const Icon(Icons.circle, size: 10, color: AppColors.primary),
             onTap: notification.read
                 ? null
-                : () => context
-                .read<NotificationBloc>()
-                .add(NotificationReadRequested(notification.id)),
+                : () => context.read<NotificationBloc>().add(
+                    NotificationReadRequested(notification.id),
+                  ),
           );
         },
       ),
     );
   }
 }
-
 
 class OrderListPage extends StatelessWidget {
   const OrderListPage({super.key});
@@ -477,9 +690,7 @@ class OrderListPage extends StatelessWidget {
           ),
         ),
         body: TabBarView(
-          children: [
-            for (final tab in _tabs) _OrderStateList(state: tab.$2),
-          ],
+          children: [for (final tab in _tabs) _OrderStateList(state: tab.$2)],
         ),
       ),
     );
@@ -637,7 +848,11 @@ class _AddressListView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.location_off_outlined, size: 72, color: AppColors.textSecondary),
+            const Icon(
+              Icons.location_off_outlined,
+              size: 72,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(height: AppSpacing.lg),
             const Text(
               'Chưa có địa chỉ nào',
@@ -700,7 +915,9 @@ class _AddressListView extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Xóa địa chỉ'),
-        content: Text('Bạn có chắc muốn xóa địa chỉ của "${address.receiverName}"?'),
+        content: Text(
+          'Bạn có chắc muốn xóa địa chỉ của "${address.receiverName}"?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -751,7 +968,11 @@ class _AddressCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 18, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.person_outline,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -787,7 +1008,11 @@ class _AddressCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
-                  const Icon(Icons.phone_outlined, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.phone_outlined,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     address.phone,
@@ -801,7 +1026,11 @@ class _AddressCard extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 2),
-                    child: Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
+                    child: Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -867,37 +1096,62 @@ class _AddressFormPageState extends State<AddressFormPage> {
 
   // Mock data for provinces and districts (user can extend with real API later)
   final Map<String, List<String>> _provincesDistricts = {
-    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 2', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7', 'Quận 8', 'Quận 9', 'Quận 10', 'Quận 11', 'Quận 12', 'Quận Bình Tân', 'Quận Bình Thạnh', 'Quận Gò Vấp', 'Quận Phú Nhuận', 'Quận Tân Bình', 'Quận Tân Phú', 'Quận Thủ Đức', 'Huyện Bình Chánh', 'Huyện Cần Giờ', 'Huyện Củ Chi', 'Huyện Hóc Môn', 'Huyện Nhà Bè'],
-    'Hà Nội': ['Quận Ba Đình', 'Quận Hoàn Kiếm', 'Quận Tây Hồ', 'Quận Long Biên', 'Quận Đống Đa', 'Quận Hai Bà Trưng', 'Quận Hoàng Mai', 'Quận Thanh Xuân', 'Huyện Sóc Sơn', 'Huyện Đông Anh', 'Huyện Gia Lâm', 'Huyện thanh trì'],
-    'Đà Nẵng': ['Quận Hải Châu', 'Quận Cẩm Lệ', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn', 'Huyện Hoàng Sa'],
+    'TP. Hồ Chí Minh': [
+      'Quận 1',
+      'Quận 2',
+      'Quận 3',
+      'Quận 4',
+      'Quận 5',
+      'Quận 6',
+      'Quận 7',
+      'Quận 8',
+      'Quận 9',
+      'Quận 10',
+      'Quận 11',
+      'Quận 12',
+      'Quận Bình Tân',
+      'Quận Bình Thạnh',
+      'Quận Gò Vấp',
+      'Quận Phú Nhuận',
+      'Quận Tân Bình',
+      'Quận Tân Phú',
+      'Quận Thủ Đức',
+      'Huyện Bình Chánh',
+      'Huyện Cần Giờ',
+      'Huyện Củ Chi',
+      'Huyện Hóc Môn',
+      'Huyện Nhà Bè',
+    ],
+    'Hà Nội': [
+      'Quận Ba Đình',
+      'Quận Hoàn Kiếm',
+      'Quận Tây Hồ',
+      'Quận Long Biên',
+      'Quận Đống Đa',
+      'Quận Hai Bà Trưng',
+      'Quận Hoàng Mai',
+      'Quận Thanh Xuân',
+      'Huyện Sóc Sơn',
+      'Huyện Đông Anh',
+      'Huyện Gia Lâm',
+      'Huyện thanh trì',
+    ],
+    'Đà Nẵng': [
+      'Quận Hải Châu',
+      'Quận Cẩm Lệ',
+      'Quận Thanh Khê',
+      'Quận Sơn Trà',
+      'Quận Ngũ Hành Sơn',
+      'Huyện Hoàng Sa',
+    ],
   };
 
   final List<Map<String, dynamic>> _presetLocations = const [
-    {
-      'name': 'Hồ Hoàn Kiếm, Hà Nội',
-      'lat': 21.0285,
-      'lng': 105.8542,
-    },
-    {
-      'name': 'Dinh Độc Lập, TP. Hồ Chí Minh',
-      'lat': 10.7770,
-      'lng': 106.6953,
-    },
-    {
-      'name': 'Cầu Rồng, Đà Nẵng',
-      'lat': 16.0613,
-      'lng': 108.2274,
-    },
-    {
-      'name': 'Chợ Bến Thành, TP. Hồ Chí Minh',
-      'lat': 10.7725,
-      'lng': 106.6980,
-    },
-    {
-      'name': 'Lăng Bác, Hà Nội',
-      'lat': 21.0368,
-      'lng': 105.8346,
-    },
+    {'name': 'Hồ Hoàn Kiếm, Hà Nội', 'lat': 21.0285, 'lng': 105.8542},
+    {'name': 'Dinh Độc Lập, TP. Hồ Chí Minh', 'lat': 10.7770, 'lng': 106.6953},
+    {'name': 'Cầu Rồng, Đà Nẵng', 'lat': 16.0613, 'lng': 108.2274},
+    {'name': 'Chợ Bến Thành, TP. Hồ Chí Minh', 'lat': 10.7725, 'lng': 106.6980},
+    {'name': 'Lăng Bác, Hà Nội', 'lat': 21.0368, 'lng': 105.8346},
   ];
 
   bool get _isEditMode => widget.address != null;
@@ -905,13 +1159,21 @@ class _AddressFormPageState extends State<AddressFormPage> {
   @override
   void initState() {
     super.initState();
-    _receiverNameCtrl = TextEditingController(text: widget.address?.receiverName ?? '');
+    _receiverNameCtrl = TextEditingController(
+      text: widget.address?.receiverName ?? '',
+    );
     _phoneCtrl = TextEditingController(text: widget.address?.phone ?? '');
     _addressCtrl = TextEditingController(text: widget.address?.address ?? '');
-    _fullAddressCtrl = TextEditingController(text: widget.address?.fullAddress ?? '');
-    _addressDetailCtrl = TextEditingController(text: widget.address?.addressDetail ?? '');
+    _fullAddressCtrl = TextEditingController(
+      text: widget.address?.fullAddress ?? '',
+    );
+    _addressDetailCtrl = TextEditingController(
+      text: widget.address?.addressDetail ?? '',
+    );
     _latitudeCtrl = TextEditingController(text: widget.address?.latitude ?? '');
-    _longitudeCtrl = TextEditingController(text: widget.address?.longitude ?? '');
+    _longitudeCtrl = TextEditingController(
+      text: widget.address?.longitude ?? '',
+    );
     _isDefault = widget.address?.isDefault ?? false;
     // Set default province if needed
     if (_provincesDistricts.isNotEmpty && _selectedProvince == null) {
@@ -958,9 +1220,14 @@ class _AddressFormPageState extends State<AddressFormPage> {
                   itemBuilder: (context, index) {
                     final loc = _presetLocations[index];
                     return ListTile(
-                      leading: const Icon(Icons.location_on, color: AppColors.primary),
+                      leading: const Icon(
+                        Icons.location_on,
+                        color: AppColors.primary,
+                      ),
                       title: Text(loc['name'] as String),
-                      subtitle: Text('Vĩ độ: ${loc['lat']}, Kinh độ: ${loc['lng']}'),
+                      subtitle: Text(
+                        'Vĩ độ: ${loc['lat']}, Kinh độ: ${loc['lng']}',
+                      ),
                       onTap: () {
                         setState(() {
                           _latitudeCtrl.text = loc['lat'].toString();
@@ -986,10 +1253,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final LatLng? result = await Navigator.push<LatLng>(
       context,
       MaterialPageRoute(
-        builder: (_) => MapPickerScreen(
-          initialLat: initialLat,
-          initialLng: initialLng,
-        ),
+        builder: (_) =>
+            MapPickerScreen(initialLat: initialLat, initialLng: initialLng),
       ),
     );
 
@@ -1010,10 +1275,15 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final latitude = _latitudeCtrl.text.trim();
     final longitude = _longitudeCtrl.text.trim();
 
-    if (receiverName.isEmpty || phone.isEmpty || fullAddress.isEmpty || addressDetail.isEmpty) {
+    if (receiverName.isEmpty ||
+        phone.isEmpty ||
+        fullAddress.isEmpty ||
+        addressDetail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm'),
+          content: Text(
+            'Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm',
+          ),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -1043,32 +1313,36 @@ class _AddressFormPageState extends State<AddressFormPage> {
     final bloc = context.read<AddressBloc>();
 
     if (_isEditMode) {
-      bloc.add(AddressUpdated(
-        id: widget.address!.id,
-        address: address.isEmpty ? fullAddress : address,
-        fullAddress: fullAddress,
-        receiverName: receiverName,
-        phone: phone,
-        isDefault: _isDefault,
-        addressDetail: addressDetail,
-        province: _selectedProvince!,
-        district: _selectedDistrict!,
-        latitude: latitude,
-        longitude: longitude,
-      ));
+      bloc.add(
+        AddressUpdated(
+          id: widget.address!.id,
+          address: address.isEmpty ? fullAddress : address,
+          fullAddress: fullAddress,
+          receiverName: receiverName,
+          phone: phone,
+          isDefault: _isDefault,
+          addressDetail: addressDetail,
+          province: _selectedProvince!,
+          district: _selectedDistrict!,
+          latitude: latitude,
+          longitude: longitude,
+        ),
+      );
     } else {
-      bloc.add(AddressAdded(
-        address: address.isEmpty ? fullAddress : address,
-        fullAddress: fullAddress,
-        receiverName: receiverName,
-        phone: phone,
-        isDefault: _isDefault,
-        addressDetail: addressDetail,
-        province: _selectedProvince!,
-        district: _selectedDistrict!,
-        latitude: latitude,
-        longitude: longitude,
-      ));
+      bloc.add(
+        AddressAdded(
+          address: address.isEmpty ? fullAddress : address,
+          fullAddress: fullAddress,
+          receiverName: receiverName,
+          phone: phone,
+          isDefault: _isDefault,
+          addressDetail: addressDetail,
+          province: _selectedProvince!,
+          district: _selectedDistrict!,
+          latitude: latitude,
+          longitude: longitude,
+        ),
+      );
     }
   }
 
@@ -1134,7 +1408,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
                       return DropdownMenuItem(
                         value: province,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
                           child: Text(province),
                         ),
                       );
@@ -1165,11 +1441,15 @@ class _AddressFormPageState extends State<AddressFormPage> {
                     underline: SizedBox(),
                     value: _selectedDistrict,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    items: (_provincesDistricts[_selectedProvince] ?? []).map((district) {
+                    items: (_provincesDistricts[_selectedProvince] ?? []).map((
+                      district,
+                    ) {
                       return DropdownMenuItem(
                         value: district,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
                           child: Text(district),
                         ),
                       );
@@ -1317,7 +1597,10 @@ class NewsDetailPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return ErrorState(message: snapshot.error.toString(), onRetry: () {});
+            return ErrorState(
+              message: snapshot.error.toString(),
+              onRetry: () {},
+            );
           }
           final item = snapshot.data;
           if (item == null) {
@@ -1334,7 +1617,8 @@ class NewsDetailPage extends StatelessWidget {
             final ts = int.tryParse(trailing);
             if (ts != null) {
               final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
-              timeText = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+              timeText =
+                  '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
             } else {
               timeText = trailing;
             }
@@ -1345,10 +1629,19 @@ class NewsDetailPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 if (timeText.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text(timeText, style: const TextStyle(color: AppColors.textSecondary)),
+                  Text(
+                    timeText,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
                 ],
                 const SizedBox(height: AppSpacing.md),
                 Text(content),
@@ -1358,5 +1651,5 @@ class NewsDetailPage extends StatelessWidget {
         },
       ),
     );
-  }}
-
+  }
+}

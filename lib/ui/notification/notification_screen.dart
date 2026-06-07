@@ -5,11 +5,12 @@ import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-const Color _shopeeOrange = Color(0xFFEE4D2D);
+const Color _shopeeOrange = Color(0xFFE83A14);
 const Color _greyBackground = Color(0xFFF5F5F5);
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({super.key});
+  final bool isTab;
+  const NotificationScreen({super.key, this.isTab = false});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -62,16 +63,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
+        backgroundColor: widget.isTab ? _shopeeOrange : Colors.white,
+        elevation: widget.isTab ? 0.0 : 0.5,
+        iconTheme: IconThemeData(color: widget.isTab ? Colors.white : Colors.black87),
+        leading: widget.isTab
+            ? IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+        automaticallyImplyLeading: !widget.isTab,
+        title: Text(
           'Thông báo',
           style: TextStyle(
-            color: Colors.black87,
+            color: widget.isTab ? Colors.white : Colors.black87,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),

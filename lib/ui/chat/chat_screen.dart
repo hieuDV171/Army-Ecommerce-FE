@@ -5,7 +5,7 @@ import 'package:army_ecommerce/models/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-const Color _shopeeOrange = Color(0xFFEE4D2D);
+const Color _shopeeOrange = Color(0xFFE83A14);
 
 class ChatScreen extends StatefulWidget {
   final String partnerId;

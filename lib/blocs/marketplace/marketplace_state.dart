@@ -293,7 +293,7 @@ class SimpleListState extends Equatable {
 //--------------------------------------
 class WalletState extends Equatable {
   final WalletBalanceModel? balance;
-  final List<MarketplaceItem> history;
+  final List<WalletHistoryModel> history;
   final bool isLoading;
   final String? errorMessage;
 
@@ -306,7 +306,7 @@ class WalletState extends Equatable {
 
   WalletState copyWith({
     WalletBalanceModel? balance,
-    List<MarketplaceItem>? history,
+    List<WalletHistoryModel>? history,
     bool? isLoading,
     String? errorMessage,
   }) {

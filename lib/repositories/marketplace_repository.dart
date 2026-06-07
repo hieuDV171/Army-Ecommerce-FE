@@ -1,3 +1,4 @@
+import 'dart:io';
 import '../models/marketplace_models.dart';
 
 abstract class MarketplaceRepository {
@@ -76,6 +77,17 @@ abstract class MarketplaceRepository {
 
   Future<ShipFeeModel?> getShipFee(int productId, {int? addressId});
 
+  /// Lấy danh sách kho hàng theo khu vực.
+  /// [level]: 0 = phường/xã, 1 = tỉnh/thành phố (mặc định 1).
+  /// [parentId]: mã tỉnh hoặc mã phường (bắt buộc).
+  /// [index], [count]: phân trang.
+  Future<List<ShipFromModel>> getShipFrom({
+    required String parentId,
+    int? level,
+    int index = 0,
+    int count = 20,
+  });
+
   /// Create a new order. Accepts a raw request map to keep flexibility for
   /// different backend payload shapes.
   Future<void> createOrder(Map<String, dynamic> data);
@@ -136,4 +148,24 @@ abstract class MarketplaceRepository {
   Future<WalletBalanceModel> getCurrentBalance();
 
   Future<void> postAction(String path, Map<String, dynamic> data);
+
+  /// [STUB — BE chưa implement] Lịch sử quy đổi điểm thưởng.
+  /// Endpoint dự kiến: POST /rewards/get_reward_history
+  Future<List<RewardHistoryModel>> getRewardHistory({
+    int index = 0,
+    int count = 20,
+  });
+
+  /// [STUB — BE chưa implement] Tạo yêu cầu khiếu nại điểm thưởng.
+  /// Endpoint dự kiến: POST /rewards/create_reward_appeal
+  Future<RewardAppealModel> createRewardAppeal({
+    required String rewardId,
+    String? reason,
+  });
+
+  /// [STUB — BE chưa implement] Tải video quy đổi điểm thưởng.
+  /// Endpoint dự kiến: POST /media/upload_video
+  Future<UploadVideoResponseModel> uploadVideo({
+    required File videoFile,
+  });
 }

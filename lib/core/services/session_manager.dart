@@ -8,6 +8,7 @@ class SessionManager {
   static const String _keyPhoneNumber = "phone_number";
   static const String _keyAvatar = "avatar";
   static const String _keyLastDevToken = "last_dev_token";
+  static const String _keyCoverImage = "cover_image";
 
   // Lưu thông tin khi đăng nhập thành công
   // token is required; username and phoneNumber are optional and will only be stored when not null
@@ -77,6 +78,19 @@ class SessionManager {
     final devToken = prefs.getString(_keyLastDevToken);
     logger.d('SessionManager: getLastDevToken -> ${devToken != null ? "[RETRIEVED]" : "null"}');
     return devToken;
+  }
+
+  static Future<void> setCoverImage(String coverImage) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCoverImage, coverImage);
+    logger.d('SessionManager: setCoverImage -> [SAVED]');
+  }
+
+  static Future<String?> getCoverImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final coverImage = prefs.getString(_keyCoverImage);
+    logger.d('SessionManager: getCoverImage -> ${coverImage != null ? "[RETRIEVED]" : "null"}');
+    return coverImage;
   }
 
   // Xóa sạch khi đăng xuất

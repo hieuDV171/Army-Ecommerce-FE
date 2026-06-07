@@ -21,24 +21,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 
 import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
+import '../../blocs/marketplace/marketplace_state.dart' show HomeState;
 import '../../blocs/marketplace/marketplace_event.dart' show HomeRequested;
 import '../../blocs/settings/push_setting_bloc.dart';
 import '../../core/services/session_manager.dart';
 import '../../core/services/cart_manager.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../auth/change_password_screen.dart';
-import '../marketplace/marketplace_chat_pages.dart';
 import '../marketplace/marketplace_home_page.dart';
 import '../marketplace/marketplace_list_pages.dart';
 import '../marketplace/marketplace_order_pages.dart';
 import '../marketplace/marketplace_product_pages.dart';
+import '../marketplace/reward_screen.dart';
 import '../widgets/app_button.dart';
 import '../widgets/price_text.dart';
 import '../profile/user_profile_screen.dart';
 import '../settings/push_settings_screen.dart';
 
-const Color _shopeeOrange = Color(0xFFEE4D2D);
-const Color _navyBlue = Color(0xFF003366);
+const Color _shopeeOrange = Color(0xFFE83A14);
+const Color _navyBlue = Color(0xFFE83A14);
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -59,6 +60,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   String? _avatarUrl;
+  String? _coverImageUrl;
   late String _currentUsername;
   // BLoC phụ trách API follow/block/chat/notification — tạo và dispose trong lifecycle
   late final FollowBloc _followBloc;
@@ -86,9 +88,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _notificationBloc.add(LoadNotificationsRequested());
     _chatBloc.add(LoadConversationsRequested());
 
-    // Tải avatar từ bộ nhớ cục bộ
+    // Tải avatar và cover image từ bộ nhớ cục bộ
     SessionManager.getAvatar().then((avatar) {
       if (mounted) setState(() => _avatarUrl = avatar);
+    });
+    SessionManager.getCoverImage().then((cover) {
+      if (mounted) setState(() => _coverImageUrl = cover);
     });
   }
 
@@ -101,21 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Mở màn hình thông báo
-  void _openNotifications() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: _notificationBloc,
-          child: const NotificationScreen(),
-        ),
-      ),
-    ).then((_) {
-      // Làm mới badge sau khi đọc thông báo
-      if (mounted) _notificationBloc.add(LoadNotificationsRequested());
-    });
-  }
 
   // Mở màn hình danh sách người theo dõi (followers)
   void _openFollowers() {
@@ -204,23 +194,40 @@ class _HomeScreenState extends State<HomeScreen> {
         )..add(HomeRequested()),
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            // Cập nhật username và avatar khi đổi thông tin thành công
             if (state is ChangeInfoSuccess && mounted) {
               setState(() {
                 _currentUsername = state.updatedUser.username;
                 _avatarUrl = state.updatedUser.avatar;
+                _coverImageUrl = state.updatedUser.coverImage;
+              });
+            } else if (state is SetUserInfoSuccess && mounted) {
+              setState(() {
+                _currentUsername = state.user.username;
+                _avatarUrl = state.user.avatar;
+                _coverImageUrl = state.user.coverImage;
+              });
+            } else if (state is GetUserInfoSuccess && mounted) {
+              setState(() {
+                _currentUsername = state.user.username;
+                _avatarUrl = state.user.avatar;
+                _coverImageUrl = state.user.coverImage;
+              });
+            } else if (state is AuthSuccess && mounted) {
+              setState(() {
+                _currentUsername = state.user.username;
+                _avatarUrl = state.user.avatar;
+                _coverImageUrl = state.user.coverImage;
               });
             }
           },
           child: Scaffold(
             key: _scaffoldKey,
             backgroundColor: const Color(0xFFF5F5F5),
-            appBar: _buildAppBar(),
+            appBar: _selectedIndex == 3 ? null : _buildAppBar(),
             drawer: _HomeDrawer(
               displayName: _currentUsername,
               avatarUrl: _avatarUrl,
               token: widget.token,
-              onBlockedUsers: _openBlockedUsers,
             ),
             body: IndexedStack(
               index: _selectedIndex,
@@ -235,15 +242,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 const _CategoryTabBody(),
                 // Tab 2: Giỏ hàng (placeholder)
                 const _CartTabBody(),
-                // Tab 3: Trang cá nhân với links followers/following/blocked
+                // Tab 3: Thông báo
+                BlocProvider.value(
+                  value: _notificationBloc,
+                  child: const NotificationScreen(isTab: true),
+                ),
+                // Tab 4: Trang cá nhân với links followers/following/blocked
                 _ProfileTabBody(
                   userId: widget.userId,
                   username: _currentUsername,
                   avatarUrl: _avatarUrl,
+                  coverImageUrl: _coverImageUrl,
                   onFollowers: _openFollowers,
                   onFollowing: _openFollowing,
                   onEditProfile: _openUpdateProfile,
                   onChangePassword: _openChangePassword,
+                  onNotificationSettings: () {
+                    final pushSettingBloc = context.read<PushSettingBloc>();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BlocProvider.value(
+                          value: pushSettingBloc,
+                          child: const PushSettingsScreen(),
+                        ),
+                      ),
+                    );
+                  },
                   onBlockedUsers: _openBlockedUsers,
                   onLogout: () => _showLogoutDialog(context),
                 ),
@@ -267,7 +292,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? 'Danh mục'
                 : _selectedIndex == 2
                     ? 'Giỏ hàng'
-                    : 'Trang cá nhân',
+                    : _selectedIndex == 3
+                        ? 'Thông báo'
+                        : 'Trang cá nhân',
         style: const TextStyle(color: Colors.white, fontSize: 16),
       ),
     );
@@ -289,11 +316,6 @@ class _HomeScreenState extends State<HomeScreen> {
           unselectedFontSize: 11,
           onTap: (index) {
             if (index == _selectedIndex) return;
-            // Tab Thông báo (index 4) → push sang màn hình riêng
-            if (index == 4) {
-              _openNotifications();
-              return;
-            }
             setState(() => _selectedIndex = index);
           },
           items: [
@@ -346,12 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               label: 'Giỏ hàng',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Tôi',
-            ),
-            // Thông báo với badge số chưa đọc
+            // Thông báo với badge số chưa đọc (index 3)
             BottomNavigationBarItem(
               icon: Stack(
                 clipBehavior: Clip.none,
@@ -378,6 +395,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               label: 'Thông báo',
+            ),
+            // Tôi (index 4)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Tôi',
             ),
           ],
         );
@@ -413,17 +436,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // ── Drawer (giao diện mới của team) ────────────────────────────────────────
 
+
 class _HomeDrawer extends StatelessWidget {
   final String displayName;
   final String? avatarUrl;
   final String token;
-  final VoidCallback onBlockedUsers;
 
   const _HomeDrawer({
     required this.displayName,
     required this.avatarUrl,
     required this.token,
-    required this.onBlockedUsers,
   });
 
   @override
@@ -446,55 +468,6 @@ class _HomeDrawer extends StatelessWidget {
                   : null,
             ),
           ),
-          _DrawerTile(
-            icon: Icons.person_outline,
-            color: Colors.blue,
-            title: 'Hồ sơ của tôi',
-            onTap: () => _push(context, const UserProfileScreen()),
-          ),
-          _DrawerTile(
-            icon: Icons.lock_reset,
-            color: Colors.orange,
-            title: 'Đổi mật khẩu',
-            onTap: () {
-              Navigator.pop(context);
-              final authBloc = context.read<AuthBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: authBloc,
-                    child: const ChangePasswordScreen(),
-                  ),
-                ),
-              );
-            },
-          ),
-          _DrawerTile(
-            icon: Icons.notifications_active,
-            color: Colors.purple,
-            title: 'Cài đặt thông báo',
-            onTap: () {
-              Navigator.pop(context);
-              final pushSettingBloc = context.read<PushSettingBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: pushSettingBloc,
-                    child: const PushSettingsScreen(),
-                  ),
-                ),
-              );
-            },
-          ),
-          _DrawerTile(
-            icon: Icons.block,
-            color: Colors.grey,
-            title: 'Người dùng đã chặn',
-            onTap: onBlockedUsers,
-          ),
-          const Divider(),
           _DrawerTile(
             icon: Icons.search,
             color: Colors.deepOrange,
@@ -520,11 +493,12 @@ class _HomeDrawer extends StatelessWidget {
             onTap: () => _push(context, const WalletPage()),
           ),
           _DrawerTile(
-            icon: Icons.chat_bubble_outline,
-            color: Colors.indigo,
-            title: 'Tin nhắn',
-            onTap: () => _push(context, const ConversationPage()),
+            icon: Icons.stars_outlined,
+            color: Colors.amber,
+            title: 'Điểm thưởng',
+            onTap: () => _push(context, const RewardScreen()),
           ),
+
           _DrawerTile(
             icon: Icons.article_outlined,
             color: Colors.cyan,
@@ -629,21 +603,99 @@ class _Badge extends StatelessWidget {
 
 // ── Tab bodies ─────────────────────────────────────────────────────────────
 
-// Tab 1: Danh mục (placeholder)
+// Tab 1: Danh mục
 class _CategoryTabBody extends StatelessWidget {
   const _CategoryTabBody();
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.grid_view, size: 64, color: Colors.grey),
-          SizedBox(height: 12),
-          Text('Danh mục sản phẩm', style: TextStyle(color: Colors.grey)),
-        ],
-      ),
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        if (state.isInitialLoading) {
+          return const Center(
+            child: CircularProgressIndicator(color: _shopeeOrange),
+          );
+        }
+        final categories = state.categories;
+        if (categories.isEmpty) {
+          return const Center(
+            child: Text(
+              'Không có danh mục nào',
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.85,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final category = categories[index];
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SearchPage(categoryId: category.id),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: _shopeeOrange.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.category_outlined,
+                        color: _shopeeOrange,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        category.name,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -849,10 +901,12 @@ class _ProfileTabBody extends StatelessWidget {
   final String userId;
   final String username;
   final String? avatarUrl;
+  final String? coverImageUrl;
   final VoidCallback onFollowers;
   final VoidCallback onFollowing;
   final VoidCallback onEditProfile;
   final VoidCallback onChangePassword;
+  final VoidCallback onNotificationSettings;
   final VoidCallback onBlockedUsers;
   final VoidCallback onLogout;
 
@@ -860,10 +914,12 @@ class _ProfileTabBody extends StatelessWidget {
     required this.userId,
     required this.username,
     this.avatarUrl,
+    this.coverImageUrl,
     required this.onFollowers,
     required this.onFollowing,
     required this.onEditProfile,
     required this.onChangePassword,
+    required this.onNotificationSettings,
     required this.onBlockedUsers,
     required this.onLogout,
   });
@@ -873,47 +929,82 @@ class _ProfileTabBody extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Vùng thông tin cá nhân
+          // Vùng thông tin cá nhân đồng bộ Side bar header (Ảnh bìa / Nền xám)
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white, width: 4),
+              color: (coverImageUrl == null || coverImageUrl!.isEmpty)
+                  ? Colors.grey.shade300
+                  : null,
+              image: (coverImageUrl != null && coverImageUrl!.isNotEmpty)
+                  ? DecorationImage(
+                      image: NetworkImage(coverImageUrl!),
+                      fit: BoxFit.cover,
+                      colorFilter: ColorFilter.mode(
+                        Colors.black.withValues(alpha: 0.3),
+                        BlendMode.srcOver,
+                      ),
+                    )
+                  : null,
+            ),
             child: Column(
               children: [
                 // Avatar
                 CircleAvatar(
-                  radius: 44,
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
-                      ? NetworkImage(avatarUrl!)
-                      : null,
-                  child: (avatarUrl == null || avatarUrl!.isEmpty)
-                      ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                      : null,
+                  radius: 46,
+                  backgroundColor: Colors.white,
+                  child: CircleAvatar(
+                    radius: 44,
+                    backgroundColor: Colors.white,
+                    backgroundImage: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                        ? NetworkImage(avatarUrl!)
+                        : null,
+                    child: (avatarUrl == null || avatarUrl!.isEmpty)
+                        ? const Icon(Icons.person, size: 50, color: Color(0xFFE83A14))
+                        : null,
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
                   username,
                   style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // Nút followers / following
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _StatButton(label: 'Người theo dõi', onTap: onFollowers),
-                    Container(
-                      width: 1,
-                      height: 32,
-                      color: Colors.grey[300],
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                    ),
-                    _StatButton(label: 'Đang theo dõi', onTap: onFollowing),
-                  ],
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _StatButton(
+                        label: 'Người theo dõi',
+                        onTap: onFollowers,
+                        textColor: Colors.white,
+                      ),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        color: Colors.white30,
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      _StatButton(
+                        label: 'Đang theo dõi',
+                        onTap: onFollowing,
+                        textColor: Colors.white,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -937,6 +1028,13 @@ class _ProfileTabBody extends StatelessWidget {
                   iconColor: Colors.orange,
                   title: 'Đổi mật khẩu',
                   onTap: onChangePassword,
+                ),
+                const _Divider(),
+                _SettingsTile(
+                  icon: Icons.notifications_active,
+                  iconColor: Colors.purple,
+                  title: 'Cài đặt thông báo',
+                  onTap: onNotificationSettings,
                 ),
                 const _Divider(),
                 _SettingsTile(
@@ -972,8 +1070,13 @@ class _ProfileTabBody extends StatelessWidget {
 class _StatButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
+  final Color textColor;
 
-  const _StatButton({required this.label, required this.onTap});
+  const _StatButton({
+    required this.label,
+    required this.onTap,
+    this.textColor = Colors.black87,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -981,9 +1084,16 @@ class _StatButton extends StatelessWidget {
       onTap: onTap,
       child: Column(
         children: [
-          const Icon(Icons.people_outline, size: 22, color: _shopeeOrange),
+          Icon(Icons.people_outline, size: 20, color: textColor),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: textColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

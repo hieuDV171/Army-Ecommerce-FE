@@ -151,4 +151,22 @@ class MarketplaceRemoteDataSource {
       data: request,
     );
   }
+
+  /// GET /order/get_ship_from — Lấy danh sách kho hàng theo khu vực.
+  Future<ApiResponse<dynamic>> getShipFrom({
+    required String parentId,
+    int? level,
+    int index = 0,
+    int count = 20,
+  }) {
+    final queryParams = <String, dynamic>{
+      'parent_id': parentId,
+      'index': index,
+      'count': count,
+    };
+    if (level != null) queryParams['level'] = level;
+
+    return get('/order/get_ship_from', queryParameters: queryParams);
+  }
 }
+

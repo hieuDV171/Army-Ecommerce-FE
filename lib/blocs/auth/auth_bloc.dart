@@ -29,9 +29,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           // LƯU VÀO MÁY CỤC BỘ TRƯỚC (lưu token, username, phoneNumber nếu có)
           await SessionManager.saveSession(response.data!.token, response.data!.username, event.phoneNumber); // :)))
 
-          // Lưu avatar từ API response
+          // Lưu avatar và coverImage từ API response
           if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
             await SessionManager.setAvatar(response.data!.avatar!);
+          }
+          if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
+            await SessionManager.setCoverImage(response.data!.coverImage!);
           }
           logger.i('Login: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
 
@@ -104,9 +107,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (response.data != null) {
             await SessionManager.saveSession(response.data!.token, response.data!.username, event.phoneNumber);
 
-            // Lưu avatar từ API response
+            // Lưu avatar và coverImage từ API response
             if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
               await SessionManager.setAvatar(response.data!.avatar!);
+            }
+            if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
+              await SessionManager.setCoverImage(response.data!.coverImage!);
             }
             logger.i('VerifyOtp: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
           }
@@ -155,22 +161,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
              logger.d('AutoLogin: using username from API: "$apiUsername"');
            }
 
-           // Lấy avatar từ local storage nếu API không trả
-           final localAvatar = await SessionManager.getAvatar();
-           final avatarToUse = (response.data!.avatar != null && response.data!.avatar!.isNotEmpty)
-               ? response.data!.avatar
-               : localAvatar;
+            // Lấy avatar và coverImage từ local storage nếu API không trả
+            final localAvatar = await SessionManager.getAvatar();
+            final avatarToUse = (response.data!.avatar != null && response.data!.avatar!.isNotEmpty)
+                ? response.data!.avatar
+                : localAvatar;
+            final localCover = await SessionManager.getCoverImage();
+            final coverToUse = (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty)
+                ? response.data!.coverImage
+                : localCover;
 
-           // Lưu avatar lại nếu API trả về
-           if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
-             await SessionManager.setAvatar(response.data!.avatar!);
-           }
+            // Lưu avatar và coverImage lại nếu API trả về
+            if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
+              await SessionManager.setAvatar(response.data!.avatar!);
+            }
+            if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
+              await SessionManager.setCoverImage(response.data!.coverImage!);
+            }
 
-           final user = response.data!.copyWith(
-             token: token,
-             username: usernameToUse,
-             avatar: avatarToUse,
-           );
+            final user = response.data!.copyWith(
+              token: token,
+              username: usernameToUse,
+              avatar: avatarToUse,
+              coverImage: coverToUse,
+            );
            // Token hợp lệ -> Chuyển thẳng vào trang Home
            emit(AuthSuccess(user: user));
         } else {
@@ -244,9 +258,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             event.phoneNumber,
           );
 
-          // Lưu avatar từ API response
+          // Lưu avatar và coverImage từ API response
           if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
             await SessionManager.setAvatar(response.data!.avatar!);
+          }
+          if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
+            await SessionManager.setCoverImage(response.data!.coverImage!);
           }
           logger.i('ResetPassword: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
 
@@ -312,10 +329,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         final responseCode = ResponseCode.fromCode(response.code);
         if (responseCode == ResponseCode.ok && response.data != null) {
-           // Cập nhật lại username và avatar trong bộ nhớ tạm
+           // Cập nhật lại username, avatar và coverImage trong bộ nhớ tạm
            await SessionManager.setUsername(response.data!.username);
            if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
              await SessionManager.setAvatar(response.data!.avatar!);
+           }
+           if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
+             await SessionManager.setCoverImage(response.data!.coverImage!);
            }
 
            emit(ChangeInfoSuccess(updatedUser: response.data!));
@@ -398,6 +418,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           }
           if (updatedUser.avatar != null && updatedUser.avatar!.isNotEmpty) {
             await SessionManager.setAvatar(updatedUser.avatar!);
+          }
+          if (updatedUser.coverImage != null && updatedUser.coverImage!.isNotEmpty) {
+            await SessionManager.setCoverImage(updatedUser.coverImage!);
           }
 
           emit(SetUserInfoSuccess(user: updatedUser));

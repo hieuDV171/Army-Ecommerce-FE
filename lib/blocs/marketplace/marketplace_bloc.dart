@@ -486,7 +486,7 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
       emit(
         state.copyWith(
           balance: balance,
-          history: history.map((item) => item.toItem()).toList(),
+          history: history,
           isLoading: false,
         ),
       );
