@@ -6,10 +6,10 @@ import 'package:army_ecommerce/ui/auth/signup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../constants/app_colors.dart';
-import '../constants/app_spacing.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_text_field.dart';
+import '../util/constants/app_colors.dart';
+import '../util/constants/app_spacing.dart';
+import '../util/widgets/app_button.dart';
+import '../util/widgets/app_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

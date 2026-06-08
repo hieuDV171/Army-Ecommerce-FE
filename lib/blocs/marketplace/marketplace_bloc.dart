@@ -211,6 +211,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchRequested event,
     Emitter<ProductSearchState> emit,
   ) async {
+    final hasCondition = event.keyword.trim().isNotEmpty ||
+        (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') ||
+        (event.brandId != null && event.brandId!.isNotEmpty) ||
+        event.priceMin != null ||
+        event.priceMax != null;
+
     emit(
       state.copyWith(
         keyword: event.keyword,
@@ -218,7 +224,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         brandId: event.brandId,
         priceMin: event.priceMin,
         priceMax: event.priceMax,
-        useListProductsApi: false,
+        useListProductsApi: !hasCondition,
         lastId: null,
         products: const [],
         index: 0,
@@ -240,6 +246,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchFiltered event,
     Emitter<ProductSearchState> emit,
   ) async {
+    final hasCondition = event.keyword.trim().isNotEmpty ||
+        (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') ||
+        (event.brandId != null && event.brandId!.isNotEmpty) ||
+        event.priceMin != null ||
+        event.priceMax != null;
+
     emit(
       state.copyWith(
         keyword: event.keyword,
@@ -247,7 +259,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         brandId: event.brandId,
         priceMin: event.priceMin,
         priceMax: event.priceMax,
-        useListProductsApi: true,
+        useListProductsApi: !hasCondition,
         lastId: null,
         products: const [],
         index: 0,

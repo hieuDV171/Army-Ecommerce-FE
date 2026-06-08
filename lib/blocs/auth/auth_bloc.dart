@@ -61,7 +61,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         if (responseCode == ResponseCode.ok) {
           // Đăng ký bước 1 thành công 
-          emit(AuthSignupSuccess(phoneNumber: event.phoneNumber));
+          emit(AuthSignupSuccess(
+            phoneNumber: event.phoneNumber,
+            password: event.password,
+          ));
         } else {
           final errorMessage = response.message.isNotEmpty ? response.message : responseCode.message;
           emit(AuthFailure(error: errorMessage, code: response.code));
@@ -103,21 +106,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final responseCode = ResponseCode.fromCode(response.code);
 
         if (responseCode == ResponseCode.ok) {
-          // Xác thực OTP thành công -> Lưu session (nếu BE trả token) rồi vào Home
-          if (response.data != null) {
-            await SessionManager.saveSession(response.data!.token, response.data!.username, event.phoneNumber);
+          // Thực hiện đăng nhập ngầm để nhận được Token thật từ Backend!
+          final loginResponse = await authRepository.login(event.phoneNumber, event.password);
+          final loginCode = ResponseCode.fromCode(loginResponse.code);
+
+          if (loginCode == ResponseCode.ok && loginResponse.data != null) {
+            final realUser = loginResponse.data!;
+            await SessionManager.saveSession(realUser.token, realUser.username, event.phoneNumber);
 
             // Lưu avatar và coverImage từ API response
-            if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
-              await SessionManager.setAvatar(response.data!.avatar!);
+            if (realUser.avatar != null && realUser.avatar!.isNotEmpty) {
+              await SessionManager.setAvatar(realUser.avatar!);
             }
-            if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
-              await SessionManager.setCoverImage(response.data!.coverImage!);
+            if (realUser.coverImage != null && realUser.coverImage!.isNotEmpty) {
+              await SessionManager.setCoverImage(realUser.coverImage!);
             }
-            logger.i('VerifyOtp: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
+            logger.i('VerifyOtp (Autologin): saved session for username="${realUser.username}" phone="${event.phoneNumber}"');
+
+            emit(AuthSuccess(user: realUser));
+          } else {
+            final errMsg = loginResponse.message.isNotEmpty ? loginResponse.message : loginCode.message;
+            emit(AuthFailure(error: 'Đăng nhập tự động thất bại: $errMsg', code: loginResponse.code));
           }
-          // Phát state để vào Home
-          emit(AuthSuccess(user: response.data!));
         } else {
           final errorMessage = response.message.isNotEmpty ? response.message : responseCode.message;
           emit(AuthFailure(error: errorMessage, code: response.code));
@@ -207,15 +217,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       try {
         final response = await authRepository.createCodeResetPassword(event.phoneNumber);
-        final responseCode = ResponseCode.fromCode(response['code']); // response.code
+        final responseCode = ResponseCode.fromCode(response['code']?.toString() ?? '');
 
         if (responseCode == ResponseCode.ok) {
-          final tempOtp = response['data']['otp'].toString(); //
+          final tempOtp = response['data']['otp'].toString();
           // Thành công -> Phát state thông báo mã đã gửi
           emit(ForgotPasswordCodeSent(phoneNumber: event.phoneNumber, otp: tempOtp));
         } else {
           // Thất bại (SĐT chưa đăng ký...) -> Phát state lỗi
-          emit(AuthFailure(error: response['message'], code: response['code'])); // response.message // response.code
+          emit(AuthFailure(
+            error: response['message']?.toString() ?? 'Gửi mã xác thực thất bại',
+            code: response['code']?.toString() ?? '',
+          ));
         }
       } catch (e) {
         emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));
@@ -338,10 +351,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
              await SessionManager.setCoverImage(response.data!.coverImage!);
            }
 
-           emit(ChangeInfoSuccess(updatedUser: response.data!));
+           final token = await SessionManager.getToken() ?? '';
+           final updatedUser = response.data!.copyWith(token: token);
+           emit(ChangeInfoSuccess(updatedUser: updatedUser));
 
            // Phát tiếp AuthSuccess để đồng bộ trạng thái hệ thống và tự động chuyển sang HomeScreen
-           final token = await SessionManager.getToken() ?? '';
            final userWithToken = response.data!.copyWith(token: token, active: 1);
            emit(AuthSuccess(user: userWithToken));
         } else {
@@ -375,7 +389,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final responseCode = ResponseCode.fromCode(response.code);
 
         if (responseCode == ResponseCode.ok && response.data != null) {
-          emit(GetUserInfoSuccess(user: response.data!));
+          var fetchedUser = response.data!;
+          if (userId == null) {
+            fetchedUser = fetchedUser.copyWith(token: token);
+          }
+          // Lưu avatar, username và coverImage của bản thân vào bộ nhớ tạm nếu userId == null
+          if (userId == null) {
+            if (fetchedUser.username.isNotEmpty) {
+              await SessionManager.setUsername(fetchedUser.username);
+            }
+            if (fetchedUser.avatar != null && fetchedUser.avatar!.isNotEmpty) {
+              await SessionManager.setAvatar(fetchedUser.avatar!);
+            }
+            if (fetchedUser.coverImage != null && fetchedUser.coverImage!.isNotEmpty) {
+              await SessionManager.setCoverImage(fetchedUser.coverImage!);
+            }
+          }
+          emit(GetUserInfoSuccess(user: fetchedUser));
         } else {
           emit(GetUserInfoFailure(
             error: response.message.isNotEmpty ? response.message : responseCode.message,
@@ -411,7 +441,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         final responseCode = ResponseCode.fromCode(response.code);
         if (responseCode == ResponseCode.ok && response.data != null) {
-          final updatedUser = response.data!;
+          final token = await SessionManager.getToken() ?? '';
+          final updatedUser = response.data!.copyWith(token: token);
 
           if (updatedUser.username.isNotEmpty) {
             await SessionManager.setUsername(updatedUser.username);

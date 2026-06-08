@@ -5,12 +5,12 @@ import '../../blocs/marketplace/marketplace_event.dart';
 import '../../blocs/marketplace/marketplace_state.dart';
 import '../../models/marketplace_models.dart';
 import '../../repositories/marketplace_repository.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_radius.dart';
-import '../constants/app_spacing.dart';
-import '../widgets/app_text_field.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/error_state.dart';
+import '../util/constants/app_colors.dart';
+import '../util/constants/app_radius.dart';
+import '../util/constants/app_spacing.dart';
+import '../util/widgets/app_text_field.dart';
+import '../util/widgets/empty_state.dart';
+import '../util/widgets/error_state.dart';
 
 class ConversationPage extends StatelessWidget {
   const ConversationPage({super.key});

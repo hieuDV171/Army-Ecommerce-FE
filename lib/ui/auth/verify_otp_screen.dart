@@ -11,12 +11,14 @@ class VerifyOtpScreen extends StatefulWidget{
   final String phoneNumber;
   final bool isForgotPassword;
   final String? tempOtp; // Mã OTP tạm thời từ BE
+  final String? password; // Mật khẩu dùng để login ngầm
 
   const VerifyOtpScreen({
     super.key,
     required this.phoneNumber,
     this.isForgotPassword = false,
-    this.tempOtp
+    this.tempOtp,
+    this.password,
   });
 
   @override
@@ -65,7 +67,11 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     } else {
       // GỌI LOGIC ĐĂNG KÝ
       context.read<AuthBloc>().add(
-        VerifyOtpPressed(phoneNumber: widget.phoneNumber, code: otpCode),
+        VerifyOtpPressed(
+          phoneNumber: widget.phoneNumber,
+          password: widget.password ?? '',
+          code: otpCode,
+        ),
       );
     }
   }

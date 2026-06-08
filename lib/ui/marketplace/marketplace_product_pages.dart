@@ -1,8 +1,10 @@
+import 'package:army_ecommerce/blocs/chat/chat_event.dart';
+import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
-import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/repositories/chat_repository.dart';
 import 'package:army_ecommerce/ui/chat/chat_screen.dart';
@@ -17,26 +19,28 @@ import '../../blocs/marketplace/marketplace_event.dart';
 import '../../blocs/marketplace/marketplace_state.dart' show ProductDetailState, ProductSearchState, CheckoutState;
 import '../../models/marketplace_models.dart';
 import '../../models/user_model.dart';
+import '../../models/api_response.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/block_repository.dart';
 import '../../repositories/follow_repository.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../../core/services/cart_manager.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_radius.dart';
-import '../constants/app_spacing.dart';
-import '../theme/app_text_styles.dart';
-import '../widgets/app_bottom_sheet.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_text_field.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/error_state.dart';
-import '../widgets/loading_overlay.dart';
-import '../widgets/price_text.dart';
-import '../widgets/product_card.dart';
-import '../widgets/rating_stars.dart';
-import '../widgets/section_header.dart';
-import '../widgets/shimmer_product_grid.dart';
+import '../util/constants/app_colors.dart';
+import '../util/constants/app_radius.dart';
+import '../util/constants/app_spacing.dart';
+import '../util/theme/app_text_styles.dart';
+import '../util/widgets/app_bottom_sheet.dart';
+import '../util/widgets/app_button.dart';
+import '../util/widgets/app_text_field.dart';
+import '../util/widgets/empty_state.dart';
+import '../util/widgets/error_state.dart';
+import '../util/widgets/loading_overlay.dart';
+import '../util/widgets/price_text.dart';
+import '../util/widgets/product_card.dart';
+import '../util/widgets/rating_stars.dart';
+import '../util/widgets/section_header.dart';
+import '../util/widgets/shimmer_product_grid.dart';
+import '../util/widgets/shimmer_box.dart';
 import 'marketplace_shared.dart';
 
 class ProductDetailPage extends StatelessWidget {
@@ -117,13 +121,44 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               actions: [
                 IconButton(
                   tooltip: 'Báo cáo',
-                  onPressed: product == null ? null : () => _showReportSheet(context),
+                  onPressed: product == null
+                      ? null
+                      : () {
+                          final authState = context.read<AuthBloc>().state;
+                          final token = authState.currentUser?.token ?? '';
+                          if (checkLogin(context, token: token)) {
+                            _showReportSheet(context);
+                          }
+                        },
                   icon: const Icon(Icons.flag_outlined),
                 ),
               ],
             ),
             bottomNavigationBar: product == null
-                ? null
+                ? SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: null,
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              label: const Text('Chat'),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: AppButton(
+                              label: 'Thêm giỏ hàng',
+                              icon: Icons.add_shopping_cart,
+                              onPressed: null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 : SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -134,33 +169,39 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                               onPressed: product.seller?.id == null || product.seller!.id.isEmpty
                                   ? null
                                   : () {
-                                final authState = context.read<AuthBloc>().state;
-                                final currentUserId =
-                                    authState is AuthSuccess ? authState.user.id : '';
-                                final chatBloc = context.read<ChatBloc>();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => BlocProvider.value(
-                                      value: chatBloc,
-                                      child: ChatScreen(
-                                        partnerId: product.seller!.id,
-                                        partnerUsername:
-                                            product.sellerName ?? 'Người bán',
-                                        partnerAvatar: product.seller?.avatar,
-                                        currentUserId: currentUserId,
-                                        productId: product.id,
-                                        // Truyền thông tin sản phẩm để hiển thị trên banner
-                                        productTitle: product.title,
-                                        productPrice: product.price,
-                                        productImageUrl: product.imageUrls.isNotEmpty
-                                            ? product.imageUrls.first
-                                            : null,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                                      final authState = context.read<AuthBloc>().state;
+                                      final token = authState.currentUser?.token ?? '';
+                                      if (checkLogin(context, token: token)) {
+                                        final currentUserId =
+                                            authState.currentUser?.id ?? '';
+                                        final chatBloc = context.read<ChatBloc>();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => BlocProvider.value(
+                                              value: chatBloc,
+                                              child: ChatScreen(
+                                                partnerId: product.seller!.id,
+                                                partnerUsername:
+                                                    product.sellerName ?? 'Người bán',
+                                                partnerAvatar: product.seller?.avatar,
+                                                currentUserId: currentUserId,
+                                                productId: product.id,
+                                                productTitle: product.title,
+                                                productPrice: product.price,
+                                                productImageUrl: product.imageUrls.isNotEmpty
+                                                    ? product.imageUrls.first
+                                                    : null,
+                                              ),
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (token.isNotEmpty) {
+                                            chatBloc.add(LoadConversationsRequested());
+                                          }
+                                        });
+                                      }
+                                    },
                               icon: const Icon(Icons.chat_bubble_outline),
                               label: const Text('Chat'),
                             ),
@@ -184,20 +225,48 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     );
   }
 
+  Widget _buildLoadingBody(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        const ShimmerBox(height: 300),
+        const SizedBox(height: AppSpacing.md),
+        const ShimmerBox(height: 24, width: 200),
+        const SizedBox(height: AppSpacing.sm),
+        const ShimmerBox(height: 20, width: 100),
+        const SizedBox(height: AppSpacing.lg),
+        const ShimmerBox(height: 40),
+        const Divider(height: 32),
+        const ShimmerBox(height: 16),
+        const SizedBox(height: AppSpacing.sm),
+        const ShimmerBox(height: 16),
+        const SizedBox(height: AppSpacing.sm),
+        const ShimmerBox(height: 16),
+        const Divider(height: 32),
+        Row(
+          children: [
+            const ShimmerBox(height: 50, width: 50, borderRadius: BorderRadius.all(Radius.circular(25))),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const ShimmerBox(height: 16, width: 150),
+                  const SizedBox(height: AppSpacing.xs),
+                  const ShimmerBox(height: 14, width: 100),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildBody(BuildContext context, ProductDetailState state) {
     final product = state.product;
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (state.errorMessage != null && product == null) {
-      return ErrorState(
-        message: state.errorMessage!,
-        onRetry: () {
-          final bloc = context.read<ProductDetailBloc>();
-          final id = (bloc.state.product?.id).toString();
-          if (id.isNotEmpty) bloc.add(ProductDetailRequested(id));
-        },
-      );
+    if (state.isLoading || (state.errorMessage != null && product == null)) {
+      return _buildLoadingBody(context);
     }
     if (product == null) {
       return const EmptyState(title: 'Không tìm thấy sản phẩm');
@@ -362,7 +431,13 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   const Spacer(),
                   IconButton(
                     tooltip: product.isLiked ? 'Bỏ thích' : 'Thích',
-                    onPressed: () => context.read<ProductDetailBloc>().add(ProductLikeToggled()),
+                    onPressed: () {
+                      final authState = context.read<AuthBloc>().state;
+                      final token = authState.currentUser?.token ?? '';
+                      if (checkLogin(context, token: token)) {
+                        context.read<ProductDetailBloc>().add(ProductLikeToggled());
+                      }
+                    },
                     icon: Icon(
                       product.isLiked ? Icons.favorite : Icons.favorite_border,
                       color: product.isLiked ? AppColors.danger : AppColors.textSecondary,
@@ -504,7 +579,13 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               SectionHeader(
                 title: 'Bình luận',
                 actionLabel: 'Viết',
-                onActionTap: () => _showCommentSheet(context),
+                onActionTap: () {
+                  final authState = context.read<AuthBloc>().state;
+                  final token = authState.currentUser?.token ?? '';
+                  if (checkLogin(context, token: token)) {
+                    _showCommentSheet(context);
+                  }
+                },
               ),
               const SizedBox(height: AppSpacing.sm),
               if (state.comments.isEmpty)
@@ -864,7 +945,7 @@ class _RatingsSectionState extends State<_RatingsSection> {
             label: 'Gửi đánh giá',
             onPressed: () async {
               final authState = context.read<AuthBloc>().state;
-              final userId = authState is AuthSuccess ? authState.user.id : '';
+              final userId = authState.currentUser?.id ?? '';
               if (userId.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bạn cần đăng nhập để đánh giá')));
                 return;
@@ -976,9 +1057,13 @@ class _SearchViewState extends State<_SearchView> {
   }
 
   Future<void> _openFilterSheet(BuildContext context, ProductSearchState state) async {
+    final searchBloc = context.read<ProductSearchBloc>();
     await AppBottomSheet.show<void>(
       context: context,
-      child: _ProductSearchFilterSheet(state: state),
+      child: BlocProvider.value(
+        value: searchBloc,
+        child: _ProductSearchFilterSheet(state: state),
+      ),
     );
   }
 
@@ -1142,30 +1227,63 @@ class _ProductSearchFilterSheet extends StatefulWidget {
 }
 
 class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
-  late final TextEditingController _brandController;
-  late final TextEditingController _minPriceController;
-  late final TextEditingController _maxPriceController;
+  late List<ProductBrandInfo> _availableBrands;
+  String? _selectedBrandId;
+  late double _currentMinPrice;
+  late double _currentMaxPrice;
+  late double _minPriceBound;
+  late double _maxPriceBound;
 
   @override
   void initState() {
     super.initState();
-    _brandController = TextEditingController(text: widget.state.brandId ?? '');
-    _minPriceController = TextEditingController(text: widget.state.priceMin?.toString() ?? '');
-    _maxPriceController = TextEditingController(text: widget.state.priceMax?.toString() ?? '');
+    _selectedBrandId = widget.state.brandId;
+
+    // Collect brands from products
+    final Map<String, ProductBrandInfo> brandMap = {};
+    for (final product in widget.state.products) {
+      final brand = product.brand;
+      if (brand != null && brand.id.isNotEmpty) {
+        brandMap[brand.id] = brand;
+      }
+    }
+    // Also include currently selected brand if not already in the map
+    if (widget.state.brandId != null && !brandMap.containsKey(widget.state.brandId)) {
+      brandMap[widget.state.brandId!] = ProductBrandInfo(
+        id: widget.state.brandId!,
+        name: 'ID: ${widget.state.brandId}',
+      );
+    }
+    _availableBrands = brandMap.values.toList();
+
+    // Determine price range bounds
+    final products = widget.state.products;
+    if (products.isNotEmpty) {
+      _minPriceBound = products.map((p) => p.price.toDouble()).reduce((a, b) => a < b ? a : b);
+      _maxPriceBound = products.map((p) => p.price.toDouble()).reduce((a, b) => a > b ? a : b);
+    } else {
+      _minPriceBound = 0;
+      _maxPriceBound = 10000000;
+    }
+
+    if (_minPriceBound == _maxPriceBound) {
+      _maxPriceBound = _minPriceBound + 100000;
+    }
+
+    _currentMinPrice = (widget.state.priceMin?.toDouble() ?? _minPriceBound).clamp(_minPriceBound, _maxPriceBound);
+    _currentMaxPrice = (widget.state.priceMax?.toDouble() ?? _maxPriceBound).clamp(_minPriceBound, _maxPriceBound);
+    if (_currentMinPrice > _currentMaxPrice) {
+      _currentMinPrice = _minPriceBound;
+      _currentMaxPrice = _maxPriceBound;
+    }
   }
 
-  @override
-  void dispose() {
-    _brandController.dispose();
-    _minPriceController.dispose();
-    _maxPriceController.dispose();
-    super.dispose();
-  }
-
-  num? _parseNumber(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return null;
-    return num.tryParse(trimmed);
+  String _formatPrice(num value) {
+    try {
+      return '${NumberFormat.decimalPattern('vi_VN').format(value)} xu';
+    } catch (_) {
+      return '${value.toStringAsFixed(0)} xu';
+    }
   }
 
   void _applyFilter() {
@@ -1173,9 +1291,9 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
           ProductSearchFiltered(
             keyword: widget.state.keyword,
             categoryId: widget.state.categoryId,
-            brandId: _brandController.text.trim().isEmpty ? null : _brandController.text.trim(),
-            priceMin: _parseNumber(_minPriceController.text),
-            priceMax: _parseNumber(_maxPriceController.text),
+            brandId: _selectedBrandId,
+            priceMin: _currentMinPrice.round(),
+            priceMax: _currentMaxPrice.round(),
           ),
         );
     Navigator.of(context).pop();
@@ -1194,32 +1312,101 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.lg,
+      ),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Bộ lọc tìm kiếm', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _brandController,
-              label: 'Brand ID',
-              hint: 'Nhập brand ID nếu cần lọc',
+            Text(
+              'Bộ lọc tìm kiếm',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _minPriceController,
-              label: 'Giá tối thiểu',
-              hint: 'Ví dụ: 100000',
-              keyboardType: TextInputType.number,
+            Text(
+              'Thương hiệu',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
+            const SizedBox(height: AppSpacing.xs),
+            if (_availableBrands.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Text(
+                  'Không có thương hiệu nào từ các sản phẩm tìm thấy',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+              )
+            else
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: _availableBrands.map((brand) {
+                  final isSelected = _selectedBrandId == brand.id;
+                  final displayName = brand.name.isNotEmpty && brand.name != 'Thương hiệu'
+                      ? brand.name
+                      : 'ID: ${brand.id}';
+                  return ChoiceChip(
+                    label: Text(displayName),
+                    selected: isSelected,
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
+                    checkmarkColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedBrandId = selected ? brand.id : null;
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _maxPriceController,
-              label: 'Giá tối đa',
-              hint: 'Ví dụ: 500000',
-              keyboardType: TextInputType.number,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Khoảng giá',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                Text(
+                  '${_formatPrice(_currentMinPrice)} - ${_formatPrice(_currentMaxPrice)}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            RangeSlider(
+              values: RangeValues(_currentMinPrice, _currentMaxPrice),
+              min: _minPriceBound,
+              max: _maxPriceBound,
+              activeColor: AppColors.primary,
+              inactiveColor: AppColors.border,
+              labels: RangeLabels(
+                _formatPrice(_currentMinPrice),
+                _formatPrice(_currentMaxPrice),
+              ),
+              onChanged: (values) {
+                setState(() {
+                  _currentMinPrice = values.start;
+                  _currentMaxPrice = values.end;
+                });
+              },
             ),
             const SizedBox(height: AppSpacing.lg),
             Row(
@@ -1445,12 +1632,20 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   bool _isFollowed = false;
   bool _isBlocked = false;
 
+  // Trạng thái sản phẩm & phân trang
+  late final ScrollController _scrollController;
+  List<ProductModel> _products = [];
+  bool _isLoadingProducts = false;
+  int _currentIndex = 0;
+  bool _hasReachedEnd = false;
+
   @override
   void initState() {
     super.initState();
     _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
     _chatBloc = ChatBloc(chatRepository: context.read<ChatRepository>());
+    _scrollController = ScrollController()..addListener(_onScroll);
     _loadUser();
   }
 
@@ -1459,67 +1654,133 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     _followBloc.close();
     _blockBloc.close();
     _chatBloc.close();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent - 320;
+    if (_scrollController.position.pixels >= threshold) {
+      _loadMoreProducts();
+    }
   }
 
   Future<void> _loadUser() async {
     setState(() {
       _isLoading = true;
       _error = null;
+      _products = [];
+      _currentIndex = 0;
+      _hasReachedEnd = false;
+      _isLoadingProducts = true;
     });
 
     final authRepo = context.read<AuthRepository>();
+    final marketRepo = context.read<MarketplaceRepository>();
     try {
       final token = await SessionManager.getToken();
-      if (token == null || token.isEmpty) {
-        setState(() {
-          _error = 'Bạn cần đăng nhập để xem thông tin người dùng.';
-          _isLoading = false;
-        });
-        return;
-      }
+      final isGuest = token == null || token.isEmpty;
 
-      final response = await authRepo.getUserInfo(token: token, userId: _sellerUserId);
-      if (response.data != null) {
+      if (isGuest) {
+        // Guest mode: load listings, skip follow/block status
+        final productsResponse = await marketRepo.getUserListings(
+          userId: _sellerUserId,
+          index: 0,
+          count: 20,
+        );
+        if (!mounted) return;
         setState(() {
-          _user = response.data;
+          _products = productsResponse;
+          _currentIndex = 1;
+          _hasReachedEnd = productsResponse.length < 20;
+          _isFollowed = false;
+          _isBlocked = false;
           _isLoading = false;
-          // Khởi tạo trạng thái nút từ dữ liệu API trả về
-          _isFollowed = response.data!.followed ?? false;
-          _isBlocked = response.data!.isBlocked ?? false;
+          _isLoadingProducts = false;
         });
       } else {
-        setState(() {
-          _error = response.message.isNotEmpty ? response.message : 'Không tìm thấy người dùng.';
-          _isLoading = false;
-        });
+        // Fetch user info and first listings page concurrently
+        final results = await Future.wait([
+          authRepo.getUserInfo(token: token, userId: _sellerUserId),
+          marketRepo.getUserListings(userId: _sellerUserId, index: 0, count: 20),
+        ]);
+
+        final userResponse = results[0] as ApiResponse<UserModel>;
+        final productsResponse = results[1] as List<ProductModel>;
+
+        if (userResponse.data != null) {
+          if (!mounted) return;
+          setState(() {
+            _user = userResponse.data;
+            _products = productsResponse;
+            _currentIndex = 1;
+            _hasReachedEnd = productsResponse.length < 20;
+            _isFollowed = userResponse.data!.followed ?? false;
+            _isBlocked = userResponse.data!.isBlocked ?? false;
+            _isLoading = false;
+            _isLoadingProducts = false;
+          });
+        } else {
+          if (!mounted) return;
+          setState(() {
+            _error = userResponse.message.isNotEmpty ? userResponse.message : 'Không tìm thấy người dùng.';
+            _isLoading = false;
+            _isLoadingProducts = false;
+          });
+        }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
+        _isLoadingProducts = false;
       });
     }
   }
 
-  void _openSellerListings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => SellerListingsPage(userId: _sellerUserId)),
-    );
+  Future<void> _loadMoreProducts() async {
+    if (_isLoadingProducts || _hasReachedEnd || _isLoading) return;
+
+    setState(() => _isLoadingProducts = true);
+    final marketRepo = context.read<MarketplaceRepository>();
+    try {
+      final products = await marketRepo.getUserListings(
+        userId: _sellerUserId,
+        index: _currentIndex,
+        count: 20,
+      );
+      if (!mounted) return;
+      setState(() {
+        _products = [..._products, ...products];
+        _currentIndex += 1;
+        _hasReachedEnd = products.length < 20;
+        _isLoadingProducts = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingProducts = false;
+      });
+    }
   }
 
   // Bật/tắt follow người bán
   void _toggleFollow() {
-    if (_isFollowed) {
-      _showUnfollowDialog();
-    } else {
-      setState(() => _isFollowed = true);
-      _followBloc.add(FollowUserRequested(
-        followeeId: _sellerUserId,
-        username: widget.sellerName,
-        action: 'follow',
-      ));
+    final authState = context.read<AuthBloc>().state;
+    final token = authState.currentUser?.token ?? '';
+    if (checkLogin(context, token: token)) {
+      if (_isFollowed) {
+        _showUnfollowDialog();
+      } else {
+        setState(() => _isFollowed = true);
+        _followBloc.add(FollowUserRequested(
+          followeeId: _sellerUserId,
+          username: widget.sellerName,
+          action: 'follow',
+        ));
+      }
     }
   }
 
@@ -1556,10 +1817,14 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 
   // Bật/tắt chặn người bán
   void _toggleBlock() {
-    if (_isBlocked) {
-      _showUnblockDialog();
-    } else {
-      _showBlockDialog();
+    final authState = context.read<AuthBloc>().state;
+    final token = authState.currentUser?.token ?? '';
+    if (checkLogin(context, token: token)) {
+      if (_isBlocked) {
+        _showUnblockDialog();
+      } else {
+        _showBlockDialog();
+      }
     }
   }
 
@@ -1630,26 +1895,31 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   }
 
   void _openChat() {
-    // Lấy userId của người dùng hiện tại từ AuthBloc để xác định bong bóng tin nhắn
     final authState = context.read<AuthBloc>().state;
-    final currentUserId = authState is AuthSuccess ? authState.user.id : '';
+    final token = authState.currentUser?.token ?? '';
+    if (checkLogin(context, token: token)) {
+      final currentUserId = authState.currentUser?.id ?? '';
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: _chatBloc,
-          child: ChatScreen(
-            partnerId: _sellerUserId,
-            partnerUsername: _user?.username ?? widget.sellerName,
-            partnerAvatar: _user?.avatar ?? widget.avatarUrl,
-            currentUserId: currentUserId,
-            // Chat từ trang người bán không đính kèm sản phẩm cụ thể → không hiện banner
-            productId: null,
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: _chatBloc,
+            child: ChatScreen(
+              partnerId: _sellerUserId,
+              partnerUsername: _user?.username ?? widget.sellerName,
+              partnerAvatar: _user?.avatar ?? widget.avatarUrl,
+              currentUserId: currentUserId,
+              productId: null,
+            ),
           ),
         ),
-      ),
-    );
+      ).then((_) {
+        if (mounted && token.isNotEmpty) {
+          _chatBloc.add(LoadConversationsRequested());
+        }
+      });
+    }
   }
 
   @override
@@ -1658,6 +1928,11 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     final displayName = _user?.username ?? widget.sellerName;
     final displayListing = _user?.listing?.toString() ?? widget.sellerListing;
     final displayScore = widget.sellerScore;
+
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.currentUser?.id ?? '';
+    final isMe = _sellerUserId == currentUserId && currentUserId.isNotEmpty;
+    final isGuest = !authState.isAuthenticated;
 
     return MultiBlocProvider(
       providers: [
@@ -1716,6 +1991,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                   onRetry: _loadUser,
                 )
               : ListView(
+                  controller: _scrollController,
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   children: [
                     Row(
@@ -1738,25 +2014,68 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    // Hàng 1: Chat + Xem sản phẩm
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppButton(
-                            label: 'Chat',
-                            icon: Icons.chat_bubble_outline,
-                            onPressed: _openChat,
+                    if (isMe) ...[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: AppButton(
-                            label: 'Xem sản phẩm của người bán',
-                            icon: Icons.inventory_2_outlined,
-                            onPressed: _openSellerListings,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: AppColors.primary),
+                            SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                'Đây là trang cửa hàng của bạn. Bạn không thể tự nhắn tin, theo dõi hoặc tự chặn chính mình.',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ] else if (isGuest) ...[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: Colors.grey.withValues(alpha: 0.3),
                           ),
                         ),
-                      ],
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.grey),
+                            SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                'Bạn đang ở chế độ khách. Đăng nhập để nhắn tin, theo dõi hoặc chặn người bán này.',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    // Hàng 1: Chat (Full width)
+                    AppButton(
+                      label: 'Chat',
+                      icon: Icons.chat_bubble_outline,
+                      onPressed: isMe ? null : _openChat,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     // Hàng 2: Theo dõi + Chặn
@@ -1768,7 +2087,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                             icon: _isFollowed ? Icons.check : Icons.person_add_outlined,
                             isActive: _isFollowed,
                             activeColor: AppColors.primary,
-                            onTap: _toggleFollow,
+                            onTap: isMe ? null : _toggleFollow,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -1778,7 +2097,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                             icon: Icons.block,
                             isActive: _isBlocked,
                             activeColor: Colors.black87,
-                            onTap: _toggleBlock,
+                            onTap: isMe ? null : _toggleBlock,
                           ),
                         ),
                       ],
@@ -1797,6 +2116,47 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                     ]
                     else
                       const Text('Thông tin chi tiết người bán chưa có.'),
+                    const Divider(height: 32),
+                    const SectionHeader(title: 'Sản phẩm đang bán'),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (_products.isEmpty && !_isLoadingProducts)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        child: Text(
+                          'Chưa đăng bán sản phẩm nào.',
+                          style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+                        ),
+                      )
+                    else ...[
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _products.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 0.66,
+                        ),
+                        itemBuilder: (context, index) {
+                          final product = _products[index];
+                          return ProductCard(
+                            product: productCardDataFromModel(product),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProductDetailPage(productId: product.id),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      if (_isLoadingProducts)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                    ],
                   ],
                 ),
         ),
@@ -1993,7 +2353,7 @@ class _SellerActionButton extends StatelessWidget {
   final IconData icon;
   final bool isActive;
   final Color activeColor;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _SellerActionButton({
     required this.label,
@@ -2005,15 +2365,20 @@ class _SellerActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDisabled = onTap == null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: isActive ? activeColor : Colors.white,
+          color: isDisabled
+              ? Colors.grey[200]
+              : (isActive ? activeColor : Colors.white),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-            color: isActive ? activeColor : Colors.grey[400]!,
+            color: isDisabled
+                ? Colors.grey[300]!
+                : (isActive ? activeColor : Colors.grey[400]!),
             width: 1,
           ),
         ),
@@ -2022,14 +2387,22 @@ class _SellerActionButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: isActive ? Colors.white : Colors.grey[700]),
+            Icon(
+              icon,
+              size: 16,
+              color: isDisabled
+                  ? Colors.grey[400]
+                  : (isActive ? Colors.white : Colors.grey[700]),
+            ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: isActive ? Colors.white : Colors.grey[700],
+                color: isDisabled
+                    ? Colors.grey[400]
+                    : (isActive ? Colors.white : Colors.grey[700]),
               ),
             ),
           ],

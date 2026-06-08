@@ -19,7 +19,7 @@ class ApiPaths {
   static const brands = '/api/get_list_brands';
   static const listProducts = '/api/get_list_products';
   static const productDetail = '/api/get_products';
-  static const search = '/api/search_products';
+  static const search = '/api/search';
   static const saveSearch = '/api/save_search';
   static const savedSearches = '/api/get_saved_searches';
 }

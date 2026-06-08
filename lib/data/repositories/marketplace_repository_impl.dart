@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 
@@ -13,8 +14,24 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<List<CategoryModel>> getCategories({int? parentId}) async {
-    final response = await remoteDataSource.getCategories(parentId: parentId);
-    return parseListFromData(response.data, CategoryModel.fromJson);
+    try {
+      final response = await remoteDataSource.getCategories(parentId: parentId);
+      // Cache response data for first level categories
+      if (parentId == null || parentId == 0) {
+        SessionManager.saveCachedCategoriesJson(jsonEncode(response.data));
+      }
+      return parseListFromData(response.data, CategoryModel.fromJson);
+    } catch (e) {
+      // Offline fallback: load categories from cache
+      if (parentId == null || parentId == 0) {
+        final cachedJson = await SessionManager.getCachedCategoriesJson();
+        if (cachedJson != null) {
+          final decoded = jsonDecode(cachedJson);
+          return parseListFromData(decoded, CategoryModel.fromJson);
+        }
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -46,31 +63,57 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int? longitude,
     int? lastId,
   }) async {
-    final response = await remoteDataSource.getListProducts(
-      index: index,
-      count: count,
-      keyword: keyword,
-      categoryId: categoryId,
-      brandId: brandId,
-      productSizeId: productSizeId,
-      priceMin: priceMin,
-      priceMax: priceMax,
-      order: order,
-      latitude: latitude,
-      longitude: longitude,
-      lastId: lastId,
-    );
-    final products = parseListFromData(response.data, ProductModel.fromJson);
-    final map = parseMapFromData(response.data);
-    int? last;
-    final rawLast = map['last_id'] ?? map['lastId'] ?? map['last'];
-    if (rawLast is int) {
-      last = rawLast;
-    } else if (rawLast != null) {
-      last = int.tryParse(rawLast.toString());
-    }
+    try {
+      final response = await remoteDataSource.getListProducts(
+        index: index,
+        count: count,
+        keyword: keyword,
+        categoryId: categoryId,
+        brandId: brandId,
+        productSizeId: productSizeId,
+        priceMin: priceMin,
+        priceMax: priceMax,
+        order: order,
+        latitude: latitude,
+        longitude: longitude,
+        lastId: lastId,
+      );
+      // Cache the product list response for the first-load home page view
+      if (index == 0 && keyword == null && categoryId == null && brandId == null) {
+        SessionManager.saveCachedProductsJson(jsonEncode(response.data));
+      }
 
-    return ProductListResult(products: products, lastId: last);
+      final products = parseListFromData(response.data, ProductModel.fromJson);
+      final map = parseMapFromData(response.data);
+      int? last;
+      final rawLast = map['last_id'] ?? map['lastId'] ?? map['last'];
+      if (rawLast is int) {
+        last = rawLast;
+      } else if (rawLast != null) {
+        last = int.tryParse(rawLast.toString());
+      }
+
+      return ProductListResult(products: products, lastId: last);
+    } catch (e) {
+      // Offline fallback: load products from cache for home screen first-load
+      if (index == 0 && keyword == null && categoryId == null && brandId == null) {
+        final cachedJson = await SessionManager.getCachedProductsJson();
+        if (cachedJson != null) {
+          final decoded = jsonDecode(cachedJson);
+          final products = parseListFromData(decoded, ProductModel.fromJson);
+          final map = parseMapFromData(decoded);
+          int? last;
+          final rawLast = map['last_id'] ?? map['lastId'] ?? map['last'];
+          if (rawLast is int) {
+            last = rawLast;
+          } else if (rawLast != null) {
+            last = int.tryParse(rawLast.toString());
+          }
+          return ProductListResult(products: products, lastId: last);
+        }
+      }
+      rethrow;
+    }
   }
 
   @override

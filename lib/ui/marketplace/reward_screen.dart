@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../constants/app_colors.dart';
-import '../constants/app_spacing.dart';
-import '../constants/app_radius.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_text_field.dart';
+import '../util/constants/app_colors.dart';
+import '../util/constants/app_spacing.dart';
+import '../util/constants/app_radius.dart';
+import '../util/widgets/app_button.dart';
+import '../util/widgets/app_text_field.dart';
 
 /// Màn hình Quy đổi điểm thưởng (Tuần 8)
 /// - Tab 1: Upload video (upload_video API) ✅

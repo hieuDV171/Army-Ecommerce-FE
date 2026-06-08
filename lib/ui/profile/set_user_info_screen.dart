@@ -8,6 +8,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../models/user_model.dart';
+import '../util/widgets/image_crop_screen.dart';
 
 class SetUserInfoScreen extends StatefulWidget {
   final UserModel currentUser;
@@ -59,21 +60,59 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
   Future<void> _pickAvatar() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null && mounted) {
-      setState(() => _avatarFile = File(picked.path));
+      final croppedFile = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropScreen(
+            imageFile: File(picked.path),
+            isCircle: true,
+            title: 'Cắt ảnh đại diện',
+          ),
+        ),
+      );
+      if (croppedFile != null && mounted) {
+        setState(() => _avatarFile = croppedFile);
+      }
     }
   }
 
   Future<void> _pickCoverImage() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null && mounted) {
-      setState(() => _coverImageFile = File(picked.path));
+      final croppedFile = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropScreen(
+            imageFile: File(picked.path),
+            isCircle: false,
+            aspectRatio: 2.0,
+            title: 'Cắt ảnh bìa hồ sơ',
+          ),
+        ),
+      );
+      if (croppedFile != null && mounted) {
+        setState(() => _coverImageFile = croppedFile);
+      }
     }
   }
 
   Future<void> _pickCoverImageWeb() async {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked != null && mounted) {
-      setState(() => _coverImageWebFile = File(picked.path));
+      final croppedFile = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropScreen(
+            imageFile: File(picked.path),
+            isCircle: false,
+            aspectRatio: 3.5,
+            title: 'Cắt ảnh bìa cho web',
+          ),
+        ),
+      );
+      if (croppedFile != null && mounted) {
+        setState(() => _coverImageWebFile = croppedFile);
+      }
     }
   }
 

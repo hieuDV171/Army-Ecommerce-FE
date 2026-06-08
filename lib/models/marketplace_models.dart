@@ -32,6 +32,17 @@ class BrandModel {
   }
 }
 
+bool _isVideoUrl(String url) {
+  final lower = url.toLowerCase().split('?').first;
+  return lower.endsWith('.mp4') ||
+      lower.endsWith('.mov') ||
+      lower.endsWith('.avi') ||
+      lower.endsWith('.mkv') ||
+      lower.endsWith('.flv') ||
+      lower.endsWith('.webm') ||
+      lower.endsWith('.3gp');
+}
+
 class ProductModel {
   final String id;
   final String title;
@@ -149,7 +160,11 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final sellerJson = _readMap(json, ['seller']);
-    final brandJson = _readMap(json, ['brand']);
+    final rawBrandId = _readOptionalString(json, ['brand_id', 'brandId']);
+    final brandJson = _readMap(json, ['brand']) ?? (rawBrandId != null ? {
+      'id': rawBrandId,
+      'name': '',
+    } : null);
     final categoryJson = _readMap(json, ['category']);
 
     final parsedImages = _readProductImageList(json, ['image', 'images']);
@@ -159,16 +174,43 @@ class ProductModel {
       'image_url',
       'thumbnail',
     ]);
-    final imageUrls = parsedImages.isNotEmpty
-        ? parsedImages
-            .map((item) => item.url)
-            .where((url) => url.isNotEmpty)
-            .toList()
+
+    final cleanImages = <ProductImageModel>[];
+    final extraVideos = <ProductVideoModel>[];
+
+    for (final img in parsedImages) {
+      if (_isVideoUrl(img.url)) {
+        extraVideos.add(ProductVideoModel(url: img.url));
+      } else {
+        cleanImages.add(img);
+      }
+    }
+
+    final cleanImageUrls = <String>[];
+    final rawImageUrls = cleanImages.isNotEmpty
+        ? cleanImages.map((e) => e.url).toList()
         : fallbackImageUrls;
 
-    final parsedVideos = _readProductVideoList(json, ['video', 'videos']);
-    final parsedSizes = _readProductSizeList(json, ['size', 'sizes', 'variants']);
+    for (final url in rawImageUrls) {
+      if (_isVideoUrl(url)) {
+        if (!extraVideos.any((v) => v.url == url)) {
+          extraVideos.add(ProductVideoModel(url: url));
+        }
+      } else if (url.isNotEmpty) {
+        cleanImageUrls.add(url);
+      }
+    }
 
+    final originalVideos = _readProductVideoList(json, ['video', 'videos']);
+    final parsedVideos = <ProductVideoModel>[];
+    parsedVideos.addAll(originalVideos);
+    for (final ev in extraVideos) {
+      if (!parsedVideos.any((v) => v.url == ev.url)) {
+        parsedVideos.add(ev);
+      }
+    }
+
+    final parsedSizes = _readProductSizeList(json, ['size', 'sizes', 'variants']);
     final likeText = _readOptionalString(json, ['like', 'like_count', 'likes']);
 
     return ProductModel(
@@ -178,8 +220,8 @@ class ProductModel {
       priceNew: _readOptionalString(json, ['price_new']),
       priceDiscount: _readOptionalString(json, ['price_discount']),
       described: _readString(json, ['described', 'description', 'details'], fallback: ''),
-      imageUrls: imageUrls,
-      images: parsedImages,
+      imageUrls: cleanImageUrls,
+      images: cleanImages,
       videos: parsedVideos,
       sizes: parsedSizes,
       brand: brandJson == null ? null : ProductBrandInfo.fromJson(brandJson),

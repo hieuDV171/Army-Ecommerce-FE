@@ -5,22 +5,23 @@ import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
 import 'package:army_ecommerce/ui/notification/notification_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
 import '../../blocs/marketplace/marketplace_event.dart' show HomeRequested, HomeRefreshed, HomeLoadMoreRequested;
 import '../../blocs/marketplace/marketplace_state.dart' show HomeState;
 import '../../models/marketplace_models.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_radius.dart';
-import '../constants/app_spacing.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/error_state.dart';
-import '../widgets/gradient_header.dart';
-import '../widgets/product_card.dart';
-import '../widgets/search_pill.dart';
-import '../widgets/section_header.dart';
-import '../widgets/shimmer_product_grid.dart';
+import '../util/constants/app_colors.dart';
+import '../util/constants/app_radius.dart';
+import '../util/constants/app_spacing.dart';
+import '../util/widgets/empty_state.dart';
+import '../util/widgets/error_state.dart';
+import '../util/widgets/gradient_header.dart';
+import '../util/widgets/product_card.dart';
+import '../util/widgets/search_pill.dart';
+import '../util/widgets/section_header.dart';
+import '../util/widgets/shimmer_product_grid.dart';
 import 'marketplace_list_pages.dart';
 import 'marketplace_product_pages.dart';
 import 'marketplace_shared.dart';
@@ -29,12 +30,14 @@ class MarketplaceHomeBody extends StatefulWidget {
   final String username;
   final String? avatarUrl;
   final String userId;
+  final String token;
 
   const MarketplaceHomeBody({
     super.key,
     required this.username,
     this.avatarUrl,
     required this.userId,
+    required this.token,
   });
 
   @override
@@ -99,7 +102,11 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
             controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(
-                child: _HomeHeader(username: widget.username, userId: widget.userId),
+                child: _HomeHeader(
+                  username: widget.username,
+                  userId: widget.userId,
+                  token: widget.token,
+                ),
               ),
               SliverToBoxAdapter(
                 child: _HomeCategories(categories: state.categories),
@@ -175,8 +182,13 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
 class _HomeHeader extends StatelessWidget {
   final String username;
   final String userId;
+  final String token;
 
-  const _HomeHeader({required this.username, required this.userId});
+  const _HomeHeader({
+    required this.username,
+    required this.userId,
+    required this.token,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -207,11 +219,11 @@ class _HomeHeader extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => BlocProvider.value(
                         value: notifBloc,
-                        child: const NotificationScreen(),
+                        child: NotificationScreen(token: token),
                       ),
                     ),
                   ).then((_) {
-                    if (context.mounted) {
+                    if (context.mounted && token.isNotEmpty) {
                       notifBloc.add(LoadNotificationsRequested());
                     }
                   });
@@ -227,19 +239,23 @@ class _HomeHeader extends StatelessWidget {
                   return IconButton(
                     tooltip: 'Tin nhắn',
                     onPressed: () {
-                      final chatBloc = ctx.read<ChatBloc>();
-                      Navigator.push(
-                        ctx,
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider.value(
-                            value: chatBloc,
-                            child: ConversationListScreen(currentUserId: userId),
+                      if (checkLogin(ctx, token: token)) {
+                        final chatBloc = ctx.read<ChatBloc>();
+                        Navigator.push(
+                          ctx,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: chatBloc,
+                              child: ConversationListScreen(currentUserId: userId),
+                            ),
                           ),
-                        ),
-                      ).then((_) {
-                        // Làm mới badge khi quay lại từ màn hình chat
-                        if (ctx.mounted) chatBloc.add(LoadConversationsRequested());
-                      });
+                        ).then((_) {
+                          // Làm mới badge khi quay lại từ màn hình chat
+                          if (ctx.mounted && token.isNotEmpty) {
+                            chatBloc.add(LoadConversationsRequested());
+                          }
+                        });
+                      }
                     },
                     icon: Stack(
                       clipBehavior: Clip.none,
@@ -286,10 +302,14 @@ class _HomeHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const WalletPage()),
-            ),
+            onTap: () {
+              if (checkLogin(context, token: token)) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const WalletPage()),
+                );
+              }
+            },
             borderRadius: BorderRadius.circular(AppRadius.xl),
             child: Container(
               padding: const EdgeInsets.symmetric(

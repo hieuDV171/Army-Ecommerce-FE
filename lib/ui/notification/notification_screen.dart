@@ -4,13 +4,15 @@ import 'package:army_ecommerce/blocs/notification/notification_state.dart';
 import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/ui/auth/login_screen.dart';
 
 const Color _shopeeOrange = Color(0xFFE83A14);
 const Color _greyBackground = Color(0xFFF5F5F5);
 
 class NotificationScreen extends StatefulWidget {
   final bool isTab;
-  const NotificationScreen({super.key, this.isTab = false});
+  final String token;
+  const NotificationScreen({super.key, this.isTab = false, this.token = ""});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -24,7 +26,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<NotificationBloc>().add(LoadNotificationsRequested());
+    if (widget.token.isNotEmpty) {
+      context.read<NotificationBloc>().add(LoadNotificationsRequested());
+    }
     _scrollController.addListener(_onScroll);
   }
 
@@ -60,6 +64,65 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.token.isEmpty) {
+      return Scaffold(
+        backgroundColor: _greyBackground,
+        appBar: AppBar(
+          backgroundColor: widget.isTab ? _shopeeOrange : Colors.white,
+          elevation: widget.isTab ? 0.0 : 0.5,
+          iconTheme: IconThemeData(color: widget.isTab ? Colors.white : Colors.black87),
+          leading: widget.isTab
+              ? IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                )
+              : null,
+          title: Text(
+            'Thông báo',
+            style: TextStyle(
+              color: widget.isTab ? Colors.white : Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.notifications_none_outlined, size: 80, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              const Text(
+                'Vui lòng đăng nhập để xem thông báo',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _shopeeOrange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                child: const Text('Đăng nhập ngay', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(

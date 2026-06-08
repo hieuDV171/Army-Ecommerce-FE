@@ -4,6 +4,19 @@ import 'package:equatable/equatable.dart';
 abstract class AuthState extends Equatable {
   @override
   List<Object?> get props => [];
+
+  // Thêm helper getters để lấy thông tin user hiện tại và kiểm tra đăng nhập
+  UserModel? get currentUser {
+    final state = this;
+    if (state is AuthSuccess) return state.user;
+    if (state is GetUserInfoSuccess) return state.user;
+    if (state is SetUserInfoSuccess) return state.user;
+    if (state is ChangeInfoSuccess) return state.updatedUser;
+    if (state is ResetPasswordSuccess) return state.user;
+    return null;
+  }
+
+  bool get isAuthenticated => currentUser != null && currentUser!.token.isNotEmpty;
 }
 
 // Trạng thái khi người dùng chưa đăng nhập
@@ -34,12 +47,13 @@ class AuthFailure extends AuthState {
 }
 
 class AuthSignupSuccess extends AuthState {
-  final String phoneNumber; // Truyền SĐT sang màn hình OTP để người dùng biết
+  final String phoneNumber;
+  final String password; // Mật khẩu đăng ký dùng để tự động đăng nhập sau OTP
 
-  AuthSignupSuccess({required this.phoneNumber});
+  AuthSignupSuccess({required this.phoneNumber, required this.password});
 
   @override
-  List<Object?> get props => [phoneNumber];
+  List<Object?> get props => [phoneNumber, password];
 }
 
 // Trạng thái báo hiệu đã đăng xuất thành công khỏi thiết bị

@@ -1,6 +1,7 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/ui/auth/verify_otp_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
@@ -67,9 +68,18 @@ class _SignupScreenState extends State<SignupScreen> {
             if (state is AuthSignupSuccess) {
               // Đăng ký thành công -> Chuyển sang màn hình xác thực OTP
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đăng ký thành công, vui lòng đăng nhập')),
+                const SnackBar(content: Text('Đăng ký thành công, vui lòng xác thực OTP')),
               );
-              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VerifyOtpScreen(
+                    phoneNumber: state.phoneNumber,
+                    isForgotPassword: false,
+                    password: state.password,
+                  ),
+                ),
+              );
             } else if (state is AuthSuccess) {
               // Không điều hướng trực tiếp — main.dart sẽ tự xử lý khi nhận AuthSuccess
               ScaffoldMessenger.of(context).showSnackBar(

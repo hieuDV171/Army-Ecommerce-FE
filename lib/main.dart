@@ -16,7 +16,7 @@ import 'package:army_ecommerce/repositories/setting_repository.dart';
 import 'data/repositories/setting_repository_impl.dart';
 import 'data/sources/remote/setting_remote_data_source.dart';
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
-import 'package:army_ecommerce/ui/auth/login_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/network_status_wrapper.dart';
 import 'package:army_ecommerce/ui/home/home_screen.dart';
 import 'package:army_ecommerce/ui/profile/change_info_after_signup_screen.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +27,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/api/dio_client.dart';
 import 'core/services/firebase_notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'ui/theme/app_theme.dart';
+import 'ui/util/theme/app_theme.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'firebase_options.dart';
 
@@ -135,6 +135,9 @@ class _MyAppState extends State<MyApp> {
         child: MaterialApp(
           title: 'Army E-commerce',
           theme: AppTheme.light,
+          builder: (context, child) {
+            return NetworkStatusWrapper(child: child!);
+          },
           home: BlocConsumer<AuthBloc, AuthState>(
             listenWhen: (previous, current) {
               return current is AuthSuccess || current is AuthLogoutSuccess || current is Unauthenticated;
@@ -182,9 +185,13 @@ class _MyAppState extends State<MyApp> {
                 );
               }
 
-              // Chưa đăng nhập hoặc vừa đăng xuất
+              // Chưa đăng nhập hoặc vừa đăng xuất -> Cho phép vào HomeScreen lướt sản phẩm (Guest Mode)
               if (state is Unauthenticated || state is AuthLogoutSuccess) {
-                return const LoginScreen();
+                return const HomeScreen(
+                  userId: "",
+                  username: "Khách",
+                  token: "",
+                );
               }
 
               // Màn hình chờ (Splash Screen) khi đang kiểm tra token

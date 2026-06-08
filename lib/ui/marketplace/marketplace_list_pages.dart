@@ -8,16 +8,16 @@ import '../../blocs/marketplace/marketplace_event.dart';
 import '../../blocs/marketplace/marketplace_state.dart';
 import '../../models/marketplace_models.dart';
 import '../../repositories/marketplace_repository.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_radius.dart';
-import '../constants/app_spacing.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_text_field.dart';
-import '../widgets/empty_state.dart';
-import '../widgets/error_state.dart';
-import '../widgets/loading_overlay.dart';
-import '../widgets/price_text.dart';
-import '../widgets/section_header.dart';
+import '../util/constants/app_colors.dart';
+import '../util/constants/app_radius.dart';
+import '../util/constants/app_spacing.dart';
+import '../util/widgets/app_button.dart';
+import '../util/widgets/app_text_field.dart';
+import '../util/widgets/empty_state.dart';
+import '../util/widgets/error_state.dart';
+import '../util/widgets/loading_overlay.dart';
+import '../util/widgets/price_text.dart';
+import '../util/widgets/section_header.dart';
 
 class ProductListPage extends StatelessWidget {
   final String title;

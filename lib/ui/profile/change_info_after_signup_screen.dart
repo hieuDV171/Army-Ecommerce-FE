@@ -8,6 +8,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../core/services/session_manager.dart';
+import '../util/widgets/image_crop_screen.dart';
 
 class ChangeInfoAfterSignupScreen extends StatefulWidget {
   final String currentUsername;
@@ -47,9 +48,23 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
     );
 
     if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
+      if (!mounted) return;
+      final croppedFile = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageCropScreen(
+            imageFile: File(pickedFile.path),
+            isCircle: true,
+            title: 'Cắt ảnh đại diện',
+          ),
+        ),
+      );
+
+      if (croppedFile != null && mounted) {
+        setState(() {
+          _selectedImage = croppedFile;
+        });
+      }
     }
   }
 

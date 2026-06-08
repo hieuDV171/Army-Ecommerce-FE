@@ -49,12 +49,13 @@ class AppStarted extends AuthEvent {}
 
 class VerifyOtpPressed extends AuthEvent {
   final String phoneNumber;
+  final String password;
   final String code;
 
-  VerifyOtpPressed({required this.phoneNumber, required this.code});
+  VerifyOtpPressed({required this.phoneNumber, required this.password, required this.code});
 
   @override
-  List<Object?> get props => [phoneNumber, code];
+  List<Object?> get props => [phoneNumber, password, code];
 }
 
 // Sự kiện yêu cầu gửi mã OTP quên mật khẩu

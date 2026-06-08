@@ -70,6 +70,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
         _conversationsIndex += 1;
+
+        // Sắp xếp danh sách hội thoại theo tin nhắn mới nhất lên đầu làm phương án phòng thủ
+        list.sort((a, b) {
+          final aTime = a.lastMessage?.created;
+          final bTime = b.lastMessage?.created;
+          if (aTime == null && bTime == null) return 0;
+          if (aTime == null) return 1;
+          if (bTime == null) return -1;
+          return bTime.compareTo(aTime);
+        });
+
         emit(ConversationsLoaded(
           conversations: list,
           hasMore: list.length == _pageSize,
@@ -106,6 +117,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         final newItems = response.data ?? [];
         _conversationsIndex += 1;
         final updatedList = [...currentState.conversations, ...newItems];
+
+        // Sắp xếp danh sách hội thoại theo tin nhắn mới nhất lên đầu làm phương án phòng thủ
+        updatedList.sort((a, b) {
+          final aTime = a.lastMessage?.created;
+          final bTime = b.lastMessage?.created;
+          if (aTime == null && bTime == null) return 0;
+          if (aTime == null) return 1;
+          if (bTime == null) return -1;
+          return bTime.compareTo(aTime);
+        });
+
         emit(ConversationsLoaded(
           conversations: updatedList,
           hasMore: newItems.length == _pageSize,

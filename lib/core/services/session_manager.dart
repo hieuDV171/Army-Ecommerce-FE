@@ -93,6 +93,29 @@ class SessionManager {
     return coverImage;
   }
 
+  static const String _keyCachedProducts = "cached_products_json";
+  static const String _keyCachedCategories = "cached_categories_json";
+
+  static Future<void> saveCachedProductsJson(String jsonString) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCachedProducts, jsonString);
+  }
+
+  static Future<String?> getCachedProductsJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyCachedProducts);
+  }
+
+  static Future<void> saveCachedCategoriesJson(String jsonString) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCachedCategories, jsonString);
+  }
+
+  static Future<String?> getCachedCategoriesJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyCachedCategories);
+  }
+
   // Xóa sạch khi đăng xuất
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();

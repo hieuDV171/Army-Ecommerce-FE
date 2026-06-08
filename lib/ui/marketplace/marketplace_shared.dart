@@ -1,5 +1,5 @@
 import '../../models/marketplace_models.dart';
-import '../widgets/product_card.dart';
+import '../util/widgets/product_card.dart';
 
 ProductCardData productCardDataFromModel(ProductModel product) {
   final primaryImage = product.images.isNotEmpty
