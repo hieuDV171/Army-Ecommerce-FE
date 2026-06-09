@@ -42,6 +42,7 @@ import '../util/widgets/section_header.dart';
 import '../util/widgets/shimmer_product_grid.dart';
 import '../util/widgets/shimmer_box.dart';
 import 'marketplace_shared.dart';
+import 'product_form_page.dart';
 import '../util/theme/special_app_theme.dart';
 
 class ProductDetailPage extends StatelessWidget {
@@ -132,19 +133,52 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 style: TextStyle(color: Colors.white, fontSize: 16),
               ),
               actions: [
-                IconButton(
-                  tooltip: 'Báo cáo',
-                  onPressed: product == null
-                      ? null
-                      : () {
-                          final authState = context.read<AuthBloc>().state;
-                          final token = authState.currentUser?.token ?? '';
-                          if (checkLogin(context, token: token)) {
-                            _showReportSheet(context);
-                          }
-                        },
-                  icon: const Icon(Icons.flag_outlined),
-                ),
+                if (product != null) ...[
+                  Builder(builder: (context) {
+                    final authState = context.read<AuthBloc>().state;
+                    final currentUserId = authState.currentUser?.id ?? '';
+                    final sellerId = product.seller?.id ?? '';
+                    final isOwnProduct = sellerId.isNotEmpty && sellerId.toString() == currentUserId.toString();
+                    if (isOwnProduct) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Chỉnh sửa',
+                            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProductFormPage(product: product),
+                                ),
+                              );
+                              if (result == true && context.mounted) {
+                                context.read<ProductDetailBloc>().add(ProductDetailRequested(product.id));
+                              }
+                            },
+                          ),
+                          IconButton(
+                            tooltip: 'Xóa',
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            onPressed: () => _confirmDeleteProduct(context, product.id),
+                          ),
+                        ],
+                      );
+                    }
+                    return IconButton(
+                      tooltip: 'Báo cáo',
+                      onPressed: () {
+                        final authState = context.read<AuthBloc>().state;
+                        final token = authState.currentUser?.token ?? '';
+                        if (checkLogin(context, token: token)) {
+                          _showReportSheet(context);
+                        }
+                      },
+                      icon: const Icon(Icons.flag_outlined),
+                    );
+                  }),
+                ],
               ],
             ),
             bottomNavigationBar: product == null
@@ -172,19 +206,19 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       ),
                     ),
                   )
-                : SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Builder(builder: (context) {
-                              final authState = context.read<AuthBloc>().state;
-                              final currentUserId = authState.currentUser?.id ?? '';
-                              final sellerId = product.seller?.id ?? '';
-                              final isOwnProduct = sellerId.isNotEmpty && sellerId == currentUserId;
-                              final canChat = !isOwnProduct && sellerId.isNotEmpty;
-                              return OutlinedButton.icon(
+                : Builder(builder: (context) {
+                    final authState = context.read<AuthBloc>().state;
+                    final currentUserId = authState.currentUser?.id ?? '';
+                    final sellerId = product.seller?.id ?? '';
+                    final isOwnProduct = sellerId.isNotEmpty && sellerId == currentUserId;
+                    final canChat = !isOwnProduct && sellerId.isNotEmpty;
+                    return SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
                                 onPressed: canChat
                                     ? () {
                                         final token = authState.currentUser?.token ?? '';
@@ -220,21 +254,21 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                                     : null,
                                 icon: const Icon(Icons.chat_bubble_outline),
                                 label: const Text('Chat'),
-                              );
-                            }),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: AppButton(
-                              label: 'Thêm giỏ hàng',
-                              icon: Icons.add_shopping_cart,
-                              onPressed: () => _showAddToCartSheet(context, product),
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: AppButton(
+                                label: 'Thêm giỏ hàng',
+                                icon: Icons.add_shopping_cart,
+                                onPressed: isOwnProduct ? null : () => _showAddToCartSheet(context, product),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  }),
             body: _buildBody(context, state),
           ),
         );
@@ -782,6 +816,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           product.price,
                           firstImg,
                           quantity: quantity,
+                          sellerId: product.seller?.id,
                         );
 
                         Navigator.pop(context);
@@ -851,6 +886,54 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteProduct(BuildContext context, String productId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xóa sản phẩm'),
+        content: const Text('Bạn có chắc chắn muốn xóa sản phẩm này không? Thao tác này không thể hoàn tác.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    if (!context.mounted) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await context.read<MarketplaceRepository>().deleteProduct(productId);
+      if (!context.mounted) return;
+      Navigator.pop(context); // Pop loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Xóa sản phẩm thành công')),
+      );
+      Navigator.pop(context, true); // Pop detail page back to listings, with refresh indicator
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); // Pop loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 }
 
@@ -1555,8 +1638,31 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.currentUser?.id ?? '';
+    final isOwnListings = currentUserId.isNotEmpty && currentUserId.toString() == widget.userId.toString();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Sản phẩm người bán')),
+      floatingActionButton: isOwnListings
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ProductFormPage(),
+                  ),
+                );
+                if (result == true) {
+                  _loadProducts();
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Thêm sản phẩm'),
+              backgroundColor: context.specialTheme.primaryColor,
+              foregroundColor: Colors.white,
+            )
+          : null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null && _products.isEmpty
@@ -1598,7 +1704,7 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
                                     MaterialPageRoute(
                                       builder: (_) => ProductDetailPage(productId: product.id),
                                     ),
-                                  ),
+                                  ).then((_) => _loadProducts()),
                                 );
                               },
                             ),

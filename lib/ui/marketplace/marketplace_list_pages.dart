@@ -730,12 +730,14 @@ class _OrderStateList extends StatelessWidget {
     return BlocProvider(
       create: (context) => SimpleListBloc(
         marketplaceRepository: repository,
-        loader: (index, count) => repository.getGenericList(
-          '/order/get_list_purchases',
-          data: {'state': state},
-          index: index,
-          count: count,
-        ),
+        loader: (index, count) async {
+          final orders = await repository.getOrders(
+            state: state,
+            index: index,
+            count: count,
+          );
+          return orders.map((order) => order.toItem()).toList();
+        },
       )..add(SimpleListRequested()),
       child: const _SimpleListBody(emptyMessage: 'Chưa có đơn hàng'),
     );
@@ -1125,60 +1127,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
   late final TextEditingController _longitudeCtrl;
   bool _isDefault = false;
   bool _isSubmitting = false;
-  String? _selectedProvince;
-  String? _selectedDistrict;
 
-  // Mock data for provinces and districts (user can extend with real API later)
-  final Map<String, List<String>> _provincesDistricts = {
-    'TP. Hồ Chí Minh': [
-      'Quận 1',
-      'Quận 2',
-      'Quận 3',
-      'Quận 4',
-      'Quận 5',
-      'Quận 6',
-      'Quận 7',
-      'Quận 8',
-      'Quận 9',
-      'Quận 10',
-      'Quận 11',
-      'Quận 12',
-      'Quận Bình Tân',
-      'Quận Bình Thạnh',
-      'Quận Gò Vấp',
-      'Quận Phú Nhuận',
-      'Quận Tân Bình',
-      'Quận Tân Phú',
-      'Quận Thủ Đức',
-      'Huyện Bình Chánh',
-      'Huyện Cần Giờ',
-      'Huyện Củ Chi',
-      'Huyện Hóc Môn',
-      'Huyện Nhà Bè',
-    ],
-    'Hà Nội': [
-      'Quận Ba Đình',
-      'Quận Hoàn Kiếm',
-      'Quận Tây Hồ',
-      'Quận Long Biên',
-      'Quận Đống Đa',
-      'Quận Hai Bà Trưng',
-      'Quận Hoàng Mai',
-      'Quận Thanh Xuân',
-      'Huyện Sóc Sơn',
-      'Huyện Đông Anh',
-      'Huyện Gia Lâm',
-      'Huyện thanh trì',
-    ],
-    'Đà Nẵng': [
-      'Quận Hải Châu',
-      'Quận Cẩm Lệ',
-      'Quận Thanh Khê',
-      'Quận Sơn Trà',
-      'Quận Ngũ Hành Sơn',
-      'Huyện Hoàng Sa',
-    ],
-  };
+  List<ProvinceModel> _provinces = [];
+  List<WardModel> _wards = [];
+  ProvinceModel? _selectedProvinceModel;
+  WardModel? _selectedWardModel;
+  bool _isLoadingProvinces = false;
+  bool _isLoadingWards = false;
 
   final List<Map<String, dynamic>> _presetLocations = const [
     {'name': 'Hồ Hoàn Kiếm, Hà Nội', 'lat': 21.0285, 'lng': 105.8542},
@@ -1209,11 +1164,10 @@ class _AddressFormPageState extends State<AddressFormPage> {
       text: widget.address?.longitude ?? '',
     );
     _isDefault = widget.address?.isDefault ?? false;
-    // Set default province if needed
-    if (_provincesDistricts.isNotEmpty && _selectedProvince == null) {
-      _selectedProvince = _provincesDistricts.keys.first;
-      _selectedDistrict = _provincesDistricts[_selectedProvince]?.first;
-    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadProvinces();
+    });
   }
 
   @override
@@ -1226,6 +1180,71 @@ class _AddressFormPageState extends State<AddressFormPage> {
     _latitudeCtrl.dispose();
     _longitudeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProvinces() async {
+    if (!mounted) return;
+    setState(() => _isLoadingProvinces = true);
+    try {
+      final repository = context.read<MarketplaceRepository>();
+      final provinces = await repository.getProvinces();
+      if (!mounted) return;
+      setState(() {
+        _provinces = provinces;
+        _isLoadingProvinces = false;
+
+        if (_isEditMode && widget.address?.province != null) {
+          final matched = provinces.firstWhere(
+            (p) => p.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase(),
+            orElse: () => provinces.first,
+          );
+          _selectedProvinceModel = matched;
+        } else if (provinces.isNotEmpty) {
+          _selectedProvinceModel = provinces.first;
+        }
+      });
+      if (_selectedProvinceModel != null) {
+        await _loadWards(_selectedProvinceModel!.id);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingProvinces = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải danh mục tỉnh/thành phố: $e')),
+      );
+    }
+  }
+
+  Future<void> _loadWards(int provinceId) async {
+    if (!mounted) return;
+    setState(() => _isLoadingWards = true);
+    try {
+      final repository = context.read<MarketplaceRepository>();
+      final wards = await repository.getWards(provinceId);
+      if (!mounted) return;
+      setState(() {
+        _wards = wards;
+        _isLoadingWards = false;
+
+        if (_isEditMode && widget.address?.district != null && _selectedProvinceModel != null && _selectedProvinceModel!.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase()) {
+          final matched = wards.firstWhere(
+            (w) => w.name.trim().toLowerCase() == widget.address!.district!.trim().toLowerCase(),
+            orElse: () => wards.first,
+          );
+          _selectedWardModel = matched;
+        } else if (wards.isNotEmpty) {
+          _selectedWardModel = wards.first;
+        } else {
+          _selectedWardModel = null;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingWards = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi tải danh mục phường/xã: $e')),
+      );
+    }
   }
 
   void _showLocationPicker(BuildContext context) {
@@ -1324,10 +1343,10 @@ class _AddressFormPageState extends State<AddressFormPage> {
       return;
     }
 
-    if (_selectedProvince == null || _selectedDistrict == null) {
+    if (_selectedProvinceModel == null || _selectedWardModel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng chọn Tỉnh/Thành phố và Quận/Huyện'),
+          content: Text('Vui lòng chọn Tỉnh/Thành phố và Phường/Xã'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -1356,10 +1375,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
           phone: phone,
           isDefault: _isDefault,
           addressDetail: addressDetail,
-          province: _selectedProvince!,
-          district: _selectedDistrict!,
+          province: _selectedProvinceModel!.name,
+          district: _selectedWardModel!.name,
           latitude: latitude,
           longitude: longitude,
+          addressId: [_selectedWardModel!.id, _selectedProvinceModel!.id],
         ),
       );
     } else {
@@ -1371,10 +1391,11 @@ class _AddressFormPageState extends State<AddressFormPage> {
           phone: phone,
           isDefault: _isDefault,
           addressDetail: addressDetail,
-          province: _selectedProvince!,
-          district: _selectedDistrict!,
+          province: _selectedProvinceModel!.name,
+          district: _selectedWardModel!.name,
           latitude: latitude,
           longitude: longitude,
+          addressId: [_selectedWardModel!.id, _selectedProvinceModel!.id],
         ),
       );
     }
@@ -1433,33 +1454,35 @@ class _AddressFormPageState extends State<AddressFormPage> {
                     border: Border.all(color: AppColors.border),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: DropdownButton<String>(
+                  child: DropdownButton<ProvinceModel>(
                     isExpanded: true,
-                    underline: SizedBox(),
-                    value: _selectedProvince,
+                    underline: const SizedBox(),
+                    value: _selectedProvinceModel,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    items: _provincesDistricts.keys.map((province) {
+                    items: _provinces.map((province) {
                       return DropdownMenuItem(
                         value: province,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md,
                           ),
-                          child: Text(province),
+                          child: Text(province.name),
                         ),
                       );
                     }).toList(),
-                    onChanged: (value) {
+                    onChanged: _isLoadingProvinces ? null : (value) {
                       if (value != null) {
                         setState(() {
-                          _selectedProvince = value;
-                          _selectedDistrict = _provincesDistricts[value]?.first;
+                          _selectedProvinceModel = value;
+                          _selectedWardModel = null;
+                          _wards = [];
                         });
+                        _loadWards(value.id);
                       }
                     },
-                    hint: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text('Chọn Tỉnh/Thành phố *'),
+                    hint: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text(_isLoadingProvinces ? 'Đang tải tỉnh/thành phố...' : 'Chọn Tỉnh/Thành phố *'),
                     ),
                   ),
                 ),
@@ -1470,32 +1493,30 @@ class _AddressFormPageState extends State<AddressFormPage> {
                     border: Border.all(color: AppColors.border),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  child: DropdownButton<String>(
+                  child: DropdownButton<WardModel>(
                     isExpanded: true,
-                    underline: SizedBox(),
-                    value: _selectedDistrict,
+                    underline: const SizedBox(),
+                    value: _selectedWardModel,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    items: (_provincesDistricts[_selectedProvince] ?? []).map((
-                      district,
-                    ) {
+                    items: _wards.map((ward) {
                       return DropdownMenuItem(
-                        value: district,
+                        value: ward,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md,
                           ),
-                          child: Text(district),
+                          child: Text(ward.name),
                         ),
                       );
                     }).toList(),
-                    onChanged: (value) {
+                    onChanged: _isLoadingWards ? null : (value) {
                       if (value != null) {
-                        setState(() => _selectedDistrict = value);
+                        setState(() => _selectedWardModel = value);
                       }
                     },
-                    hint: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text('Chọn Quận/Huyện *'),
+                    hint: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text(_isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn Phường/Xã *'),
                     ),
                   ),
                 ),

@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class CategoryModel {
   final String id;
   final String name;
@@ -278,14 +280,26 @@ class ProductVideoModel {
 
 class ProductSizeModel {
   final String id;
-  final String name;
+  final String name; // represents size
+  final String? color;
+  final int? stock;
+  final num? weight;
 
-  const ProductSizeModel({required this.id, required this.name});
+  const ProductSizeModel({
+    required this.id,
+    required this.name,
+    this.color,
+    this.stock,
+    this.weight,
+  });
 
   factory ProductSizeModel.fromJson(Map<String, dynamic> json) {
     return ProductSizeModel(
-      id: _readString(json, ['id', 'size_id']),
+      id: _readString(json, ['id', 'size_id', 'variant_id']),
       name: _readString(json, ['size_name', 'size', 'name'], fallback: ''),
+      color: _readOptionalString(json, ['color']),
+      stock: _readInt(json, ['stock', 'quantity']),
+      weight: _readNum(json, ['weight']),
     );
   }
 }
@@ -628,11 +642,50 @@ class OrderModel {
 
   MarketplaceItem toItem() {
     final displayTotal = finalPrice > 0 ? finalPrice : total;
+    final formattedPrice = displayTotal > 0
+        ? '${NumberFormat.decimalPattern('vi_VN').format(displayTotal)} xu'
+        : displayTotal.toString();
     return MarketplaceItem(
       id: id,
       title: summary,
       subtitle: status,
-      trailing: displayTotal == 0 ? createdAt : displayTotal.toString(),
+      trailing: displayTotal == 0 ? createdAt : formattedPrice,
+    );
+  }
+
+  OrderModel copyWith({
+    String? id,
+    String? status,
+    num? total,
+    num? shipFee,
+    num? finalPrice,
+    String? createdAt,
+    String? note,
+    String? sellerName,
+    String? buyerName,
+    String? buyerPhone,
+    String? buyerAddress,
+    String? buyerId,
+    String? sellerId,
+    String? summary,
+    List<OrderLineItem>? items,
+  }) {
+    return OrderModel(
+      id: id ?? this.id,
+      status: status ?? this.status,
+      total: total ?? this.total,
+      shipFee: shipFee ?? this.shipFee,
+      finalPrice: finalPrice ?? this.finalPrice,
+      createdAt: createdAt ?? this.createdAt,
+      note: note ?? this.note,
+      sellerName: sellerName ?? this.sellerName,
+      buyerName: buyerName ?? this.buyerName,
+      buyerPhone: buyerPhone ?? this.buyerPhone,
+      buyerAddress: buyerAddress ?? this.buyerAddress,
+      buyerId: buyerId ?? this.buyerId,
+      sellerId: sellerId ?? this.sellerId,
+      summary: summary ?? this.summary,
+      items: items ?? this.items,
     );
   }
 }
@@ -1112,6 +1165,40 @@ class UploadVideoResponseModel {
       video: _readString(json, ['video']),
       thumb: _readString(json, ['thumb']),
       bonusCoin: _readInt(json, ['bonus_coin']) ?? 0,
+    );
+  }
+}
+
+class ProvinceModel {
+  final int id;
+  final String name;
+
+  const ProvinceModel({required this.id, required this.name});
+
+  factory ProvinceModel.fromJson(Map<String, dynamic> json) {
+    return ProvinceModel(
+      id: _readInt(json, ['id']) ?? 0,
+      name: _readString(json, ['name'], fallback: ''),
+    );
+  }
+}
+
+class WardModel {
+  final int id;
+  final String name;
+  final int provinceId;
+
+  const WardModel({
+    required this.id,
+    required this.name,
+    required this.provinceId,
+  });
+
+  factory WardModel.fromJson(Map<String, dynamic> json) {
+    return WardModel(
+      id: _readInt(json, ['id']) ?? 0,
+      name: _readString(json, ['name'], fallback: ''),
+      provinceId: _readInt(json, ['province_id', 'provinces_id']) ?? 0,
     );
   }
 }

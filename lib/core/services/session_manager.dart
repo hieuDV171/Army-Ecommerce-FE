@@ -116,6 +116,19 @@ class SessionManager {
     return prefs.getString(_keyCachedCategories);
   }
 
+  static Future<void> setOrderEdited(String orderId, bool edited) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('order_edited_$orderId', edited);
+    logger.d('SessionManager: setOrderEdited -> $orderId : $edited');
+  }
+
+  static Future<bool> isOrderEdited(String orderId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final edited = prefs.getBool('order_edited_$orderId') ?? false;
+    logger.d('SessionManager: isOrderEdited -> $orderId : $edited');
+    return edited;
+  }
+
   // Xóa sạch khi đăng xuất
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();

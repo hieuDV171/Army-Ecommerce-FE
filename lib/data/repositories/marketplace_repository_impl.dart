@@ -307,6 +307,18 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
+  Future<List<ProvinceModel>> getProvinces() async {
+    final response = await remoteDataSource.getProvinces();
+    return parseListFromData(response.data, ProvinceModel.fromJson);
+  }
+
+  @override
+  Future<List<WardModel>> getWards(int provinceId) async {
+    final response = await remoteDataSource.getWards(provinceId);
+    return parseListFromData(response.data, WardModel.fromJson);
+  }
+
+  @override
   Future<List<OrderModel>> getOrders({
     String? state,
     int index = 0,
@@ -362,63 +374,85 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Future<void> createOrder(Map<String, dynamic> data) {
-    return remoteDataSource.post(ApiPaths.createOrder, data: data);
+  Future<void> createOrder(Map<String, dynamic> data) async {
+    final response = await remoteDataSource.post(ApiPaths.createOrder, data: data);
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
   }
 
   @override
-  Future<void> editOrder(String purchaseId, Map<String, dynamic> data) {
+  Future<Map<String, dynamic>> editOrder(String purchaseId, Map<String, dynamic> data) async {
     final request = <String, dynamic>{'id': purchaseId, ...data};
-    return remoteDataSource.post(ApiPaths.editPurchase, data: request);
+    final response = await remoteDataSource.post(ApiPaths.editPurchase, data: request);
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
+    return parseMapFromData(response.data);
   }
 
   @override
-  Future<void> cancelOrder(String id, {String? reason}) {
+  Future<void> cancelOrder(String id, {String? reason}) async {
     final request = <String, dynamic>{
       'id': id,
       'reason': reason ?? '',
     };
 
-    return remoteDataSource.post(
+    final response = await remoteDataSource.post(
       ApiPaths.cancelOrder,
       data: request,
     );
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
   }
 
   @override
-  Future<void> confirmReceived(String purchaseId) {
-    return remoteDataSource.post(
+  Future<void> confirmReceived(String purchaseId) async {
+    final response = await remoteDataSource.post(
       ApiPaths.buyerConfirmReceived,
       data: {'purchase_id': purchaseId},
     );
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
   }
 
   @override
-  Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId}) {
+  Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId}) async {
     final request = <String, dynamic>{'purchase_id': purchaseId};
     if (buyerId != null) request['buyer_id'] = buyerId;
-    return remoteDataSource.post(ApiPaths.sellerMarkAsShipped, data: request);
+    final response = await remoteDataSource.post(ApiPaths.sellerMarkAsShipped, data: request);
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
   }
 
   @override
-  Future<void> refundOrder(String purchaseId, {String? reason}) {
+  Future<void> refundOrder(String purchaseId, {String? reason}) async {
     final request = <String, dynamic>{'purchase_id': purchaseId};
     if (reason != null) request['reason'] = reason;
 
-    return remoteDataSource.post(
+    final response = await remoteDataSource.post(
       ApiPaths.refundOrder,
       data: request,
     );
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
   }
 
   @override
-  Future<void> setAcceptBuyer(String purchaseId, String buyerId, bool accept) {
+  Future<void> setAcceptBuyer(String purchaseId, String buyerId, bool accept) async {
     final request = <String, dynamic>{
       'purchase_id': purchaseId,
       'buyer_id': buyerId,
       'is_accept': accept ? 1 : 0,
     };
-    return remoteDataSource.post(ApiPaths.setAcceptBuyer, data: request);
+    final response = await remoteDataSource.post(ApiPaths.setAcceptBuyer, data: request);
+    if (response.code != '1000') {
+      throw Exception(response.message);
+    }
   }
 
   @override
@@ -579,6 +613,40 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     throw UnimplementedError(
       'upload_video: API chưa được cài đặt phía Backend.',
     );
+  }
+
+  @override
+  Future<String?> uploadFile(File file) async {
+    final response = await remoteDataSource.uploadFile(file);
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Upload thất bại');
+    }
+    final map = response.data as Map<String, dynamic>?;
+    return map?['url'] as String?;
+  }
+
+  @override
+  Future<void> addProduct(Map<String, dynamic> data) async {
+    final response = await remoteDataSource.addProduct(data);
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Thêm sản phẩm thất bại');
+    }
+  }
+
+  @override
+  Future<void> updateProduct(String id, Map<String, dynamic> data) async {
+    final response = await remoteDataSource.updateProduct(id, data);
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Cập nhật sản phẩm thất bại');
+    }
+  }
+
+  @override
+  Future<void> deleteProduct(String id) async {
+    final response = await remoteDataSource.deleteProduct(id);
+    if (response.code != '1000') {
+      throw Exception(response.message.isNotEmpty ? response.message : 'Xóa sản phẩm thất bại');
+    }
   }
 
   Object _idValue(String value) {

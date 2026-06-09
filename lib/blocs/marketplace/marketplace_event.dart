@@ -246,6 +246,7 @@ class AddressAdded extends AddressEvent {
   final String district;
   final String latitude;
   final String longitude;
+  final List<int>? addressId;
 
   AddressAdded({
     required this.address,
@@ -258,10 +259,11 @@ class AddressAdded extends AddressEvent {
     required this.district,
     required this.latitude,
     required this.longitude,
+    this.addressId,
   });
 
   @override
-  List<Object?> get props => [address, fullAddress, receiverName, phone, isDefault, addressDetail, province, district, latitude, longitude];
+  List<Object?> get props => [address, fullAddress, receiverName, phone, isDefault, addressDetail, province, district, latitude, longitude, addressId];
 }
 
 class AddressUpdated extends AddressEvent {
@@ -276,6 +278,7 @@ class AddressUpdated extends AddressEvent {
   final String district;
   final String latitude;
   final String longitude;
+  final List<int>? addressId;
 
   AddressUpdated({
     required this.id,
@@ -289,10 +292,11 @@ class AddressUpdated extends AddressEvent {
     required this.district,
     required this.latitude,
     required this.longitude,
+    this.addressId,
   });
 
   @override
-  List<Object?> get props => [id, address, fullAddress, receiverName, phone, isDefault, addressDetail, province, district, latitude, longitude];
+  List<Object?> get props => [id, address, fullAddress, receiverName, phone, isDefault, addressDetail, province, district, latitude, longitude, addressId];
 }
 
 class AddressDeleted extends AddressEvent {

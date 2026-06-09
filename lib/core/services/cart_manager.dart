@@ -8,6 +8,7 @@ class CartItem {
   final num price;
   final String? imageUrl;
   int quantity;
+  final String? sellerId;
 
   CartItem({
     required this.productId,
@@ -15,6 +16,7 @@ class CartItem {
     required this.price,
     this.imageUrl,
     this.quantity = 1,
+    this.sellerId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -23,6 +25,7 @@ class CartItem {
     'price': price,
     'image_url': imageUrl,
     'quantity': quantity,
+    'seller_id': sellerId,
   };
 
   factory CartItem.fromJson(Map<String, dynamic> json) => CartItem(
@@ -31,6 +34,7 @@ class CartItem {
     price: json['price'] as num,
     imageUrl: json['image_url'] as String?,
     quantity: json['quantity'] as int,
+    sellerId: json['seller_id'] as String?,
   );
 }
 
@@ -69,7 +73,7 @@ class CartManager extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> addToCart(String productId, String title, num price, String? imageUrl, {int quantity = 1}) async {
+  Future<void> addToCart(String productId, String title, num price, String? imageUrl, {int quantity = 1, String? sellerId}) async {
     final index = _items.indexWhere((item) => item.productId == productId);
     if (index >= 0) {
       _items[index].quantity += quantity;
@@ -80,6 +84,7 @@ class CartManager extends ChangeNotifier {
         price: price,
         imageUrl: imageUrl,
         quantity: quantity,
+        sellerId: sellerId,
       ));
     }
     notifyListeners();

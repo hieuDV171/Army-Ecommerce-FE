@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../../../core/api/dio_client.dart';
@@ -167,6 +168,66 @@ class MarketplaceRemoteDataSource {
     if (level != null) queryParams['level'] = level;
 
     return get('/order/get_ship_from', queryParameters: queryParams);
+  }
+
+  /// GET /order/provinces — Lấy danh sách tỉnh/thành phố.
+  Future<ApiResponse<dynamic>> getProvinces() {
+    return get(ApiPaths.getProvinces);
+  }
+
+  /// GET /order/wards — Lấy danh sách phường/xã theo tỉnh/thành phố.
+  Future<ApiResponse<dynamic>> getWards(int provinceId) {
+    return get(
+      ApiPaths.getWards,
+      queryParameters: {'province_id': provinceId},
+    );
+  }
+
+  /// POST /upload/file — Tải hình ảnh/tập tin lên máy chủ.
+  Future<ApiResponse<dynamic>> uploadFile(File file) async {
+    try {
+      final fileName = file.path.split(Platform.pathSeparator).last;
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          file.path,
+          filename: fileName,
+        ),
+      });
+
+      final response = await _dioClient.dio.post(
+        ApiPaths.uploadFile,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
+      return ApiResponse<dynamic>.fromDynamic(response.data, (json) => json);
+    } on DioException catch (error) {
+      throw Exception(error.error?.toString() ?? error.message ?? 'Lỗi kết nối mạng');
+    }
+  }
+
+  /// POST /api/add_product — Thêm sản phẩm mới.
+  Future<ApiResponse<dynamic>> addProduct(Map<String, dynamic> data) {
+    return post(
+      ApiPaths.addProduct,
+      data: data,
+    );
+  }
+
+  /// PATCH /api/update/:id — Cập nhật sản phẩm.
+  Future<ApiResponse<dynamic>> updateProduct(String id, Map<String, dynamic> data) {
+    return patch(
+      ApiPaths.updateProduct(id),
+      data: data,
+    );
+  }
+
+  /// DELETE /api/delete/:id — Xóa sản phẩm.
+  Future<ApiResponse<dynamic>> deleteProduct(String id) {
+    return delete(
+      ApiPaths.deleteProduct(id),
+    );
   }
 }
 

@@ -71,6 +71,10 @@ abstract class MarketplaceRepository {
 
   Future<void> deleteAddress(String id);
 
+  Future<List<ProvinceModel>> getProvinces();
+
+  Future<List<WardModel>> getWards(int provinceId);
+
   Future<List<OrderModel>> getOrders({String? state, int index = 0, int count = 20});
 
   Future<OrderModel?> getOrderDetail(String id);
@@ -93,7 +97,7 @@ abstract class MarketplaceRepository {
   Future<void> createOrder(Map<String, dynamic> data);
 
   /// Edit purchase (buyer-side) when the order hasn't been shipped yet.
-  Future<void> editOrder(String purchaseId, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> editOrder(String purchaseId, Map<String, dynamic> data);
 
   /// Seller marks a purchase as shipped.
   Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId});
@@ -168,4 +172,16 @@ abstract class MarketplaceRepository {
   Future<UploadVideoResponseModel> uploadVideo({
     required File videoFile,
   });
+
+  /// Tải ảnh/tập tin sản phẩm lên máy chủ.
+  Future<String?> uploadFile(File file);
+
+  /// Thêm sản phẩm mới.
+  Future<void> addProduct(Map<String, dynamic> data);
+
+  /// Cập nhật thông tin sản phẩm.
+  Future<void> updateProduct(String id, Map<String, dynamic> data);
+
+  /// Xóa sản phẩm.
+  Future<void> deleteProduct(String id);
 }

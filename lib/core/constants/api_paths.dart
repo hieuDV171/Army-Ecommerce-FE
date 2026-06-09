@@ -32,6 +32,9 @@ class ApiPaths {
   static const reportProduct = '/api/report_product';
   static const getRates = '/api/get_rates';
   static const setRates = '/api/set_rates';
+  static const addProduct = '/api/add_product';
+  static String updateProduct(String id) => '/api/update/$id';
+  static String deleteProduct(String id) => '/api/delete/$id';
 
   // News
   static const listNews = '/News/list_news';
@@ -53,6 +56,8 @@ class ApiPaths {
   static const refundOrder = '/order/refund_order';
   static const setAcceptBuyer = '/order/set_accept_buyer';
   static const getOrderTimeline = '/order/get_order_timeline';
+  static const getProvinces = '/order/provinces';
+  static const getWards = '/order/wards';
 
   // Wallet
   static const getBalanceHistory = '/wallets/get_balance_history';

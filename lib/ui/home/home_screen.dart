@@ -1159,6 +1159,20 @@ class _ProfileTabBody extends StatelessWidget {
                   ),
                   const _Divider(),
                   _SettingsTile(
+                    icon: Icons.inventory_2_outlined,
+                    iconColor: Colors.teal,
+                    title: 'Sản phẩm của tôi',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SellerListingsPage(userId: userId),
+                        ),
+                      );
+                    },
+                  ),
+                  const _Divider(),
+                  _SettingsTile(
                     icon: Icons.lock_reset,
                     iconColor: Colors.orange,
                     title: 'Đổi mật khẩu',

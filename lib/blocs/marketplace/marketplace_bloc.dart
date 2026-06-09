@@ -643,6 +643,15 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       return;
     }
 
+    if (event.items.isNotEmpty) {
+      final firstSellerId = event.items.first.sellerId;
+      final isSameSeller = event.items.every((item) => item.sellerId == firstSellerId);
+      if (!isSameSeller) {
+        emit(state.copyWith(errorMessage: 'Các sản phẩm trong đơn hàng phải thuộc cùng một người bán'));
+        return;
+      }
+    }
+
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
       final itemsData = event.items.map((item) => {
@@ -974,7 +983,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         'district': event.district,
         'lat': double.tryParse(event.latitude) ?? 0.0,
         'lng': double.tryParse(event.longitude) ?? 0.0,
-        'address_id': [7, 1], // Default value for now
+        'address_id': event.addressId ?? [7, 1],
       };
       if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
         data['address_detail'] = event.addressDetail;
@@ -1009,8 +1018,10 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         'district': event.district,
         'lat': double.tryParse(event.latitude) ?? 0.0,
         'lng': double.tryParse(event.longitude) ?? 0.0,
-        // Omitted 'address_id' on updates to avoid triggering backend validation bug (ACTION_DONE_PREVIOUSLY)
       };
+      if (event.addressId != null) {
+        data['address_id'] = event.addressId;
+      }
       if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
         data['address_detail'] = event.addressDetail;
       }

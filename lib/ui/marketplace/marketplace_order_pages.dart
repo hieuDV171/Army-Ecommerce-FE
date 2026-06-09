@@ -15,6 +15,7 @@ import '../util/widgets/loading_overlay.dart';
 import '../util/widgets/price_text.dart';
 import '../util/widgets/section_header.dart';
 import '../util/widgets/status_chip.dart';
+import '../../core/services/session_manager.dart';
 
 class BuyerOrdersPage extends StatelessWidget {
   const BuyerOrdersPage({super.key});
@@ -246,7 +247,9 @@ class BuyerOrderDetailPage extends StatefulWidget {
 class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
   Future<OrderModel?>? _detailFuture;
   Future<List<OrderTimelineModel>>? _timelineFuture;
+  OrderModel? _orderDetail;
   bool _isSubmitting = false;
+  bool _isAlreadyEdited = false;
 
   @override
   void initState() {
@@ -256,8 +259,22 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
 
   void _load() {
     final repository = context.read<MarketplaceRepository>();
-    _detailFuture = repository.getOrderDetail(widget.orderId);
+    _detailFuture = repository.getOrderDetail(widget.orderId).then((order) {
+      if (mounted) {
+        setState(() {
+          _orderDetail = order;
+        });
+      }
+      return order;
+    });
     _timelineFuture = repository.getOrderTimeline(widget.orderId);
+    SessionManager.isOrderEdited(widget.orderId).then((edited) {
+      if (mounted) {
+        setState(() {
+          _isAlreadyEdited = edited;
+        });
+      }
+    });
   }
 
   Future<void> _refresh() async {
@@ -268,14 +285,20 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     ]);
   }
 
-  Future<void> _submit(Future<void> Function() action, {String successMessage = 'Đã cập nhật đơn hàng'}) async {
+  Future<void> _submit(
+    Future<void> Function() action, {
+    String successMessage = 'Đã cập nhật đơn hàng',
+    bool skipReload = false,
+  }) async {
     setState(() => _isSubmitting = true);
     try {
       await action();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
-      setState(_load);
-      await _refresh();
+      if (!skipReload) {
+        setState(_load);
+        await _refresh();
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
@@ -535,7 +558,7 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
                 AppButton(
                   label: 'Chỉnh sửa đơn hàng',
                   icon: Icons.edit_outlined,
-                  onPressed: () => _openEditSheet(order),
+                  onPressed: (order.status == 'confirmed' && _isAlreadyEdited) ? null : () => _openEditSheet(order),
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],
@@ -550,6 +573,22 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
+              ],
+              if (order.status == 'confirmed') ...[
+                const SizedBox(height: AppSpacing.xs),
+                Center(
+                  child: Text(
+                    _isAlreadyEdited
+                        ? 'Bạn đã chỉnh sửa đơn hàng đã xác nhận này rồi (chỉ được sửa 1 lần)'
+                        : 'Lưu ý: Đơn hàng đã xác nhận chỉ có thể chỉnh sửa địa chỉ/ghi chú 1 lần duy nhất',
+                    style: TextStyle(
+                      color: _isAlreadyEdited ? Colors.redAccent : Colors.orange,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ],
               if (order.status == 'shipping') ...[
                 AppButton(
@@ -701,8 +740,29 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     if (result == null) return;
 
     await _submit(
-      () => repository.editOrder(order.id, result),
+      () async {
+        final updatedData = await repository.editOrder(order.id, result);
+        if (order.status == 'confirmed') {
+          await SessionManager.setOrderEdited(order.id, true);
+        }
+        if (mounted) {
+          setState(() {
+            if (order.status == 'confirmed') {
+              _isAlreadyEdited = true;
+            }
+            final currentDetail = _orderDetail ?? order;
+            final updatedNote = updatedData['note']?.toString() ?? currentDetail.note;
+            final updatedAddress = updatedData['address']?.toString() ?? currentDetail.buyerAddress;
+            _orderDetail = currentDetail.copyWith(
+              note: updatedNote,
+              buyerAddress: updatedAddress,
+            );
+            _detailFuture = Future.value(_orderDetail);
+          });
+        }
+      },
       successMessage: 'Đã cập nhật địa chỉ / ghi chú',
+      skipReload: true,
     );
   }
 }
