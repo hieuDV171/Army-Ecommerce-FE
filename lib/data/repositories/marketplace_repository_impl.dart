@@ -157,7 +157,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<void> likeProduct(String productId) {
-    return remoteDataSource.post('/api/like_product', data: {'product_id': _idValue(productId)});
+    return remoteDataSource.post(ApiPaths.likeProduct, data: {'product_id': _idValue(productId)});
   }
 
   @override
@@ -167,7 +167,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int count = 20,
   }) async {
     final response = await remoteDataSource.post(
-      '/api/get_comments_product',
+      ApiPaths.getCommentsProduct,
       data: {'product_id': _idValue(productId), 'index': index, 'count': count},
     );
     return parseListFromData(response.data, CommentModel.fromJson);
@@ -176,7 +176,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<void> sendComment(String productId, String content) {
     return remoteDataSource.post(
-      '/api/set_comments_product',
+      ApiPaths.setCommentsProduct,
       data: {
         'product_id': _idValue(productId),
         'content': content,
@@ -189,7 +189,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<void> reportProduct(String productId, String subject, String details) {
     return remoteDataSource.post(
-      '/api/report_product',
+      ApiPaths.reportProduct,
       data: {'product_id': _idValue(productId), 'subject': subject, 'details': details},
     );
   }
@@ -201,7 +201,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     if (productId != null && productId.isNotEmpty) request['product_id'] = _idValue(productId);
     if (level != null) request['level'] = level;
 
-    final response = await remoteDataSource.post('/api/get_rates', data: request);
+    final response = await remoteDataSource.post(ApiPaths.getRates, data: request);
     return parseListFromData(response.data, RateModel.fromJson);
   }
 
@@ -215,7 +215,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     if (productId != null && productId.isNotEmpty) request['product_id'] = _idValue(productId);
     if (purchaseId != null && purchaseId.isNotEmpty) request['purchase_id'] = _idValue(purchaseId);
 
-    return remoteDataSource.post('/api/set_rates', data: request);
+    return remoteDataSource.post(ApiPaths.setRates, data: request);
   }
 
   @override
@@ -235,7 +235,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<List<MarketplaceItem>> getNews({int index = 0, int count = 20}) async {
     final response = await remoteDataSource.post(
-      '/News/list_news',
+      ApiPaths.listNews,
       data: {'index': index, 'count': count},
     );
 
@@ -250,7 +250,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<MarketplaceItem?> getNewsDetail(String id) async {
-    final response = await remoteDataSource.get('/News/$id');
+    final response = await remoteDataSource.get(ApiPaths.newsDetail(id));
     final map = parseMapFromData(response.data);
     if (map.isEmpty) return null;
     return MarketplaceItem.fromJson(map);
@@ -278,13 +278,13 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<List<AddressModel>> getAddresses() async {
-    final response = await remoteDataSource.get('/order/get_list_order_address');
+    final response = await remoteDataSource.get(ApiPaths.getListOrderAddress);
     return parseListFromData(response.data, AddressModel.fromJson);
   }
 
   @override
   Future<void> addAddress(Map<String, dynamic> data) async {
-    final response = await remoteDataSource.post('/order/add_order_address', data: data);
+    final response = await remoteDataSource.post(ApiPaths.addOrderAddress, data: data);
     if (response.code != '1000') {
       throw Exception(response.message.isNotEmpty ? response.message : 'Lỗi thêm địa chỉ (Mã lỗi ${response.code})');
     }
@@ -292,7 +292,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<void> updateAddress(String id, Map<String, dynamic> data) async {
-    final response = await remoteDataSource.patch('/order/update/$id', data: data);
+    final response = await remoteDataSource.patch(ApiPaths.updateAddress(id), data: data);
     if (response.code != '1000') {
       throw Exception(response.message.isNotEmpty ? response.message : 'Lỗi cập nhật địa chỉ (Mã lỗi ${response.code})');
     }
@@ -300,7 +300,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<void> deleteAddress(String id) async {
-    final response = await remoteDataSource.delete('/order/delete/$id');
+    final response = await remoteDataSource.delete(ApiPaths.deleteAddress(id));
     if (response.code != '1000') {
       throw Exception(response.message.isNotEmpty ? response.message : 'Lỗi xóa địa chỉ (Mã lỗi ${response.code})');
     }
@@ -313,7 +313,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int count = 20,
   }) async {
     final response = await remoteDataSource.post(
-      '/order/get_list_purchases',
+      ApiPaths.getListPurchases,
       data: {
         'index': index,
         'count': count,
@@ -325,7 +325,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<OrderModel?> getOrderDetail(String id) async {
-    final response = await remoteDataSource.post('/order/get_purchase', data: {'id': id});
+    final response = await remoteDataSource.post(ApiPaths.getPurchase, data: {'id': id});
     final map = parseMapFromData(response.data);
     if (map.isEmpty) return null;
     return OrderModel.fromJson(map);
@@ -334,10 +334,10 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<ShipFeeModel?> getShipFee(int productId, {int? addressId}) async {
     final response = await remoteDataSource.post(
-      '/order/get_ship_fee',
+      ApiPaths.getShipFee,
       data: {
         'product_id': productId,
-        'address_id': ?addressId,
+        'address_id': addressId,
       },
     );
     final map = parseMapFromData(response.data);
@@ -363,13 +363,13 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<void> createOrder(Map<String, dynamic> data) {
-    return remoteDataSource.post('/order/create_order', data: data);
+    return remoteDataSource.post(ApiPaths.createOrder, data: data);
   }
 
   @override
   Future<void> editOrder(String purchaseId, Map<String, dynamic> data) {
     final request = <String, dynamic>{'id': purchaseId, ...data};
-    return remoteDataSource.post('/order/edit_purchase', data: request);
+    return remoteDataSource.post(ApiPaths.editPurchase, data: request);
   }
 
   @override
@@ -380,7 +380,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     };
 
     return remoteDataSource.post(
-      '/order/cancel_order',
+      ApiPaths.cancelOrder,
       data: request,
     );
   }
@@ -388,7 +388,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<void> confirmReceived(String purchaseId) {
     return remoteDataSource.post(
-      '/order/buyer_confirm_received',
+      ApiPaths.buyerConfirmReceived,
       data: {'purchase_id': purchaseId},
     );
   }
@@ -397,7 +397,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId}) {
     final request = <String, dynamic>{'purchase_id': purchaseId};
     if (buyerId != null) request['buyer_id'] = buyerId;
-    return remoteDataSource.post('/order/seller_mark_as_shipped', data: request);
+    return remoteDataSource.post(ApiPaths.sellerMarkAsShipped, data: request);
   }
 
   @override
@@ -406,7 +406,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     if (reason != null) request['reason'] = reason;
 
     return remoteDataSource.post(
-      '/order/refund_order',
+      ApiPaths.refundOrder,
       data: request,
     );
   }
@@ -416,21 +416,21 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     final request = <String, dynamic>{
       'purchase_id': purchaseId,
       'buyer_id': buyerId,
-      'accept': accept ? 1 : 0,
+      'is_accept': accept ? 1 : 0,
     };
-    return remoteDataSource.post('/order/set_accept_buyer', data: request);
+    return remoteDataSource.post(ApiPaths.setAcceptBuyer, data: request);
   }
 
   @override
   Future<List<OrderTimelineModel>> getOrderTimeline(String purchaseId) async {
-    final response = await remoteDataSource.post('/order/get_order_timeline', data: {'purchase_id': purchaseId});
+    final response = await remoteDataSource.post(ApiPaths.getOrderTimeline, data: {'purchase_id': purchaseId});
     return parseListFromData(response.data, OrderTimelineModel.fromJson);
   }
 
   @override
   Future<List<ConversationModel>> getConversations({int index = 0, int count = 20}) async {
     final response = await remoteDataSource.post(
-      '/conversation/get_list_conversation',
+      ApiPaths.getListConversation,
       data: {'index': index, 'count': count},
     );
     return parseListFromData(response.data, ConversationModel.fromJson);
@@ -444,7 +444,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int count = 20,
   }) async {
     final response = await remoteDataSource.post(
-      '/conversation/get_conversation',
+      ApiPaths.getConversation,
       data: {
         'partner_id': _idValue(partnerId),
         'conversation_id': _idValue(conversationId),
@@ -473,7 +473,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     };
 
     final response = await remoteDataSource.post(
-      '/conversation/send_message',
+      ApiPaths.sendMessage,
       data: request,
     );
     final map = parseMapFromData(response.data);
@@ -484,7 +484,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<void> markConversationRead(String partnerId) {
     return remoteDataSource.post(
-      '/conversation/set_read_message',
+      ApiPaths.setReadMessage,
       data: {'partner_id': _idValue(partnerId)},
     );
   }
@@ -496,7 +496,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int count = 20,
   }) async {
     final response = await remoteDataSource.post(
-      '/notification/get_notification',
+      ApiPaths.getNotification,
       data: {'group': group, 'index': index, 'count': count},
     );
     return parseListFromData(response.data, NotificationModel.fromJson);
@@ -505,7 +505,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<void> markNotificationRead(String notificationId) {
     return remoteDataSource.post(
-      '/notification/set_read_notification',
+      ApiPaths.setReadNotification,
       data: {'notification_id': _idValue(notificationId)},
     );
   }
@@ -513,7 +513,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   @override
   Future<List<WalletHistoryModel>> getBalanceHistory({int index = 0, int count = 20}) async {
     final response = await remoteDataSource.post(
-      '/wallets/get_balance_history',
+      ApiPaths.getBalanceHistory,
       data: {'index': index.toString(), 'count': count.toString()},
     );
     return parseListFromData(response.data, WalletHistoryModel.fromJson);
@@ -535,7 +535,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<WalletBalanceModel> getCurrentBalance() async {
-    final response = await remoteDataSource.post('/wallets/get_current_balance');
+    final response = await remoteDataSource.post(ApiPaths.getCurrentBalance);
     return WalletBalanceModel.fromJson(parseMapFromData(response.data));
   }
 

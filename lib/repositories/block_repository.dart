@@ -1,4 +1,5 @@
 import 'package:army_ecommerce/core/api/dio_client.dart';
+import 'package:army_ecommerce/core/constants/api_paths.dart';
 import 'package:army_ecommerce/models/message_model.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:dio/dio.dart';
@@ -17,7 +18,7 @@ class BlockRepository {
     try {
       // type: 0 = block, 1 = unblock
       final response = await _dioClient.dio.post(
-        '/set_user_block',
+        ApiPaths.setUserBlock,
         data: {
           'user_id': userId,
           'type': action == 'block' ? 0 : 1,
@@ -37,7 +38,7 @@ class BlockRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/get_list_blocks',
+        ApiPaths.getListBlocks,
         data: {
           'index': index,
           'count': count,

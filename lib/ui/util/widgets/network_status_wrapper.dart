@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
 class NetworkStatusWrapper extends StatefulWidget {
   final Widget child;
@@ -80,7 +81,7 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: !_isOnline ? const Color(0xFFE83A14) : const Color(0xFF2E7D32),
+                color: !_isOnline ? AppColors.primaryDark : AppColors.successDark,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(

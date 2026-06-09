@@ -4,9 +4,11 @@ import 'package:army_ecommerce/blocs/follow/follow_state.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../util/constants/app_colors.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 
-const Color _shopeeOrange = Color(0xFFE83A14);
-const Color _greyBackground = Color(0xFFF5F5F5);
+Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
+const Color _greyBackground = AppColors.greyBackground;
 
 class FollowersScreen extends StatefulWidget {
   // userId của người cần xem danh sách người theo dõi
@@ -90,7 +92,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
               SnackBar(
                 content: Text(message),
                 duration: const Duration(seconds: 2),
-                backgroundColor: _shopeeOrange,
+                backgroundColor: _shopeeOrange(context),
               ),
             );
           } else if (state is FollowFailure) {
@@ -119,7 +121,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
           }
 
           return RefreshIndicator(
-            color: _shopeeOrange,
+            color: _shopeeOrange(context),
             onRefresh: _onRefresh,
             child: ListView.builder(
               controller: _scrollController,
@@ -127,10 +129,10 @@ class _FollowersScreenState extends State<FollowersScreen> {
               itemCount: followers.length + (isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == followers.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: _shopeeOrange),
+                      child: CircularProgressIndicator(color: _shopeeOrange(context)),
                     ),
                   );
                 }
@@ -246,7 +248,7 @@ class _UserFollowItemState extends State<_UserFollowItem> {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _shopeeOrange,
+              backgroundColor: _shopeeOrange(context),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             ),
             child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
@@ -314,9 +316,9 @@ class _UserFollowItemState extends State<_UserFollowItem> {
               height: 32,
               constraints: const BoxConstraints(minWidth: 96),
               decoration: BoxDecoration(
-                color: _isFollowed ? _shopeeOrange : Colors.white,
+                color: _isFollowed ? _shopeeOrange(context) : Colors.white,
                 borderRadius: BorderRadius.circular(2),
-                border: Border.all(color: _shopeeOrange, width: 1),
+                border: Border.all(color: _shopeeOrange(context), width: 1),
               ),
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -325,7 +327,7 @@ class _UserFollowItemState extends State<_UserFollowItem> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: _isFollowed ? Colors.white : _shopeeOrange,
+                  color: _isFollowed ? Colors.white : _shopeeOrange(context),
                 ),
               ),
             ),

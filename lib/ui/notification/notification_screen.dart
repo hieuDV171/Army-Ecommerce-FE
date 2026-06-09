@@ -5,9 +5,13 @@ import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
+import 'package:army_ecommerce/ui/marketplace/marketplace_product_pages.dart';
+import 'package:army_ecommerce/ui/marketplace/marketplace_order_pages.dart';
+import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 
-const Color _shopeeOrange = Color(0xFFE83A14);
-const Color _greyBackground = Color(0xFFF5F5F5);
+Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
+const Color _greyBackground = AppColors.greyBackground;
 
 class NotificationScreen extends StatefulWidget {
   final bool isTab;
@@ -59,7 +63,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
             MarkNotificationReadRequested(notificationId: notification.notificationId),
           );
     }
-    // TODO: Điều hướng tới màn hình liên quan dựa trên notification.type và notification.objectId
+    
+    final type = notification.type.toLowerCase();
+    final objectId = notification.objectId;
+    if (objectId != null && objectId.isNotEmpty) {
+      if (type == 'order') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BuyerOrderDetailPage(orderId: objectId),
+          ),
+        );
+      } else if (type == 'product' || type == 'like' || type == 'comment') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(productId: objectId),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -68,7 +91,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return Scaffold(
         backgroundColor: _greyBackground,
         appBar: AppBar(
-          backgroundColor: widget.isTab ? _shopeeOrange : Colors.white,
+          backgroundColor: widget.isTab
+              ? (context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor)
+              : Colors.white,
+          flexibleSpace: widget.isTab && context.specialTheme.useGradient
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: context.specialTheme.primaryGradient,
+                  ),
+                )
+              : null,
           elevation: widget.isTab ? 0.0 : 0.5,
           iconTheme: IconThemeData(color: widget.isTab ? Colors.white : Colors.black87),
           leading: widget.isTab
@@ -102,7 +134,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               const SizedBox(height: 12),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _shopeeOrange,
+                  backgroundColor: _shopeeOrange(context),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -126,7 +158,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(
-        backgroundColor: widget.isTab ? _shopeeOrange : Colors.white,
+        backgroundColor: widget.isTab
+            ? (context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor)
+            : Colors.white,
+        flexibleSpace: widget.isTab && context.specialTheme.useGradient
+            ? Container(
+                decoration: BoxDecoration(
+                  gradient: context.specialTheme.primaryGradient,
+                ),
+              )
+            : null,
         elevation: widget.isTab ? 0.0 : 0.5,
         iconTheme: IconThemeData(color: widget.isTab ? Colors.white : Colors.black87),
         leading: widget.isTab
@@ -179,17 +220,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
           }
 
           return RefreshIndicator(
-            color: _shopeeOrange,
+            color: _shopeeOrange(context),
             onRefresh: _onRefresh,
             child: ListView.builder(
               controller: _scrollController,
               itemCount: notifications.length + (isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == notifications.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: _shopeeOrange),
+                      child: CircularProgressIndicator(color: _shopeeOrange(context)),
                     ),
                   );
                 }
@@ -256,7 +297,7 @@ class _NotificationItem extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        color: isRead ? Colors.white : const Color(0xFFFFF3F0),
+        color: isRead ? Colors.white : AppColors.unreadBackground,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,8 +338,8 @@ class _NotificationItem extends StatelessWidget {
                 width: 8,
                 height: 8,
                 margin: const EdgeInsets.only(top: 4),
-                decoration: const BoxDecoration(
-                  color: _shopeeOrange,
+                decoration: BoxDecoration(
+                  color: _shopeeOrange(context),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -332,7 +373,7 @@ class _NotificationIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _iconConfig(type);
+    final config = _iconConfig(context, type);
     return Container(
       width: 44,
       height: 44,
@@ -345,22 +386,22 @@ class _NotificationIcon extends StatelessWidget {
   }
 
   // Trả về (icon, màu) theo loại thông báo
-  (IconData, Color) _iconConfig(String type) {
+  (IconData, Color) _iconConfig(BuildContext context, String type) {
     switch (type) {
       case 'order':
-        return (Icons.local_shipping_outlined, const Color(0xFF1E88E5));
+        return (Icons.local_shipping_outlined, AppColors.info);
       case 'like':
-        return (Icons.favorite_outline, _shopeeOrange);
+        return (Icons.favorite_outline, _shopeeOrange(context));
       case 'follow':
-        return (Icons.person_add_outlined, const Color(0xFF43A047));
+        return (Icons.person_add_outlined, AppColors.success);
       case 'comment':
-        return (Icons.chat_bubble_outline, const Color(0xFF8E24AA));
+        return (Icons.chat_bubble_outline, AppColors.purple);
       case 'promotion':
-        return (Icons.local_offer_outlined, _shopeeOrange);
+        return (Icons.local_offer_outlined, _shopeeOrange(context));
       case 'system':
-        return (Icons.notifications_outlined, const Color(0xFF757575));
+        return (Icons.notifications_outlined, AppColors.textSecondary);
       default:
-        return (Icons.notifications_outlined, const Color(0xFF757575));
+        return (Icons.notifications_outlined, AppColors.textSecondary);
     }
   }
 }

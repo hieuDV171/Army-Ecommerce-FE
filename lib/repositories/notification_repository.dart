@@ -1,4 +1,5 @@
 import 'package:army_ecommerce/core/api/dio_client.dart';
+import 'package:army_ecommerce/core/constants/api_paths.dart';
 import 'package:army_ecommerce/models/message_model.dart';
 import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:dio/dio.dart';
@@ -17,7 +18,7 @@ class NotificationRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/notification/get_notification',
+        ApiPaths.getNotification,
         data: {
           'index': index,
           'count': count,
@@ -37,7 +38,7 @@ class NotificationRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/notification/set_read_notification',
+        ApiPaths.setReadNotification,
         data: {
           'notification_id': int.tryParse(notificationId) ?? 0,
         },

@@ -1,4 +1,3 @@
-
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
@@ -6,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'create_new_password_screen.dart';
+import '../util/widgets/app_button.dart';
+import '../util/theme/special_app_theme.dart';
 
 class VerifyOtpScreen extends StatefulWidget{
   final String phoneNumber;
@@ -105,12 +106,37 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(title: const Text('Xác thực OTP'),),
+          appBar: AppBar(
+            backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+            flexibleSpace: context.specialTheme.useGradient
+                ? Container(
+                    decoration: BoxDecoration(
+                      gradient: context.specialTheme.primaryGradient,
+                    ),
+                  )
+                : null,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text('Xác thực OTP', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ),
           body: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 children: [
-                  const Icon(Icons.verified_user, size: 80, color: Colors.blue,),
+                  (() {
+                    final specialTheme = context.specialTheme;
+                    final iconWidget = Icon(
+                      Icons.verified_user,
+                      size: 80,
+                      color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                    );
+                    if (specialTheme.useGradient) {
+                      return ShaderMask(
+                        shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
+                        child: iconWidget,
+                      );
+                    }
+                    return iconWidget;
+                  }()),
                   const SizedBox(height: 20,),
                   Text('Nhập mã 6 ký tự được gửi đến:\n${widget.phoneNumber}',
                     textAlign: TextAlign.center, style: const TextStyle(fontSize: 16),
@@ -132,15 +158,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                   // Sử dụng BlocBuilder để đổi trạng thái nút bấm (Loading)
                   BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
-                        return ElevatedButton(
-                            onPressed: state is AuthLoading ? null : _onVerifyPressed,
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              backgroundColor: Colors.blue,
-                            ),
-                            child: state is AuthLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text('XÁC NHẬN', style: TextStyle(fontWeight: FontWeight.bold)),
+                        return AppButton(
+                          label: 'XÁC NHẬN',
+                          isLoading: state is AuthLoading,
+                          onPressed: _onVerifyPressed,
                         );
                       }
                   ),

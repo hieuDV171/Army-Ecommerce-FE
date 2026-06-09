@@ -1,4 +1,5 @@
 import 'package:army_ecommerce/core/api/dio_client.dart';
+import 'package:army_ecommerce/core/constants/api_paths.dart';
 import 'package:army_ecommerce/models/conversation_model.dart';
 import 'package:army_ecommerce/models/message_model.dart';
 import 'package:dio/dio.dart';
@@ -19,7 +20,7 @@ class ChatRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/conversation/send_message',
+        ApiPaths.sendMessage,
         data: {
           'to_id': int.tryParse(toId) ?? 0,
           'message': message,
@@ -41,7 +42,7 @@ class ChatRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/conversation/get_list_conversation',
+        ApiPaths.getListConversation,
         data: {
           'index': index,
           'count': count,
@@ -64,7 +65,7 @@ class ChatRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/conversation/get_conversation',
+        ApiPaths.getConversation,
         data: {
           'partner_id': partnerId,
           'conversation_id': conversationId,
@@ -86,7 +87,7 @@ class ChatRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/conversation/set_read_message',
+        ApiPaths.setReadMessage,
         data: {
           'partner_id': partnerId,
         },

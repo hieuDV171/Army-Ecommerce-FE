@@ -11,6 +11,8 @@ import '../util/constants/app_spacing.dart';
 import '../util/widgets/app_button.dart';
 import '../util/widgets/app_text_field.dart';
 
+import '../util/theme/special_app_theme.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -79,11 +81,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 32),
-                  const Icon(
-                    Icons.military_tech,
-                    size: 76,
-                    color: AppColors.primary,
-                  ),
+                  (() {
+                    final specialTheme = context.specialTheme;
+                    final iconWidget = Icon(
+                      Icons.military_tech,
+                      size: 76,
+                      color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                    );
+                    if (specialTheme.useGradient) {
+                      return ShaderMask(
+                        shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
+                        child: iconWidget,
+                      );
+                    }
+                    return iconWidget;
+                  }()),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     'Army E-commerce',

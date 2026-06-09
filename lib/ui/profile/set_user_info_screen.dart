@@ -9,6 +9,8 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../models/user_model.dart';
 import '../util/widgets/image_crop_screen.dart';
+import '../util/widgets/app_button.dart';
+import '../util/theme/special_app_theme.dart';
 
 class SetUserInfoScreen extends StatefulWidget {
   final UserModel currentUser;
@@ -206,8 +208,20 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
       },
       builder: (context, state) {
         final isLoading = state is SetUserInfoLoading;
+        final specialTheme = context.specialTheme;
         return Scaffold(
-          appBar: AppBar(title: const Text('Cập nhật hồ sơ')),
+          appBar: AppBar(
+            backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+            flexibleSpace: specialTheme.useGradient
+                ? Container(
+                    decoration: BoxDecoration(
+                      gradient: specialTheme.primaryGradient,
+                    ),
+                  )
+                : null,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text('Cập nhật hồ sơ', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -257,12 +271,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                   onPick: _pickCoverImageWeb,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                  child: isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('LƯU THAY ĐỔI'),
+                AppButton(
+                  label: 'LƯU THAY ĐỔI',
+                  isLoading: isLoading,
+                  onPressed: _submit,
                 ),
               ],
             ),

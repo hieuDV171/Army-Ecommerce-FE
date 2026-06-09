@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 
 class AppButton extends StatelessWidget {
   final String label;
@@ -16,11 +17,14 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final specialTheme = context.specialTheme;
+    final isEnabled = onPressed != null && !isLoading;
+
     final child = isLoading
         ? const SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
           )
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -34,12 +38,32 @@ class AppButton extends StatelessWidget {
             ],
           );
 
-    return ConstrainedBox(
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: specialTheme.useGradient ? Colors.transparent : null,
+      shadowColor: specialTheme.useGradient ? Colors.transparent : null,
+      elevation: specialTheme.useGradient ? 0 : null,
+    );
+
+    Widget innerButton = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
       child: ElevatedButton(
+        style: buttonStyle,
         onPressed: isLoading ? null : onPressed,
         child: child,
       ),
     );
+
+    if (specialTheme.useGradient) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: isEnabled ? specialTheme.primaryGradient : null,
+          color: isEnabled ? null : Colors.grey[300],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: innerButton,
+      );
+    }
+
+    return innerButton;
   }
 }

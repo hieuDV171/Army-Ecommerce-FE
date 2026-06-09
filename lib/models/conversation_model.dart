@@ -52,11 +52,13 @@ class ConversationModel {
   final int id;
   final ConversationPartner partner;
   final ConversationLastMessage? lastMessage;
+  final int numNewMessage;
 
   ConversationModel({
     required this.id,
     required this.partner,
     this.lastMessage,
+    this.numNewMessage = 0,
   });
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
@@ -71,6 +73,7 @@ class ConversationModel {
               json['last_message'] as Map<String, dynamic>,
             )
           : null,
+      numNewMessage: (json['num_new_message'] as num?)?.toInt() ?? 0,
     );
   }
 }

@@ -5,9 +5,10 @@ import 'package:army_ecommerce/models/conversation_model.dart';
 import 'package:army_ecommerce/ui/chat/chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../util/constants/app_colors.dart';
+import '../util/theme/special_app_theme.dart';
 
-const Color _shopeeOrange = Color(0xFFE83A14);
-const Color _greyBackground = Color(0xFFF5F5F5);
+const Color _greyBackground = AppColors.greyBackground;
 
 class ConversationListScreen extends StatefulWidget {
   // userId của người dùng hiện tại — dùng để xác định bubble tin nhắn trong ChatScreen
@@ -72,19 +73,27 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final specialTheme = context.specialTheme;
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+        flexibleSpace: specialTheme.useGradient
+            ? Container(
+                decoration: BoxDecoration(
+                  gradient: specialTheme.primaryGradient,
+                ),
+              )
+            : null,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Tin nhắn',
           style: TextStyle(
-            color: Colors.black87,
+            color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -119,7 +128,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           }
 
           return RefreshIndicator(
-            color: _shopeeOrange,
+            color: specialTheme.primaryColor,
             onRefresh: _onRefresh,
             child: ListView.separated(
               controller: _scrollController,
@@ -127,14 +136,14 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
               separatorBuilder: (context, index) => const Divider(
                 height: 1,
                 indent: 76,
-                color: Color(0xFFEEEEEE),
+                color: AppColors.greyLight,
               ),
               itemBuilder: (context, index) {
                 if (index == conversations.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: _shopeeOrange),
+                      child: CircularProgressIndicator(color: specialTheme.primaryColor),
                     ),
                   );
                 }
@@ -156,7 +165,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
       separatorBuilder: (context, index) => const Divider(
         height: 1,
         indent: 76,
-        color: Color(0xFFEEEEEE),
+        color: AppColors.greyLight,
       ),
       itemBuilder: (context, i) => const _SkeletonItem(),
     );
@@ -249,40 +258,45 @@ class _ConversationItem extends StatelessWidget {
             const SizedBox(width: 8),
 
             // Thời gian + badge unread
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _formatTime(conversation.lastMessage?.created),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: hasUnread ? _shopeeOrange : Colors.grey[400],
+            (() {
+              final specialTheme = context.specialTheme;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _formatTime(conversation.lastMessage?.created),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: hasUnread ? specialTheme.primaryColor : Colors.grey[400],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                if (hasUnread)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: const BoxDecoration(
-                      color: _shopeeOrange,
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                    constraints: const BoxConstraints(minWidth: 18),
-                    child: const Text(
-                      '1',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                  const SizedBox(height: 4),
+                  if (hasUnread)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: specialTheme.primaryColor,
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                else
-                  // Placeholder để giữ chiều cao nhất quán
-                  const SizedBox(height: 18),
-              ],
-            ),
+                      constraints: const BoxConstraints(minWidth: 18),
+                      child: Text(
+                        conversation.numNewMessage > 0
+                            ? '${conversation.numNewMessage}'
+                            : '1',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  else
+                    // Placeholder để giữ chiều cao nhất quán
+                    const SizedBox(height: 18),
+                ],
+              );
+            }()),
           ],
         ),
       ),

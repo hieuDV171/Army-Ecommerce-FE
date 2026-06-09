@@ -12,9 +12,9 @@ import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
 import '../../blocs/marketplace/marketplace_event.dart' show HomeRequested, HomeRefreshed, HomeLoadMoreRequested;
 import '../../blocs/marketplace/marketplace_state.dart' show HomeState;
 import '../../models/marketplace_models.dart';
-import '../util/constants/app_colors.dart';
 import '../util/constants/app_radius.dart';
 import '../util/constants/app_spacing.dart';
+import '../util/theme/special_app_theme.dart';
 import '../util/widgets/empty_state.dart';
 import '../util/widgets/error_state.dart';
 import '../util/widgets/gradient_header.dart';
@@ -233,9 +233,7 @@ class _HomeHeader extends StatelessWidget {
               // Icon chat với badge số tin nhắn chưa đọc
               BlocBuilder<ChatBloc, ChatState>(
                 builder: (ctx, chatState) {
-                  final unread = chatState is ConversationsLoaded
-                      ? chatState.numNewMessage
-                      : 0;
+                  final unread = ctx.read<ChatBloc>().numNewMessage;
                   return IconButton(
                     tooltip: 'Tin nhắn',
                     onPressed: () {
@@ -372,15 +370,30 @@ class _HomeCategories extends StatelessWidget {
                     width: 82,
                     child: Column(
                       children: [
-                        Container(
-                          width: 54,
-                          height: 54,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                          ),
-                          child: const Icon(Icons.category_outlined, color: AppColors.primary),
-                        ),
+                        (() {
+                          final specialTheme = context.specialTheme;
+                          final iconWidget = Icon(
+                            Icons.category_outlined,
+                            color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                          );
+                          return Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: specialTheme.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ),
+                            child: Center(
+                              child: specialTheme.useGradient
+                                  ? ShaderMask(
+                                      shaderCallback: (bounds) =>
+                                          specialTheme.primaryGradient!.createShader(bounds),
+                                      child: iconWidget,
+                                    )
+                                  : iconWidget,
+                            ),
+                          );
+                        }()),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           category.name,

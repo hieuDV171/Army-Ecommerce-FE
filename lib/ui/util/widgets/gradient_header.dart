@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../constants/app_colors.dart';
 import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
+import '../theme/special_app_theme.dart';
 
 class GradientHeader extends StatelessWidget {
   final Widget child;
@@ -16,16 +16,21 @@ class GradientHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final specialTheme = context.specialTheme;
+    final gradient = specialTheme.useGradient
+        ? specialTheme.primaryGradient
+        : LinearGradient(
+            colors: [specialTheme.primaryColor, specialTheme.primaryDarkColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+
     return Container(
       width: double.infinity,
       padding: padding,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppRadius.lg),
         ),
       ),

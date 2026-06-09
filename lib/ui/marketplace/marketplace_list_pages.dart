@@ -18,6 +18,7 @@ import '../util/widgets/error_state.dart';
 import '../util/widgets/loading_overlay.dart';
 import '../util/widgets/price_text.dart';
 import '../util/widgets/section_header.dart';
+import '../util/theme/special_app_theme.dart';
 
 class ProductListPage extends StatelessWidget {
   final String title;
@@ -373,19 +374,32 @@ class _WalletView extends StatelessWidget {
                   ),
                   _buildDetailRow('Thời gian', displayDate),
                   const SizedBox(height: AppSpacing.xl),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: context.specialTheme.useGradient
+                          ? context.specialTheme.primaryGradient
+                          : null,
+                      color: context.specialTheme.useGradient
+                          ? null
+                          : context.specialTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      'Đóng',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Đóng',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -447,9 +461,14 @@ class _WalletView extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.tactical, AppColors.primary],
-                        ),
+                        gradient: context.specialTheme.useGradient
+                            ? context.specialTheme.primaryGradient
+                            : LinearGradient(
+                                colors: [
+                                  AppColors.tactical,
+                                  context.specialTheme.primaryColor
+                                ],
+                              ),
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
                       child: Column(
@@ -460,7 +479,10 @@ class _WalletView extends StatelessWidget {
                             style: TextStyle(color: Colors.white70),
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          PriceText(price: state.balance?.available ?? 0),
+                          PriceText(
+                            price: state.balance?.available ?? 0,
+                            color: Colors.white,
+                          ),
                           const SizedBox(height: AppSpacing.md),
                           Text(
                             'Đang chờ: ${state.balance?.pending ?? 0}',
@@ -820,15 +842,27 @@ class _AddressListView extends StatelessWidget {
         }
       },
       builder: (context, state) {
+        final specialTheme = context.specialTheme;
         return LoadingOverlay(
           isLoading: state.isSubmitting,
           child: Scaffold(
-            appBar: AppBar(title: const Text('Địa chỉ giao hàng')),
+            appBar: AppBar(
+              backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+              flexibleSpace: specialTheme.useGradient
+                  ? Container(
+                      decoration: BoxDecoration(
+                        gradient: specialTheme.primaryGradient,
+                      ),
+                    )
+                  : null,
+              iconTheme: const IconThemeData(color: Colors.white),
+              title: const Text('Địa chỉ giao hàng', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () => _openForm(context),
               icon: const Icon(Icons.add_location_alt),
               label: const Text('Thêm'),
-              backgroundColor: AppColors.primary,
+              backgroundColor: specialTheme.primaryColor,
               foregroundColor: Colors.white,
             ),
             body: _buildBody(context, state),
@@ -928,7 +962,7 @@ class _AddressListView extends StatelessWidget {
               Navigator.pop(dialogContext);
               context.read<AddressBloc>().add(AddressDeleted(address.id));
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(foregroundColor: context.specialTheme.primaryColor),
             child: const Text('Xóa'),
           ),
         ],
@@ -955,7 +989,7 @@ class _AddressCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
         side: address.isDefault
-            ? const BorderSide(color: AppColors.primary, width: 1.5)
+            ? BorderSide(color: context.specialTheme.primaryColor, width: 1.5)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -991,15 +1025,15 @@ class _AddressCard extends StatelessWidget {
                         vertical: AppSpacing.xs,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: context.specialTheme.primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Mặc định',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: context.specialTheme.primaryColor,
                         ),
                       ),
                     ),
@@ -1050,7 +1084,7 @@ class _AddressCard extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined, size: 16),
                     label: const Text('Sửa'),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primary,
+                      foregroundColor: context.specialTheme.primaryColor,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -1059,7 +1093,7 @@ class _AddressCard extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline, size: 16),
                     label: const Text('Xóa'),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.danger,
+                      foregroundColor: context.specialTheme.primaryColor,
                     ),
                   ),
                 ],
@@ -1501,7 +1535,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: AppColors.primary,
+                            foregroundColor: context.specialTheme.primaryColor,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -1542,7 +1576,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
                   onChanged: (value) => setState(() => _isDefault = value),
                   title: const Text('Đặt làm địa chỉ mặc định'),
                   subtitle: const Text('Tự động chọn khi đặt hàng'),
-                  activeThumbColor: AppColors.primary,
+                  activeThumbColor: context.specialTheme.primaryColor,
+                  activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: AppSpacing.xl),

@@ -112,25 +112,25 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF1565C0).withValues(alpha: 0.12),
-                  const Color(0xFF0D47A1).withValues(alpha: 0.05),
+                  AppColors.infoBlue.withValues(alpha: 0.12),
+                  AppColors.infoBlueDark.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
-                color: const Color(0xFF1565C0).withValues(alpha: 0.3),
+                color: AppColors.infoBlue.withValues(alpha: 0.3),
               ),
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline, color: Color(0xFF1565C0), size: 20),
+                Icon(Icons.info_outline, color: AppColors.infoBlue, size: 20),
                 SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
                     'Upload video chiến tích để nhận điểm thưởng quy đổi thành xu nội bộ.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF1565C0),
+                      color: AppColors.infoBlue,
                       height: 1.4,
                     ),
                   ),
@@ -440,7 +440,7 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
+                      color: AppColors.codeBackground,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: const Column(
@@ -449,7 +449,7 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                         Text(
                           '// Kết quả mong đợi từ get_reward_history:',
                           style: TextStyle(
-                            color: Color(0xFF6A9955),
+                            color: AppColors.codeComment,
                             fontSize: 11,
                           ),
                         ),
@@ -462,7 +462,7 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                           '  "available_balance": 500\n'
                           '}',
                           style: TextStyle(
-                            color: Color(0xFFCE9178),
+                            color: AppColors.codeString,
                             fontSize: 11,
                             fontFamily: 'monospace',
                             height: 1.6,

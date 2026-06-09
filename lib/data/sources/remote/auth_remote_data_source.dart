@@ -5,7 +5,7 @@
 //
 // TODO: KHI BACKEND HOÀN THIỆN SMS:
 // 1. Xóa biến 'tempOtp' trong VerifyOtpScreen.
-// 2. Sửa lại AuthRepository để trả về AuthResponse chuẩn thay vì Map.
+// 2. Sửa lại AuthRepository để trả về AuthResponse chuẩn thay vị Map.
 // 3. Xóa logic tự động điền (auto-fill) trong initState của VerifyOtpScreen.
 // =============================================================================
 
@@ -30,7 +30,7 @@ class AuthRemoteDataSource {
     try {
       // Gửi request POST với SĐT và mật khẩu
       final response = await _dioClient.dio.post(
-        '/auth/login',
+        ApiPaths.login,
         data: {
           'phone_number': phoneNumber,
           'password': password,
@@ -54,7 +54,7 @@ class AuthRemoteDataSource {
     try {
       // Gửi request POST đăng ký
       final response = await _dioClient.dio.post(
-        '/auth/signup',
+        ApiPaths.signup,
         data: {
           'phone_number': phoneNumber,
           'password': password,
@@ -77,7 +77,7 @@ class AuthRemoteDataSource {
     try {
       // Gửi request POST kèm tham số token theo yêu cầu
       await _dioClient.dio.post(
-        '/auth/logout',
+        ApiPaths.logout,
         data: {
           'token': token,
         },
@@ -161,7 +161,7 @@ class AuthRemoteDataSource {
   Future<Map<String, dynamic>> createCodeResetPassword(String phoneNumber) async {
     try {
       final response = await _dioClient.dio.post(
-          '/auth/create_code_reset_password',
+          ApiPaths.createCodeResetPassword,
           data: {
             'phone_number': phoneNumber
           }
@@ -177,7 +177,7 @@ class AuthRemoteDataSource {
   Future<ApiResponse<String?>> checkCodeResetPassword(String phoneNumber, String resetCode) async {
     try {
       final response = await _dioClient.dio.post(
-        '/auth/check_code_reset_password',
+        ApiPaths.checkCodeResetPassword,
         data: {
           'phone_number': phoneNumber,
           'reset_code': resetCode,
@@ -208,7 +208,7 @@ class AuthRemoteDataSource {
       }
 
       final response = await _dioClient.dio.post(
-        '/users/get_user_info',
+        ApiPaths.getUserInfo,
         data: data,
       );
       return ApiResponse<UserModel>.fromJson(
@@ -225,7 +225,7 @@ class AuthRemoteDataSource {
   Future<ApiResponse<UserModel>> resetPassword(String phoneNumber, String newPassword) async {
     try {
       final response = await _dioClient.dio.post(
-          '/auth/reset_password',
+          ApiPaths.resetPassword,
           data: {
             'phone_number': phoneNumber,
             'password': newPassword,
@@ -251,7 +251,7 @@ class AuthRemoteDataSource {
       final token = await SessionManager.getToken();
 
       final response = await _dioClient.dio.post(
-          '/auth/change_password',
+          ApiPaths.changePassword,
           data: {
             'token': token,
             'password': oldPassword,
@@ -320,7 +320,7 @@ class AuthRemoteDataSource {
         });
 
         final uploadResponse = await _dioClient.dio.post(
-          '/upload/file',
+          ApiPaths.uploadFile,
           data: formData,
           options: Options(
             contentType: 'multipart/form-data',
@@ -331,7 +331,7 @@ class AuthRemoteDataSource {
       }
 
       final response = await _dioClient.dio.post(
-        '/auth/change_info_after_signup',
+        ApiPaths.changeInfoAfterSignup,
         data: {
           'token': token,
           'username': username,
@@ -362,7 +362,7 @@ class AuthRemoteDataSource {
     });
 
     final uploadResponse = await _dioClient.dio.post(
-      '/upload/file',
+      ApiPaths.uploadFile,
       data: formData,
       options: Options(
         contentType: 'multipart/form-data',
@@ -408,7 +408,7 @@ class AuthRemoteDataSource {
       if (coverImageWebUrl != null) payload['cover_image_web'] = coverImageWebUrl;
 
       final response = await _dioClient.dio.post(
-        '/users/set_user_info',
+        ApiPaths.setUserInfo,
         data: payload,
       );
 
@@ -468,7 +468,4 @@ class AuthRemoteDataSource {
       throw Exception('Lỗi cập nhật thông tin người dùng: $e');
     }
   }
-
-
-
 }

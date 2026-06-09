@@ -12,6 +12,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
   int _conversationsIndex = 0;
   int _messagesIndex = 0;
+  int numNewMessage = 0;
 
   ChatBloc({required this.chatRepository}) : super(ChatInitial()) {
     on<SendMessageRequested>(_onSendMessageRequested);
@@ -81,6 +82,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           return bTime.compareTo(aTime);
         });
 
+        numNewMessage = response.numNewMessage;
         emit(ConversationsLoaded(
           conversations: list,
           hasMore: list.length == _pageSize,
@@ -128,6 +130,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           return bTime.compareTo(aTime);
         });
 
+        numNewMessage = response.numNewMessage;
         emit(ConversationsLoaded(
           conversations: updatedList,
           hasMore: newItems.length == _pageSize,

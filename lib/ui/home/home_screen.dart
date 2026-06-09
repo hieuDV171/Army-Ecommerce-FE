@@ -21,6 +21,7 @@ import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
+import 'package:army_ecommerce/core/services/firebase_notification_service.dart';
 
 import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
 import '../../blocs/marketplace/marketplace_state.dart' show HomeState;
@@ -39,9 +40,10 @@ import '../util/widgets/app_button.dart';
 import '../util/widgets/price_text.dart';
 import '../profile/user_profile_screen.dart';
 import '../settings/push_settings_screen.dart';
+import '../settings/theme_selection_screen.dart';
+import '../util/constants/app_colors.dart';
+import '../util/theme/special_app_theme.dart';
 
-const Color _shopeeOrange = Color(0xFFE83A14);
-const Color _navyBlue = Color(0xFFE83A14);
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -59,7 +61,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   String? _avatarUrl;
   String? _coverImageUrl;
@@ -76,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentUsername = widget.username;
 
     // Khởi tạo 4 BLoC từ Repository do thành viên đảm nhận
@@ -86,11 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
       notificationRepository: context.read<NotificationRepository>(),
     );
 
-    // Tải sẵn thông báo và hội thoại ngay khi vào Home để hiển thị badge
-    if (widget.token.isNotEmpty) {
-      _notificationBloc.add(LoadNotificationsRequested());
-      _chatBloc.add(LoadConversationsRequested());
-    }
+    // Đăng ký lắng nghe foreground message để cập nhật badge số chưa đọc ngay lập tức
+    FirebaseNotificationService.addMessageReceivedListener(_onForegroundMessageReceived);
 
     // Tải avatar và cover image từ bộ nhớ cục bộ
     if (widget.token.isNotEmpty) {
@@ -102,8 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
-    // Tải thông tin người dùng từ máy chủ để đồng bộ avatar, cover image mới nhất
+    // Tải sẵn dữ liệu sau khi frame đầu tiên được vẽ để tránh xung đột vòng đời
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onForegroundMessageReceived();
       if (mounted && widget.token.isNotEmpty) {
         context.read<AuthBloc>().add(GetUserInfoRequested(userId: null));
       }
@@ -112,11 +113,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    FirebaseNotificationService.removeMessageReceivedListener(_onForegroundMessageReceived);
     _followBloc.close();
     _blockBloc.close();
     _chatBloc.close();
     _notificationBloc.close();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _onForegroundMessageReceived();
+    }
+  }
+
+  void _onForegroundMessageReceived() {
+    if (mounted && widget.token.isNotEmpty) {
+      _notificationBloc.add(LoadNotificationsRequested());
+      _chatBloc.add(LoadConversationsRequested());
+    }
   }
 
 
@@ -235,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           child: Scaffold(
             key: _scaffoldKey,
-            backgroundColor: const Color(0xFFF5F5F5),
+            backgroundColor: AppColors.greyBackground,
             appBar: _selectedIndex == 3 ? null : _buildAppBar(),
             drawer: _HomeDrawer(
               displayName: _currentUsername,
@@ -296,8 +313,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   AppBar _buildAppBar() {
+    final specialTheme = context.specialTheme;
     return AppBar(
-      backgroundColor: _navyBlue,
+      backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+      flexibleSpace: specialTheme.useGradient
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: specialTheme.primaryGradient,
+              ),
+            )
+          : null,
       iconTheme: const IconThemeData(color: Colors.white),
       title: Text(
         _selectedIndex == 0
@@ -323,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return BottomNavigationBar(
           currentIndex: _selectedIndex,
-          selectedItemColor: _shopeeOrange,
+          selectedItemColor: context.specialTheme.primaryColor,
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           selectedFontSize: 11,
@@ -470,7 +495,10 @@ class _HomeDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFFE83A14)),
+            decoration: BoxDecoration(
+              color: context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor,
+              gradient: context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null,
+            ),
             accountName: Text(isGuest ? 'Đồng chí: Khách' : 'Đồng chí: $displayName'),
             accountEmail: const Text('Chợ quân nhu nội bộ'),
             currentAccountPicture: CircleAvatar(
@@ -479,7 +507,7 @@ class _HomeDrawer extends StatelessWidget {
                   ? NetworkImage(avatarUrl!)
                   : null,
               child: isGuest || avatarUrl == null || avatarUrl!.isEmpty
-                  ? const Icon(Icons.person, size: 42, color: Color(0xFFE83A14))
+                  ? Icon(Icons.person, size: 42, color: context.specialTheme.primaryDarkColor)
                   : null,
             ),
           ),
@@ -496,6 +524,16 @@ class _HomeDrawer extends StatelessWidget {
             onTap: () {
               if (checkLogin(context, token: token)) {
                 _push(context, const BuyerOrdersPage());
+              }
+            },
+          ),
+          _DrawerTile(
+            icon: Icons.storefront_outlined,
+            color: Colors.blueAccent,
+            title: 'Quản lý bán hàng',
+            onTap: () {
+              if (checkLogin(context, token: token)) {
+                _push(context, const SellerOrdersPage());
               }
             },
           ),
@@ -536,6 +574,18 @@ class _HomeDrawer extends StatelessWidget {
             title: 'Tin tức',
             onTap: () => _push(context, const NewsPage()),
           ),
+          _DrawerTile(
+            icon: Icons.palette_outlined,
+            color: Colors.purple,
+            title: 'Chọn giao diện',
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ThemeSelectionScreen()),
+              );
+            },
+          ),
           const Divider(),
           if (isGuest)
             _DrawerTile(
@@ -566,6 +616,8 @@ class _HomeDrawer extends StatelessWidget {
     Navigator.pop(context);
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
   }
+
+  // Removed _showThemeSelectorDialog as it is replaced by ThemeSelectionScreen.
 
   void _showLogoutDialog(BuildContext context) {
     logger.i('HOME DRAWER: _showLogoutDialog called');
@@ -632,9 +684,10 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: const BoxDecoration(
-        color: _shopeeOrange,
-        borderRadius: BorderRadius.all(Radius.circular(8)),
+      decoration: BoxDecoration(
+        color: context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor,
+        gradient: context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null,
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       constraints: const BoxConstraints(minWidth: 16),
       child: Text(
@@ -657,8 +710,8 @@ class _CategoryTabBody extends StatelessWidget {
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
         if (state.isInitialLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: _shopeeOrange),
+          return Center(
+            child: CircularProgressIndicator(color: context.specialTheme.primaryColor),
           );
         }
         final categories = state.categories;
@@ -711,12 +764,12 @@ class _CategoryTabBody extends StatelessWidget {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: _shopeeOrange.withValues(alpha: 0.1),
+                        color: context.specialTheme.primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.category_outlined,
-                        color: _shopeeOrange,
+                        color: context.specialTheme.primaryColor,
                         size: 28,
                       ),
                     ),
@@ -985,7 +1038,10 @@ class _ProfileTabBody extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white, width: 4),
               color: (isGuest || coverImageUrl == null || coverImageUrl!.isEmpty)
-                  ? const Color.fromARGB(255, 251, 209, 209)
+                  ? (context.specialTheme.useGradient ? null : const Color.fromARGB(255, 251, 209, 209))
+                  : null,
+              gradient: (isGuest || coverImageUrl == null || coverImageUrl!.isEmpty) && context.specialTheme.useGradient
+                  ? context.specialTheme.primaryGradient
                   : null,
               image: (!isGuest && coverImageUrl != null && coverImageUrl!.isNotEmpty)
                   ? DecorationImage(
@@ -1011,7 +1067,7 @@ class _ProfileTabBody extends StatelessWidget {
                         ? NetworkImage(avatarUrl!)
                         : null,
                     child: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
-                        ? const Icon(Icons.person, size: 50, color: Color(0xFFE83A14))
+                        ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)
                         : null,
                   ),
                 ),
@@ -1029,7 +1085,7 @@ class _ProfileTabBody extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFFE83A14),
+                      foregroundColor: context.specialTheme.primaryDarkColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -1230,6 +1286,6 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(height: 1, indent: 52, color: Color(0xFFF0F0F0));
+    return const Divider(height: 1, indent: 52, color: AppColors.greyLightest);
   }
 }

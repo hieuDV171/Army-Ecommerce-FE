@@ -560,6 +560,8 @@ class OrderModel {
   final String? buyerName;
   final String? buyerPhone;
   final String? buyerAddress;
+  final String? buyerId;
+  final String? sellerId;
   final String summary;
   final List<OrderLineItem> items;
 
@@ -575,6 +577,8 @@ class OrderModel {
     this.buyerName,
     this.buyerPhone,
     this.buyerAddress,
+    this.buyerId,
+    this.sellerId,
     required this.summary,
     this.items = const [],
   });
@@ -615,6 +619,8 @@ class OrderModel {
       buyerName: _readOptionalString(buyerJson ?? json, ['name', 'username', 'buyer_name']),
       buyerPhone: _readOptionalString(buyerJson ?? json, ['phonenumber', 'phone', 'phone_number']),
       buyerAddress: _readOptionalString(buyerJson ?? json, ['address', 'full_address']),
+      buyerId: _readOptionalString(buyerJson ?? json, ['buyer_id', 'id', 'user_id']),
+      sellerId: _readOptionalString(sellerJson ?? json, ['seller_id', 'id', 'user_id']),
       summary: itemSummary,
       items: parsedItems,
     );

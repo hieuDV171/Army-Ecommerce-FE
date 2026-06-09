@@ -4,8 +4,8 @@ import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/models/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-const Color _shopeeOrange = Color(0xFFE83A14);
+import '../util/constants/app_colors.dart';
+import '../util/theme/special_app_theme.dart';
 
 class ChatScreen extends StatefulWidget {
   final String partnerId;
@@ -110,7 +110,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.greyBackground,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -166,11 +166,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     // Indicator tải thêm ở đầu danh sách (tin cũ nhất = index cao nhất)
                     if (index == messages.length) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Center(
                           child: CircularProgressIndicator(
-                            color: _shopeeOrange,
+                            color: context.specialTheme.primaryColor,
                             strokeWidth: 2,
                           ),
                         ),
@@ -221,11 +221,20 @@ class _ChatScreenState extends State<ChatScreen> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   PreferredSizeWidget _buildAppBar() {
+    final specialTheme = context.specialTheme;
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+      flexibleSpace: specialTheme.useGradient
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: specialTheme.primaryGradient,
+              ),
+            )
+          : null,
       elevation: 0.5,
+      iconTheme: const IconThemeData(color: Colors.white),
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
       titleSpacing: 0,
@@ -247,7 +256,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Text(
               widget.partnerUsername,
               style: const TextStyle(
-                color: Colors.black87,
+                color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -264,7 +273,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildProductBanner() {
     return Container(
       width: double.infinity,
-      color: const Color(0xFFFFF3F0),
+      color: AppColors.unreadBackground,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
@@ -303,9 +312,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       _formatPrice(widget.productPrice!),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: _shopeeOrange,
+                        color: context.specialTheme.primaryColor,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -323,8 +332,8 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       width: 48,
       height: 48,
-      color: const Color(0xFFFFEBE8),
-      child: const Icon(Icons.inventory_2_outlined, size: 22, color: _shopeeOrange),
+      color: AppColors.primaryUltraLight,
+      child: Icon(Icons.inventory_2_outlined, size: 22, color: context.specialTheme.primaryColor),
     );
   }
 
@@ -355,7 +364,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Container(
               constraints: const BoxConstraints(maxHeight: 100),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: AppColors.greyBackground,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
@@ -382,7 +391,12 @@ class _ChatScreenState extends State<ChatScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _isSending ? Colors.grey[300] : _shopeeOrange,
+                color: _isSending
+                    ? Colors.grey[300]
+                    : (context.specialTheme.useGradient ? null : context.specialTheme.primaryColor),
+                gradient: _isSending
+                    ? null
+                    : (context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null),
                 shape: BoxShape.circle,
               ),
               child: _isSending
@@ -413,7 +427,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildBlockedBanner() {
     return Container(
       width: double.infinity,
-      color: const Color(0xFFF5F5F5),
+      color: AppColors.greyBackground,
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
@@ -470,7 +484,10 @@ class _MessageBubble extends StatelessWidget {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isMine ? _shopeeOrange : Colors.white,
+                color: isMine
+                    ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryColor)
+                    : Colors.white,
+                gradient: isMine && context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -539,14 +556,14 @@ class _DateSeparator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+          const Expanded(child: Divider(color: AppColors.greyDivider)),
           const SizedBox(width: 10),
           Text(
             _formatDate(date),
-            style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
           const SizedBox(width: 10),
-          const Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+          const Expanded(child: Divider(color: AppColors.greyDivider)),
         ],
       ),
     );

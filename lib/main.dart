@@ -3,6 +3,7 @@ import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:army_ecommerce/repositories/block_repository.dart';
 import 'package:army_ecommerce/repositories/chat_repository.dart';
 import 'package:army_ecommerce/repositories/follow_repository.dart';
@@ -28,6 +29,8 @@ import 'core/api/dio_client.dart';
 import 'core/services/firebase_notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'ui/util/theme/app_theme.dart';
+import 'ui/util/theme/special_app_theme.dart';
+import 'blocs/theme_cubit.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'firebase_options.dart';
 
@@ -60,12 +63,46 @@ Future<void> main() async {
   // Khởi tạo DioClient dùng chung cho toàn bộ app
   final dioClient = DioClient();
 
-  runApp(MyApp(dioClient: dioClient));
+  // Load saved theme mode
+  AppThemeMode initialTheme = AppThemeMode.army;
+  int initialCustomPrimaryVal = 0xFF9C27B0;
+  int initialCustomDarkVal = 0xFF673AB7;
+  bool initialCustomUseGradient = true;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTheme = prefs.getString('theme_mode');
+    if (savedTheme != null) {
+      initialTheme = AppThemeMode.values.byName(savedTheme);
+    }
+    initialCustomPrimaryVal = prefs.getInt('theme_custom_primary') ?? 0xFF9C27B0;
+    initialCustomDarkVal = prefs.getInt('theme_custom_dark') ?? 0xFF673AB7;
+    initialCustomUseGradient = prefs.getBool('theme_custom_use_gradient') ?? true;
+  } catch (_) {}
+
+  runApp(MyApp(
+    dioClient: dioClient,
+    initialTheme: initialTheme,
+    initialCustomPrimary: Color(initialCustomPrimaryVal),
+    initialCustomDark: Color(initialCustomDarkVal),
+    initialCustomUseGradient: initialCustomUseGradient,
+  ));
 }
 
 class MyApp extends StatefulWidget {
   final DioClient dioClient;
-  const MyApp({super.key, required this.dioClient});
+  final AppThemeMode initialTheme;
+  final Color initialCustomPrimary;
+  final Color initialCustomDark;
+  final bool initialCustomUseGradient;
+
+  const MyApp({
+    super.key,
+    required this.dioClient,
+    required this.initialTheme,
+    required this.initialCustomPrimary,
+    required this.initialCustomDark,
+    required this.initialCustomUseGradient,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -131,13 +168,28 @@ class _MyAppState extends State<MyApp> {
               settingRepository: RepositoryProvider.of<SettingRepository>(context),
             ),
           ),
+          BlocProvider(
+            create: (context) => ThemeCubit(
+              initialTheme: widget.initialTheme,
+              initialCustomPrimary: widget.initialCustomPrimary,
+              initialCustomDark: widget.initialCustomDark,
+              initialCustomUseGradient: widget.initialCustomUseGradient,
+            ),
+          ),
         ],
-        child: MaterialApp(
-          title: 'Army E-commerce',
-          theme: AppTheme.light,
-          builder: (context, child) {
-            return NetworkStatusWrapper(child: child!);
-          },
+        child: BlocBuilder<ThemeCubit, ThemeState>(
+          builder: (context, themeState) {
+            return MaterialApp(
+              title: 'Army E-commerce',
+              theme: AppTheme.getTheme(
+                themeState.themeMode,
+                customPrimary: themeState.customPrimaryColor,
+                customDark: themeState.customDarkColor,
+                customUseGradient: themeState.customUseGradient,
+              ),
+              builder: (context, child) {
+                return NetworkStatusWrapper(child: child!);
+              },
           home: BlocConsumer<AuthBloc, AuthState>(
             listenWhen: (previous, current) {
               return current is AuthSuccess || current is AuthLogoutSuccess || current is Unauthenticated;
@@ -211,8 +263,10 @@ class _MyAppState extends State<MyApp> {
               );
             },
           ),
-        ),
-      ),
+        );
+      },
+    ),
+  ),
     );
   }
 }

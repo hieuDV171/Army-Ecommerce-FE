@@ -6,6 +6,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 
+import '../util/widgets/app_button.dart';
+import '../util/widgets/app_text_field.dart';
+import '../util/theme/special_app_theme.dart';
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -61,9 +65,21 @@ class _SignupScreenState extends State<SignupScreen> {
   
   @override
   Widget build(BuildContext context) {
+    final specialTheme = context.specialTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Đăng ký'),),
-      body: BlocListener<AuthBloc, AuthState>(
+      appBar: AppBar(
+        backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+        flexibleSpace: specialTheme.useGradient
+            ? Container(
+                decoration: BoxDecoration(
+                  gradient: specialTheme.primaryGradient,
+                ),
+              )
+            : null,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Đăng ký', style: TextStyle(color: Colors.white, fontSize: 16)),
+      ),
+      body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthSignupSuccess) {
               // Đăng ký thành công -> Chuyển sang màn hình xác thực OTP
@@ -91,34 +107,33 @@ class _SignupScreenState extends State<SignupScreen> {
               );
             }
           },
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(labelText: "Số điện thoại"),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 20,),
-                TextField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Mật khẩu (6-10 ký tự)'),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 30,),
-                ElevatedButton(
+          builder: (context, state) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  AppTextField(
+                    controller: _phoneController,
+                    label: "Số điện thoại",
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 20,),
+                  AppTextField(
+                    controller: _passwordController,
+                    label: 'Mật khẩu (6-10 ký tự)',
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 30,),
+                  AppButton(
+                    label: 'TIẾP THEO',
+                    isLoading: state is AuthLoading,
                     onPressed: _onSignupPressed,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: Colors.deepOrangeAccent
-                    ),
-                    child: const Text('TIẾP THEO'),
-                ),
-              ],
-            ),
-          ),
-      )
+                  ),
+                ],
+              ),
+            );
+          },
+      ),
     );
   }
 }

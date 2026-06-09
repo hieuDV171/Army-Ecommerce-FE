@@ -42,6 +42,7 @@ import '../util/widgets/section_header.dart';
 import '../util/widgets/shimmer_product_grid.dart';
 import '../util/widgets/shimmer_box.dart';
 import 'marketplace_shared.dart';
+import '../util/theme/special_app_theme.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final String productId;
@@ -117,7 +118,19 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           isLoading: state.isSubmitting,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Chi tiết sản phẩm'),
+              backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+              flexibleSpace: context.specialTheme.useGradient
+                  ? Container(
+                      decoration: BoxDecoration(
+                        gradient: context.specialTheme.primaryGradient,
+                      ),
+                    )
+                  : null,
+              iconTheme: const IconThemeData(color: Colors.white),
+              title: const Text(
+                'Chi tiết sản phẩm',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
               actions: [
                 IconButton(
                   tooltip: 'Báo cáo',
@@ -165,46 +178,50 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: product.seller?.id == null || product.seller!.id.isEmpty
-                                  ? null
-                                  : () {
-                                      final authState = context.read<AuthBloc>().state;
-                                      final token = authState.currentUser?.token ?? '';
-                                      if (checkLogin(context, token: token)) {
-                                        final currentUserId =
-                                            authState.currentUser?.id ?? '';
-                                        final chatBloc = context.read<ChatBloc>();
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => BlocProvider.value(
-                                              value: chatBloc,
-                                              child: ChatScreen(
-                                                partnerId: product.seller!.id,
-                                                partnerUsername:
-                                                    product.sellerName ?? 'Người bán',
-                                                partnerAvatar: product.seller?.avatar,
-                                                currentUserId: currentUserId,
-                                                productId: product.id,
-                                                productTitle: product.title,
-                                                productPrice: product.price,
-                                                productImageUrl: product.imageUrls.isNotEmpty
-                                                    ? product.imageUrls.first
-                                                    : null,
+                            child: Builder(builder: (context) {
+                              final authState = context.read<AuthBloc>().state;
+                              final currentUserId = authState.currentUser?.id ?? '';
+                              final sellerId = product.seller?.id ?? '';
+                              final isOwnProduct = sellerId.isNotEmpty && sellerId == currentUserId;
+                              final canChat = !isOwnProduct && sellerId.isNotEmpty;
+                              return OutlinedButton.icon(
+                                onPressed: canChat
+                                    ? () {
+                                        final token = authState.currentUser?.token ?? '';
+                                        if (checkLogin(context, token: token)) {
+                                          final chatBloc = context.read<ChatBloc>();
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => BlocProvider.value(
+                                                value: chatBloc,
+                                                child: ChatScreen(
+                                                  partnerId: sellerId,
+                                                  partnerUsername:
+                                                      product.sellerName ?? 'Người bán',
+                                                  partnerAvatar: product.seller?.avatar,
+                                                  currentUserId: currentUserId,
+                                                  productId: product.id,
+                                                  productTitle: product.title,
+                                                  productPrice: product.price,
+                                                  productImageUrl: product.imageUrls.isNotEmpty
+                                                      ? product.imageUrls.first
+                                                      : null,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ).then((_) {
-                                          if (token.isNotEmpty) {
-                                            chatBloc.add(LoadConversationsRequested());
-                                          }
-                                        });
+                                          ).then((_) {
+                                            if (token.isNotEmpty) {
+                                              chatBloc.add(LoadConversationsRequested());
+                                            }
+                                          });
+                                        }
                                       }
-                                    },
-                              icon: const Icon(Icons.chat_bubble_outline),
-                              label: const Text('Chat'),
-                            ),
+                                    : null,
+                                icon: const Icon(Icons.chat_bubble_outline),
+                                label: const Text('Chat'),
+                              );
+                            }),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
@@ -421,7 +438,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Ưu đãi: ${product.bestOffers}',
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: context.specialTheme.primaryColor, fontWeight: FontWeight.w600),
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
@@ -1311,6 +1328,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final specialTheme = context.specialTheme;
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
@@ -1357,10 +1375,10 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                   return ChoiceChip(
                     label: Text(displayName),
                     selected: isSelected,
-                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                    checkmarkColor: AppColors.primary,
+                    selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
+                    checkmarkColor: specialTheme.primaryColor,
                     labelStyle: TextStyle(
-                      color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                      color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                     onSelected: (selected) {
@@ -1383,8 +1401,8 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                 ),
                 Text(
                   '${_formatPrice(_currentMinPrice)} - ${_formatPrice(_currentMaxPrice)}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: specialTheme.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1395,7 +1413,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
               values: RangeValues(_currentMinPrice, _currentMaxPrice),
               min: _minPriceBound,
               max: _maxPriceBound,
-              activeColor: AppColors.primary,
+              activeColor: specialTheme.primaryColor,
               inactiveColor: AppColors.border,
               labels: RangeLabels(
                 _formatPrice(_currentMinPrice),
@@ -1742,32 +1760,34 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 
   Future<void> _loadMoreProducts() async {
     if (_isLoadingProducts || _hasReachedEnd || _isLoading) return;
-
     setState(() => _isLoadingProducts = true);
-    final marketRepo = context.read<MarketplaceRepository>();
     try {
-      final products = await marketRepo.getUserListings(
+      final marketRepo = context.read<MarketplaceRepository>();
+      final more = await marketRepo.getUserListings(
         userId: _sellerUserId,
         index: _currentIndex,
         count: 20,
       );
       if (!mounted) return;
       setState(() {
-        _products = [..._products, ...products];
-        _currentIndex += 1;
-        _hasReachedEnd = products.length < 20;
+        _products.addAll(more);
+        _currentIndex++;
+        _hasReachedEnd = more.length < 20;
         _isLoadingProducts = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _isLoadingProducts = false;
-      });
+      setState(() => _isLoadingProducts = false);
     }
   }
 
-  // Bật/tắt follow người bán
   void _toggleFollow() {
+    if (_isBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn đã chặn người dùng này, không thể thực hiện thao tác.')),
+      );
+      return;
+    }
     final authState = context.read<AuthBloc>().state;
     final token = authState.currentUser?.token ?? '';
     if (checkLogin(context, token: token)) {
@@ -1895,11 +1915,22 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   }
 
   void _openChat() {
+    if (_isBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bạn đã chặn người dùng này, không thể thực hiện thao tác.')),
+      );
+      return;
+    }
     final authState = context.read<AuthBloc>().state;
     final token = authState.currentUser?.token ?? '';
     if (checkLogin(context, token: token)) {
+      if (_isBlocked) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bạn đã chặn người này, không thể thực hiện thao tác.')),
+        );
+        return;
+      }
       final currentUserId = authState.currentUser?.id ?? '';
-
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -2086,7 +2117,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                             label: _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
                             icon: _isFollowed ? Icons.check : Icons.person_add_outlined,
                             isActive: _isFollowed,
-                            activeColor: AppColors.primary,
+                            activeColor: context.specialTheme.primaryColor,
                             onTap: isMe ? null : _toggleFollow,
                           ),
                         ),
@@ -2366,21 +2397,43 @@ class _SellerActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDisabled = onTap == null;
+    final specialTheme = context.specialTheme;
+    final isThemePrimary = activeColor == AppColors.primary || activeColor == specialTheme.primaryColor;
+
+    Gradient? bgGradient;
+    Color? bgSolidColor;
+    Color borderClr;
+
+    if (isDisabled) {
+      bgSolidColor = Colors.grey[200];
+      borderClr = Colors.grey[300]!;
+    } else if (isActive) {
+      if (isThemePrimary && specialTheme.useGradient) {
+        bgGradient = specialTheme.primaryGradient;
+        borderClr = Colors.transparent;
+      } else {
+        bgSolidColor = activeColor;
+        borderClr = activeColor;
+      }
+    } else {
+      bgSolidColor = Colors.white;
+      borderClr = Colors.grey[400]!;
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: isDisabled
-              ? Colors.grey[200]
-              : (isActive ? activeColor : Colors.white),
+          color: bgSolidColor,
+          gradient: bgGradient,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: isDisabled
-                ? Colors.grey[300]!
-                : (isActive ? activeColor : Colors.grey[400]!),
-            width: 1,
-          ),
+          border: borderClr == Colors.transparent
+              ? null
+              : Border.all(
+                  color: borderClr,
+                  width: 1,
+                ),
         ),
         alignment: Alignment.center,
         child: Row(

@@ -4,6 +4,8 @@ import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/ui/auth/verify_otp_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../util/widgets/app_button.dart';
+import '../util/theme/special_app_theme.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -54,7 +56,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(title: const Text('Đặt lại mật khẩu'),),
+          appBar: AppBar(
+            backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+            flexibleSpace: context.specialTheme.useGradient
+                ? Container(
+                    decoration: BoxDecoration(
+                      gradient: context.specialTheme.primaryGradient,
+                    ),
+                  )
+                : null,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text('Đặt lại mật khẩu', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ),
           body: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -77,15 +90,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 30,),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
-                    return ElevatedButton(
-                        onPressed: state is AuthLoading ? null : _onSubmit,
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepOrangeAccent,
-                            minimumSize: const Size(double.infinity, 50),
-                        ),
-                        child: state is AuthLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('TIẾP THEO')
+                    return AppButton(
+                      label: 'TIẾP THEO',
+                      isLoading: state is AuthLoading,
+                      onPressed: _onSubmit,
                     );
                   },
                 ),

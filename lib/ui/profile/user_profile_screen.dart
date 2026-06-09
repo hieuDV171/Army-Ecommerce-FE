@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../util/constants/app_colors.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -447,7 +448,7 @@ class _OnlineStatusDotState extends State<_OnlineStatusDot>
                   border: Border.all(color: Colors.white, width: 3),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(0x6624D366),
+                      color: AppColors.onlineGreenGlow,
                       blurRadius: 12,
                       spreadRadius: 2,
                     ),

@@ -4,6 +4,8 @@ import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../util/widgets/app_button.dart';
+import '../util/theme/special_app_theme.dart';
 
 class CreateNewPasswordScreen extends StatefulWidget {
   final String phoneNumber;
@@ -50,7 +52,18 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(title: const Text('Thiết lập mật khẩu'),),
+          appBar: AppBar(
+            backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+            flexibleSpace: context.specialTheme.useGradient
+                ? Container(
+                    decoration: BoxDecoration(
+                      gradient: context.specialTheme.primaryGradient,
+                    ),
+                  )
+                : null,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text('Thiết lập mật khẩu', style: TextStyle(color: Colors.white, fontSize: 16)),
+          ),
           body: Padding(
               padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -70,10 +83,14 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                   ),
                 ),
                 const SizedBox(height: 40,),
-                ElevatedButton(
-                    onPressed: _onConfirm,
-                    style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-                    child: const Text('TIẾP THEO')
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    return AppButton(
+                      label: 'TIẾP THEO',
+                      isLoading: state is AuthLoading,
+                      onPressed: _onConfirm,
+                    );
+                  },
                 ),
               ],
             ),

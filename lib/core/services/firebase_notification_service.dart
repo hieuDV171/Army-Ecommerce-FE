@@ -6,6 +6,7 @@ import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
 import 'dart:io';
+import 'dart:ui';
 
 /// Service để quản lý Firebase Cloud Messaging (FCM) cho push notification
 // Background handler must be a top-level function and reachable from the
@@ -29,6 +30,16 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class FirebaseNotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   static bool _tokenRefreshListenerRegistered = false;
+
+  static final List<VoidCallback> _onMessageReceivedListeners = [];
+
+  static void addMessageReceivedListener(VoidCallback listener) {
+    _onMessageReceivedListeners.add(listener);
+  }
+
+  static void removeMessageReceivedListener(VoidCallback listener) {
+    _onMessageReceivedListeners.remove(listener);
+  }
 
   /// Prepare FCM usage (do NOT call Firebase.initializeApp() here). Firebase
   /// should be initialized once in `main()` using `DefaultFirebaseOptions`.
@@ -140,6 +151,13 @@ class FirebaseNotificationService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       logger.i('Foreground message received: ${message.notification?.title}');
       // Hiển thị local notification hoặc cập nhật UI
+      for (final listener in _onMessageReceivedListeners) {
+        try {
+          listener();
+        } catch (e) {
+          logger.e('Error calling message received listener: $e');
+        }
+      }
     });
   }
 

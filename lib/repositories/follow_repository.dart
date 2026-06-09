@@ -1,4 +1,5 @@
 import 'package:army_ecommerce/core/api/dio_client.dart';
+import 'package:army_ecommerce/core/constants/api_paths.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:dio/dio.dart';
 
@@ -15,7 +16,7 @@ class FollowRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/set_user_follow',
+        ApiPaths.setUserFollow,
         data: {
           'followee_id': followeeId,
           'action': action,
@@ -36,7 +37,7 @@ class FollowRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/get_list_followed',
+        ApiPaths.getListFollowed,
         data: {
           'user_id': userId,
           'index': index,
@@ -58,7 +59,7 @@ class FollowRepository {
   }) async {
     try {
       final response = await _dioClient.dio.post(
-        '/get_list_following',
+        ApiPaths.getListFollowing,
         data: {
           'user_id': userId,
           'index': index,

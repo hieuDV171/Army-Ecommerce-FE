@@ -4,6 +4,9 @@ import 'package:army_ecommerce/blocs/settings/push_setting_state.dart';
 import 'package:army_ecommerce/models/push_setting_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
+import '../util/widgets/app_button.dart';
+import '../util/theme/special_app_theme.dart';
 
 class PushSettingsScreen extends StatefulWidget {
   const PushSettingsScreen({super.key});
@@ -12,14 +15,43 @@ class PushSettingsScreen extends StatefulWidget {
   State<PushSettingsScreen> createState() => _PushSettingScreenState();
 }
 
-class _PushSettingScreenState extends State<PushSettingsScreen> {
+class _PushSettingScreenState extends State<PushSettingsScreen>
+    with SingleTickerProviderStateMixin {
   PushSettingModel? _currentSettings;
   PushSettingModel? _draftSettings;
+
+  late final AnimationController _checkController;
+  late final Animation<double> _checkScale;
+  late final Animation<double> _checkFade;
+  bool _showCheck = false;
 
   @override
   void initState() {
     super.initState();
     context.read<PushSettingBloc>().add(FetchPushSettingEvent());
+    _checkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _checkScale = CurvedAnimation(parent: _checkController, curve: Curves.elasticOut);
+    _checkFade = CurvedAnimation(parent: _checkController, curve: Curves.easeIn);
+  }
+
+  @override
+  void dispose() {
+    _checkController.dispose();
+    super.dispose();
+  }
+
+  void _playSuccessAnimation() {
+    setState(() => _showCheck = true);
+    _checkController.forward(from: 0);
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (!mounted) return;
+      _checkController.reverse().then((_) {
+        if (mounted) setState(() => _showCheck = false);
+      });
+    });
   }
 
   @override
@@ -39,7 +71,16 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Cài đặt thông báo'),
+          backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+          flexibleSpace: context.specialTheme.useGradient
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: context.specialTheme.primaryGradient,
+                  ),
+                )
+              : null,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text('Cài đặt thông báo', style: TextStyle(color: Colors.white, fontSize: 16)),
           centerTitle: true,
         ),
 
@@ -151,12 +192,38 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
                           ),
 
                           const SizedBox(height: 32),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: isSaving || !hasUnsavedChanges ? null : _saveChangedSettings,
-                              child: const Text('Lưu thay đổi'),
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppButton(
+                                  label: 'Lưu thay đổi',
+                                  isLoading: isSaving,
+                                  onPressed: isSaving || !hasUnsavedChanges ? null : _saveChangedSettings,
+                                ),
+                              ),
+                              if (_showCheck) ...[
+                                const SizedBox(width: 12),
+                                ScaleTransition(
+                                  scale: _checkScale,
+                                  child: FadeTransition(
+                                    opacity: _checkFade,
+                                    child: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 22,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),
@@ -198,14 +265,9 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
                 _currentSettings = state.data;
                 _draftSettings = state.data;
               });
-            }
-
-            if (state is PushSettingSuccess && state.message != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message!),
-                backgroundColor: Colors.green,
-                ),
-              );
+              if (state.message != null) {
+                _playSuccessAnimation();
+              }
             }
             if (state is PushSettingError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -328,13 +390,13 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF333333),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE0E0E0)),
+            border: Border.all(color: AppColors.greyDivider),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -342,7 +404,7 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
               for (int i = 0; i < items.length; i++) ...[
                 items[i],
                 if (i < items.length - 1)
-                  const Divider(height: 1, color: Color(0xFFE0E0E0)),
+                  const Divider(height: 1, color: AppColors.greyDivider),
               ],
             ],
           ),
@@ -371,7 +433,7 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF333333),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -379,7 +441,7 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
                   subtitle,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF999999),
+                    color: AppColors.textSecondary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -391,8 +453,9 @@ class _PushSettingScreenState extends State<PushSettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Colors.green,
-            inactiveTrackColor: const Color(0xFFE0E0E0),
+            activeThumbColor: context.specialTheme.primaryColor,
+            activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
+            inactiveTrackColor: AppColors.greyDivider,
           ),
         ],
       ),

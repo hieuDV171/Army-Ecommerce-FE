@@ -4,9 +4,11 @@ import 'package:army_ecommerce/blocs/block/block_state.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../util/constants/app_colors.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 
-const Color _shopeeOrange = Color(0xFFE83A14);
-const Color _greyBackground = Color(0xFFF5F5F5);
+Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
+const Color _greyBackground = AppColors.greyBackground;
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({super.key});
@@ -81,7 +83,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
               SnackBar(
                 content: Text(message),
                 duration: const Duration(seconds: 2),
-                backgroundColor: state.isBlocked ? Colors.black87 : _shopeeOrange,
+                backgroundColor: state.isBlocked ? Colors.black87 : _shopeeOrange(context),
               ),
             );
           } else if (state is BlockFailure) {
@@ -110,7 +112,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
           }
 
           return RefreshIndicator(
-            color: _shopeeOrange,
+            color: _shopeeOrange(context),
             onRefresh: _onRefresh,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,10 +134,10 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                     itemCount: blockedUsers.length + (isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == blockedUsers.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Center(
-                            child: CircularProgressIndicator(color: _shopeeOrange),
+                            child: CircularProgressIndicator(color: _shopeeOrange(context)),
                           ),
                         );
                       }
@@ -263,7 +265,7 @@ class _BlockedUserItemState extends State<_BlockedUserItem> {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogCtx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _shopeeOrange,
+              backgroundColor: _shopeeOrange(context),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             ),
             child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
