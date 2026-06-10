@@ -1,17 +1,18 @@
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
+import 'package:army_ecommerce/blocs/marketplace/home/home_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/home/home_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/home/home_state.dart';
 import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
+import 'package:army_ecommerce/models/category_model.dart';
 import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
 import 'package:army_ecommerce/ui/notification/notification_screen.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
-import '../../blocs/marketplace/marketplace_event.dart' show HomeRequested, HomeRefreshed, HomeLoadMoreRequested;
-import '../../blocs/marketplace/marketplace_state.dart' show HomeState;
-import '../../models/marketplace_models.dart';
+
 import '../util/constants/app_radius.dart';
 import '../util/constants/app_spacing.dart';
 import '../util/theme/special_app_theme.dart';
@@ -22,8 +23,9 @@ import '../util/widgets/product_card.dart';
 import '../util/widgets/search_pill.dart';
 import '../util/widgets/section_header.dart';
 import '../util/widgets/shimmer_product_grid.dart';
-import 'marketplace_list_pages.dart';
-import 'marketplace_product_pages.dart';
+import 'list/wallet_page.dart';
+import 'product/product_detail_page.dart';
+import 'product/product_search_page.dart';
 import 'marketplace_shared.dart';
 
 class MarketplaceHomeBody extends StatefulWidget {
@@ -125,11 +127,17 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                 ),
               ),
               if (state.products.isEmpty)
-                const SliverFillRemaining(
-                  child: EmptyState(
-                    title: 'Chưa có sản phẩm nào',
-                    message:
-                        'Hệ thống chưa có dữ liệu sản phẩm.\nKéo xuống để thử tải lại.',
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      child: EmptyState(
+                        title: 'Chưa có sản phẩm nào',
+                        message:
+                            'Hệ thống chưa có dữ liệu sản phẩm.\nKéo xuống để thử tải lại.',
+                      ),
+                    ),
                   ),
                 )
               else

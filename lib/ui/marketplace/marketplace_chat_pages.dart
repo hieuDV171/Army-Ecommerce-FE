@@ -1,9 +1,11 @@
+import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
+import 'package:army_ecommerce/blocs/chat/chat_event.dart';
+import 'package:army_ecommerce/blocs/chat/chat_state.dart';
+import 'package:army_ecommerce/models/conversation_model.dart';
+import 'package:army_ecommerce/models/message_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../blocs/marketplace/marketplace_bloc.dart';
-import '../../blocs/marketplace/marketplace_event.dart';
-import '../../blocs/marketplace/marketplace_state.dart';
-import '../../models/marketplace_models.dart';
+
 import '../../repositories/marketplace_repository.dart';
 import '../util/constants/app_colors.dart';
 import '../util/constants/app_radius.dart';
@@ -18,9 +20,9 @@ class ConversationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ConversationListBloc(
+      create: (context) => ChatBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(ConversationsRequested()),
+      )..add(LoadConversationsRequested()),
       child: const _ConversationListView(),
     );
   }
@@ -54,13 +56,13 @@ class _ConversationListViewState extends State<_ConversationListView> {
     if (!_scrollController.hasClients) return;
     final threshold = _scrollController.position.maxScrollExtent - 240;
     if (_scrollController.position.pixels >= threshold) {
-      context.read<ConversationListBloc>().add(ConversationsLoadMoreRequested());
+      context.read<ChatBloc>().add(LoadMoreConversationsRequested());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConversationListBloc, ConversationState>(
+    return BlocBuilder<ChatBloc, ChatState>(
       builder: (context, state) {
         return Scaffold(
           appBar: AppBar(title: const Text('Tin nhắn')),
@@ -70,46 +72,69 @@ class _ConversationListViewState extends State<_ConversationListView> {
     );
   }
 
-  Widget _buildBody(BuildContext context, ConversationState state) {
-    if (state.isInitialLoading) return const Center(child: CircularProgressIndicator());
-    if (state.errorMessage != null && state.conversations.isEmpty) {
+  Widget _buildBody(BuildContext context, ChatState state) {
+    if (state is ChatInitial || state is ChatLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    List<ConversationModel> conversations = [];
+    bool isLoadingMore = false;
+    String? errorMessage;
+
+    if (state is ConversationsLoaded) {
+      conversations = state.conversations;
+    } else if (state is ChatLoadingMore) {
+      conversations = state.currentList.whereType<ConversationModel>().toList();
+      isLoadingMore = true;
+    } else if (state is ChatFailure) {
+      errorMessage = state.error;
+    }
+
+    if (errorMessage != null && conversations.isEmpty) {
       return ErrorState(
-        message: state.errorMessage!,
-        onRetry: () => context.read<ConversationListBloc>().add(ConversationsRequested()),
+        message: errorMessage,
+        onRetry: () => context.read<ChatBloc>().add(LoadConversationsRequested()),
       );
     }
-    if (state.conversations.isEmpty) {
+    
+    if (conversations.isEmpty && state is! ChatLoadingMore) {
       return const EmptyState(title: 'Chưa có cuộc trò chuyện');
     }
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ConversationListBloc>().add(ConversationsRefreshed());
+        context.read<ChatBloc>().add(LoadConversationsRequested());
       },
       child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.all(AppSpacing.lg),
-        itemCount: state.conversations.length + (state.isLoadingMore ? 1 : 0),
+        itemCount: conversations.length + (isLoadingMore ? 1 : 0),
         separatorBuilder: (_, _) => const Divider(height: AppSpacing.lg),
         itemBuilder: (context, index) {
-          if (index >= state.conversations.length) {
+          if (index >= conversations.length) {
             return const Center(child: CircularProgressIndicator());
           }
-          final conversation = state.conversations[index];
+          final conversation = conversations[index];
+          final unread = (conversation.lastMessage?.unread ?? false) || conversation.numNewMessage > 0;
+          
           return ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
-              child: Icon(conversation.unread ? Icons.mark_chat_unread : Icons.chat_outlined),
+              child: Icon(unread ? Icons.mark_chat_unread : Icons.chat_outlined),
             ),
-            title: Text(conversation.partnerName),
-            subtitle: Text(conversation.lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: conversation.unread
+            title: Text(conversation.partner.username),
+            subtitle: Text(conversation.lastMessage?.message ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: unread
                 ? const Icon(Icons.circle, size: 10, color: AppColors.primary)
                 : null,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ChatDetailPage(conversation: conversation),
+                builder: (_) => ChatDetailPage(
+                  partnerId: conversation.partner.id.toString(),
+                  conversationId: conversation.id.toString(),
+                  partnerName: conversation.partner.username,
+                ),
               ),
             ),
           );
@@ -120,9 +145,18 @@ class _ConversationListViewState extends State<_ConversationListView> {
 }
 
 class ChatDetailPage extends StatefulWidget {
-  final ConversationModel conversation;
+  final String partnerId;
+  final String conversationId;
+  final String partnerName;
+  final String? productId;
 
-  const ChatDetailPage({super.key, required this.conversation});
+  const ChatDetailPage({
+    super.key,
+    required this.partnerId,
+    required this.conversationId,
+    required this.partnerName,
+    this.productId,
+  });
 
   @override
   State<ChatDetailPage> createState() => _ChatDetailPageState();
@@ -142,69 +176,31 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return BlocProvider(
       create: (context) => ChatBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
-        conversation: widget.conversation,
-      )..add(ChatRequested()),
+      )..add(LoadMessagesRequested(
+          partnerId: widget.partnerId,
+          conversationId: widget.conversationId,
+        ))..add(MarkMessageReadRequested(partnerId: widget.partnerId)),
       child: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
-          if (state.errorMessage != null) {
+          if (state is ChatFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!)),
+              SnackBar(content: Text(state.error)),
             );
           }
         },
         builder: (context, state) {
           return Scaffold(
-            appBar: AppBar(title: Text(widget.conversation.partnerName)),
+            appBar: AppBar(title: Text(widget.partnerName)),
             body: Column(
               children: [
-                if (widget.conversation.productId != null)
+                if (widget.productId != null && widget.productId != '0')
                   ListTile(
                     leading: const Icon(Icons.inventory_2_outlined),
                     title: const Text('Sản phẩm liên quan'),
-                    subtitle: Text('Mã sản phẩm: ${widget.conversation.productId}'),
+                    subtitle: Text('Mã sản phẩm: ${widget.productId}'),
                   ),
                 Expanded(
-                  child: state.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          itemCount: state.messages.length,
-                          itemBuilder: (context, index) {
-                            final message = state.messages[index];
-                            final isMine = message.senderId == 'me';
-                            return Align(
-                              alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                                padding: const EdgeInsets.all(AppSpacing.md),
-                                decoration: BoxDecoration(
-                                  color: isMine ? AppColors.primary : AppColors.surface,
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      message.content,
-                                      style: TextStyle(
-                                        color: isMine ? Colors.white : AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    if (message.isLocalPending || message.isFailed)
-                                      Text(
-                                        message.isFailed ? 'Gửi lỗi' : 'Đang gửi',
-                                        style: TextStyle(
-                                          color: isMine ? Colors.white70 : AppColors.textSecondary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                  child: _buildMessageList(context, state),
                 ),
                 SafeArea(
                   top: false,
@@ -221,14 +217,17 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                         const SizedBox(width: AppSpacing.sm),
                         IconButton.filled(
                           tooltip: 'Gửi',
-                          onPressed: state.isSending
-                              ? null
-                              : () {
-                                  context
-                                      .read<ChatBloc>()
-                                      .add(ChatMessageSubmitted(_messageController.text));
-                                  _messageController.clear();
-                                },
+                          onPressed: () {
+                            final text = _messageController.text.trim();
+                            if (text.isNotEmpty) {
+                              context.read<ChatBloc>().add(SendMessageRequested(
+                                    toId: widget.partnerId,
+                                    message: text,
+                                    productId: widget.productId ?? '0',
+                                  ));
+                              _messageController.clear();
+                            }
+                          },
                           icon: const Icon(Icons.send),
                         ),
                       ],
@@ -240,6 +239,57 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildMessageList(BuildContext context, ChatState state) {
+    if (state is ChatLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    List<MessageModel> messages = [];
+    if (state is MessagesLoaded) {
+      messages = state.messages;
+    } else if (state is ChatLoadingMore) {
+      messages = state.currentList.whereType<MessageModel>().toList();
+    }
+
+    if (messages.isEmpty && state is! ChatLoadingMore) {
+      return const Center(child: Text('Chưa có tin nhắn nào'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final message = messages[index];
+        
+        final isMine = message.sender.id.toString() != widget.partnerId;
+        
+        return Align(
+          alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: isMine ? AppColors.primary : AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message.message,
+                  style: TextStyle(
+                    color: isMine ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

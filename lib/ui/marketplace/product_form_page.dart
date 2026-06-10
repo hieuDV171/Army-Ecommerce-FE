@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'package:army_ecommerce/models/address_model.dart';
+import 'package:army_ecommerce/models/brand_model.dart';
+import 'package:army_ecommerce/models/category_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../models/marketplace_models.dart';
-import '../../repositories/marketplace_repository.dart';
 import '../util/constants/app_colors.dart';
 import '../util/constants/app_radius.dart';
 import '../util/constants/app_spacing.dart';
@@ -351,10 +354,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
           'description': description,
           'ship_from_id': shipFromId,
           'variants': variantsJson,
-          // ignore: use_null_aware_elements
-          if (categoryId != null) 'category_id': categoryId,
-          // ignore: use_null_aware_elements
-          if (brandId != null) 'brand_id': brandId,
+          'category_id': ?categoryId,
+          'brand_id': ?brandId,
           'image_urls': _newUploadedImageUrls,
           'image_urls_del': _deletedImages,
           'videos': videos,
@@ -372,10 +373,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
           'description': description,
           'ship_from_id': shipFromId,
           'variants': variantsJson,
-          // ignore: use_null_aware_elements
-          if (categoryId != null) 'category_id': categoryId,
-          // ignore: use_null_aware_elements
-          if (brandId != null) 'brand_id': brandId,
+          'category_id': ?categoryId,
+          'brand_id': ?brandId,
           'image_urls': _newUploadedImageUrls,
           'videos': videos,
         };

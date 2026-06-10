@@ -2,11 +2,13 @@ class ApiResponse<T> {
   final String code;
   final String message;
   final T? data;
+  final dynamic rawJson; // Added to store the entire JSON response
 
   ApiResponse({
     required this.code,
     required this.message,
-    this.data
+    this.data,
+    this.rawJson,
   });
 
   factory ApiResponse.fromJson(
@@ -19,7 +21,8 @@ class ApiResponse<T> {
     return ApiResponse<T>(
       code: json['code']?.toString() ?? '1000',
       message: json['message']?.toString() ?? '',
-      data: _parseData(rawData, fromJsonT)
+      data: _parseData(rawData, fromJsonT),
+      rawJson: json,
     );
   }
 
@@ -38,6 +41,7 @@ class ApiResponse<T> {
       code: '1000',
       message: '',
       data: _parseData(rawData, fromJsonT),
+      rawJson: rawData,
     );
   }
 

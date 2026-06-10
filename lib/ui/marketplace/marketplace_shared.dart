@@ -1,4 +1,5 @@
-import '../../models/marketplace_models.dart';
+import 'package:army_ecommerce/models/product_model.dart';
+
 import '../util/widgets/product_card.dart';
 
 ProductCardData productCardDataFromModel(ProductModel product) {

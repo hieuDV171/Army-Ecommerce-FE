@@ -1,5 +1,16 @@
 import 'dart:io';
-import '../models/marketplace_models.dart';
+
+import 'package:army_ecommerce/models/address_model.dart';
+import 'package:army_ecommerce/models/brand_model.dart';
+import 'package:army_ecommerce/models/category_model.dart';
+import 'package:army_ecommerce/models/checkout_model.dart';
+import 'package:army_ecommerce/models/conversation_model.dart';
+import 'package:army_ecommerce/models/marketplace_chat_model.dart' as mk;
+import 'package:army_ecommerce/models/message_model.dart';
+import 'package:army_ecommerce/models/model_helpers.dart';
+import 'package:army_ecommerce/models/order_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/models/wallet_model.dart';
 
 abstract class MarketplaceRepository {
   Future<List<CategoryModel>> getCategories({int? parentId});
@@ -114,25 +125,25 @@ abstract class MarketplaceRepository {
 
   Future<void> refundOrder(String purchaseId, {String? reason});
 
-  Future<List<ConversationModel>> getConversations({int index = 0, int count = 20});
+  Future<ConversationListResponse> getConversations({int index = 0, int count = 20});
 
-  Future<List<MessageModel>> getConversation({
+  Future<MessageListResponse> getConversation({
     required String partnerId,
     required String conversationId,
     int index = 0,
     int count = 20,
   });
 
-  Future<MessageModel?> sendMessage({
+  Future<SendMessageResponse> sendMessage({
     required String toId,
     required String message,
     String? productId,
     String typeMessage = 'text',
   });
 
-  Future<void> markConversationRead(String partnerId);
+  Future<SimpleResponse> markConversationRead(String partnerId);
 
-  Future<List<NotificationModel>> getNotifications({
+  Future<List<mk.NotificationModel>> getNotifications({
     int group = 0,
     int index = 0,
     int count = 20,

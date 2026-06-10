@@ -5,8 +5,8 @@ import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
-import 'package:army_ecommerce/ui/marketplace/marketplace_product_pages.dart';
-import 'package:army_ecommerce/ui/marketplace/marketplace_order_pages.dart';
+import 'package:army_ecommerce/ui/marketplace/order/buyer_order_detail_page.dart';
+import 'package:army_ecommerce/ui/marketplace/product/product_detail_page.dart';
 import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 

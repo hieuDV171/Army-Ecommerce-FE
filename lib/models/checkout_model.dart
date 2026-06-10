@@ -1,0 +1,107 @@
+import 'model_helpers.dart';
+
+class ShipFeeModel {
+  final num shipFee;
+  final int leatime;
+
+  const ShipFeeModel({required this.shipFee, required this.leatime});
+
+  factory ShipFeeModel.fromJson(Map<String, dynamic> json) {
+    return ShipFeeModel(
+      shipFee: (json['ship_fee'] ?? json['shipfee'] ?? 0) as num,
+      leatime: (json['leatime'] ?? 0) as int,
+    );
+  }
+}
+
+class ShipFromModel {
+  final String id;
+  final String name;
+  final String? pickSupport;
+  final String? messagePickSupport;
+
+  const ShipFromModel({
+    required this.id,
+    required this.name,
+    this.pickSupport,
+    this.messagePickSupport,
+  });
+
+  factory ShipFromModel.fromJson(Map<String, dynamic> json) {
+    return ShipFromModel(
+      id: readString(json, ['id']),
+      name: readString(json, ['name'], fallback: 'Kho hàng'),
+      pickSupport: readOptionalString(json, ['pick_support']),
+      messagePickSupport: readOptionalString(json, ['message_pick_support']),
+    );
+  }
+}
+
+class RewardHistoryModel {
+  final String userId;
+  final String? rewardId;
+  final int receivedCoin;
+  final int availableBalance;
+
+  const RewardHistoryModel({
+    required this.userId,
+    this.rewardId,
+    required this.receivedCoin,
+    required this.availableBalance,
+  });
+
+  factory RewardHistoryModel.fromJson(Map<String, dynamic> json) {
+    return RewardHistoryModel(
+      userId: readString(json, ['user_id']),
+      rewardId: readOptionalString(json, ['reward_id']),
+      receivedCoin: (json['received_coin'] ?? 0) as int,
+      availableBalance: (json['available_balance'] ?? 0) as int,
+    );
+  }
+}
+
+class RewardAppealModel {
+  final String? appealId;
+  final String? rewardId;
+  final String? videoId;
+  final String? status;
+
+  const RewardAppealModel({
+    this.appealId,
+    this.rewardId,
+    this.videoId,
+    this.status,
+  });
+
+  factory RewardAppealModel.fromJson(Map<String, dynamic> json) {
+    return RewardAppealModel(
+      appealId: readOptionalString(json, ['appeal_id']),
+      rewardId: readOptionalString(json, ['reward_id']),
+      videoId: readOptionalString(json, ['video_id']),
+      status: readOptionalString(json, ['status']),
+    );
+  }
+}
+
+class UploadVideoResponseModel {
+  final String videoId;
+  final String video; // url_video
+  final String thumb; // url_thumb
+  final int bonusCoin;
+
+  const UploadVideoResponseModel({
+    required this.videoId,
+    required this.video,
+    required this.thumb,
+    required this.bonusCoin,
+  });
+
+  factory UploadVideoResponseModel.fromJson(Map<String, dynamic> json) {
+    return UploadVideoResponseModel(
+      videoId: readString(json, ['video_id']),
+      video: readString(json, ['video']),
+      thumb: readString(json, ['thumb']),
+      bonusCoin: readInt(json, ['bonus_coin']) ?? 0,
+    );
+  }
+}

@@ -2,10 +2,15 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
+import 'package:army_ecommerce/data/repositories/block_repository_impl.dart';
+import 'package:army_ecommerce/data/repositories/follow_repository_impl.dart';
+import 'package:army_ecommerce/data/repositories/notification_repository_impl.dart';
+import 'package:army_ecommerce/data/sources/remote/block_remote_data_source.dart';
+import 'package:army_ecommerce/data/sources/remote/follow_remote_data_source.dart';
+import 'package:army_ecommerce/data/sources/remote/notification_remote_data_source.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:army_ecommerce/repositories/block_repository.dart';
-import 'package:army_ecommerce/repositories/chat_repository.dart';
 import 'package:army_ecommerce/repositories/follow_repository.dart';
 import 'package:army_ecommerce/repositories/notification_repository.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -144,16 +149,19 @@ class _MyAppState extends State<MyApp> {
         ),
         // Repository của thành viên phụ trách API follow/block/chat/notification
         RepositoryProvider<FollowRepository>(
-          create: (_) => FollowRepository(dioClient: widget.dioClient),
+          create: (context) => FollowRepositoryImpl(
+            remoteDataSource: FollowRemoteDataSource(dioClient: widget.dioClient),
+          ),
         ),
         RepositoryProvider<BlockRepository>(
-          create: (_) => BlockRepository(dioClient: widget.dioClient),
-        ),
-        RepositoryProvider<ChatRepository>(
-          create: (_) => ChatRepository(dioClient: widget.dioClient),
+          create: (context) => BlockRepositoryImpl(
+            remoteDataSource: BlockRemoteDataSource(dioClient: widget.dioClient),
+          ),
         ),
         RepositoryProvider<NotificationRepository>(
-          create: (_) => NotificationRepository(dioClient: widget.dioClient),
+          create: (context) => NotificationRepositoryImpl(
+            remoteDataSource: NotificationRemoteDataSource(dioClient: widget.dioClient),
+          ),
         ),
       ],
       child: MultiBlocProvider(

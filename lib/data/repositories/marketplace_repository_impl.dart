@@ -1,9 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:army_ecommerce/core/services/session_manager.dart';
+import 'package:army_ecommerce/models/address_model.dart';
+import 'package:army_ecommerce/models/brand_model.dart';
+import 'package:army_ecommerce/models/category_model.dart';
+import 'package:army_ecommerce/models/checkout_model.dart';
+import 'package:army_ecommerce/models/conversation_model.dart';
+import 'package:army_ecommerce/models/marketplace_chat_model.dart' as mk;
+import 'package:army_ecommerce/models/message_model.dart';
+import 'package:army_ecommerce/models/model_helpers.dart';
+import 'package:army_ecommerce/models/order_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/models/wallet_model.dart';
 
 import '../../core/constants/api_paths.dart';
-import '../../models/marketplace_models.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../sources/remote/marketplace_remote_data_source.dart';
 
@@ -462,16 +472,16 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Future<List<ConversationModel>> getConversations({int index = 0, int count = 20}) async {
+  Future<ConversationListResponse> getConversations({int index = 1, int count = 20}) async {
     final response = await remoteDataSource.post(
       ApiPaths.getListConversation,
       data: {'index': index, 'count': count},
     );
-    return parseListFromData(response.data, ConversationModel.fromJson);
+    return ConversationListResponse.fromJson(response.rawJson);
   }
 
   @override
-  Future<List<MessageModel>> getConversation({
+  Future<MessageListResponse> getConversation({
     required String partnerId,
     required String conversationId,
     int index = 0,
@@ -486,11 +496,11 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
         'count': count,
       },
     );
-    return parseListFromData(response.data, MessageModel.fromJson);
+    return MessageListResponse.fromJson(response.rawJson);
   }
 
   @override
-  Future<MessageModel?> sendMessage({
+  Future<SendMessageResponse> sendMessage({
     required String toId,
     required String message,
     String? productId,
@@ -510,21 +520,20 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       ApiPaths.sendMessage,
       data: request,
     );
-    final map = parseMapFromData(response.data);
-    if (map.isEmpty) return null;
-    return MessageModel.fromJson(map);
+    return SendMessageResponse.fromJson(response.rawJson);
   }
 
   @override
-  Future<void> markConversationRead(String partnerId) {
-    return remoteDataSource.post(
+  Future<SimpleResponse> markConversationRead(String partnerId) async {
+    final response = await remoteDataSource.post(
       ApiPaths.setReadMessage,
       data: {'partner_id': _idValue(partnerId)},
     );
+    return SimpleResponse.fromJson(response.rawJson);
   }
 
   @override
-  Future<List<NotificationModel>> getNotifications({
+  Future<List<mk.NotificationModel>> getNotifications({
     int group = 0,
     int index = 0,
     int count = 20,
@@ -533,7 +542,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       ApiPaths.getNotification,
       data: {'group': group, 'index': index, 'count': count},
     );
-    return parseListFromData(response.data, NotificationModel.fromJson);
+    return parseListFromData(response.data, mk.NotificationModel.fromJson);
   }
 
   @override

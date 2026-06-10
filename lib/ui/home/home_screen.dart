@@ -5,11 +5,13 @@ import 'package:army_ecommerce/blocs/block/block_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/follow/follow_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/home/home_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/home/home_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/home/home_state.dart';
 import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/blocs/notification/notification_state.dart';
 import 'package:army_ecommerce/repositories/block_repository.dart';
-import 'package:army_ecommerce/repositories/chat_repository.dart';
 import 'package:army_ecommerce/repositories/follow_repository.dart';
 import 'package:army_ecommerce/repositories/notification_repository.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
@@ -23,18 +25,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/core/services/firebase_notification_service.dart';
 
-import '../../blocs/marketplace/marketplace_bloc.dart' show HomeBloc;
-import '../../blocs/marketplace/marketplace_state.dart' show HomeState;
-import '../../blocs/marketplace/marketplace_event.dart' show HomeRequested;
 import '../../blocs/settings/push_setting_bloc.dart';
 import '../../core/services/session_manager.dart';
 import '../../core/services/cart_manager.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../auth/change_password_screen.dart';
 import '../marketplace/marketplace_home_page.dart';
-import '../marketplace/marketplace_list_pages.dart';
-import '../marketplace/marketplace_order_pages.dart';
-import '../marketplace/marketplace_product_pages.dart';
+import '../marketplace/list/news_page.dart';
+import '../marketplace/list/wallet_page.dart';
+import '../marketplace/order/buyer_orders_page.dart';
+import '../marketplace/order/seller_orders_page.dart';
+import '../marketplace/address/address_list_page.dart';
+import '../marketplace/checkout/checkout_page.dart';
+import '../marketplace/product/product_search_page.dart';
+import '../marketplace/product/seller_listings_page.dart';
 import '../marketplace/reward_screen.dart';
 import '../util/widgets/app_button.dart';
 import '../util/widgets/price_text.dart';
@@ -84,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Khởi tạo 4 BLoC từ Repository do thành viên đảm nhận
     _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
-    _chatBloc = ChatBloc(chatRepository: context.read<ChatRepository>());
+    _chatBloc = ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>());
     _notificationBloc = NotificationBloc(
       notificationRepository: context.read<NotificationRepository>(),
     );

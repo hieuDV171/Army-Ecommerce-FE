@@ -2,19 +2,19 @@ import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
-import 'package:army_ecommerce/repositories/chat_repository.dart';
+import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 const int _pageSize = 20;
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  final ChatRepository chatRepository;
+  final MarketplaceRepository marketplaceRepository;
 
   int _conversationsIndex = 0;
   int _messagesIndex = 0;
   int numNewMessage = 0;
 
-  ChatBloc({required this.chatRepository}) : super(ChatInitial()) {
+  ChatBloc({required this.marketplaceRepository}) : super(ChatInitial()) {
     on<SendMessageRequested>(_onSendMessageRequested);
     on<LoadConversationsRequested>(_onLoadConversationsRequested);
     on<LoadMoreConversationsRequested>(_onLoadMoreConversationsRequested);
@@ -29,11 +29,11 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
-      final response = await chatRepository.sendMessage(
+      final response = await marketplaceRepository.sendMessage(
         toId: event.toId,
         message: event.message,
         typeMessage: event.typeMessage,
-        productId: int.tryParse(event.productId) ?? 0,
+        productId: event.productId,
       );
 
       final responseCode = ResponseCode.fromCode(response.code);
@@ -61,7 +61,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _conversationsIndex = 1;
 
     try {
-      final response = await chatRepository.getListConversation(
+      final response = await marketplaceRepository.getConversations(
         index: _conversationsIndex,
         count: _pageSize,
       );
@@ -89,7 +89,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           numNewMessage: response.numNewMessage,
         ));
       } else {
-        logger.w('ChatBloc: getListConversation failed code=${response.code}');
+        logger.w('ChatBloc: getConversations failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
       }
     } catch (e) {
@@ -108,7 +108,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoadingMore(currentList: currentState.conversations));
 
     try {
-      final response = await chatRepository.getListConversation(
+      final response = await marketplaceRepository.getConversations(
         index: _conversationsIndex,
         count: _pageSize,
       );
@@ -162,9 +162,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _messagesIndex = 1;
 
     try {
-      final response = await chatRepository.getConversation(
-        partnerId: int.tryParse(event.partnerId ?? '') ?? 0,
-        conversationId: int.tryParse(event.conversationId ?? '') ?? 0,
+      final response = await marketplaceRepository.getConversation(
+        partnerId: event.partnerId ?? '',
+        conversationId: event.conversationId ?? '',
         index: _messagesIndex,
         count: _pageSize,
       );
@@ -200,9 +200,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(ChatLoadingMore(currentList: currentState.messages));
 
     try {
-      final response = await chatRepository.getConversation(
-        partnerId: int.tryParse(event.partnerId ?? '') ?? 0,
-        conversationId: int.tryParse(event.conversationId ?? '') ?? 0,
+      final response = await marketplaceRepository.getConversation(
+        partnerId: event.partnerId ?? '',
+        conversationId: event.conversationId ?? '',
         index: _messagesIndex,
         count: _pageSize,
       );
@@ -243,12 +243,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
-      await chatRepository.setReadMessage(
-        partnerId: int.tryParse(event.partnerId) ?? 0,
+      await marketplaceRepository.markConversationRead(
+        event.partnerId,
       );
       // Không emit state mới - mobile không hiển thị trạng thái "Đã xem"
     } catch (e) {
-      logger.w('ChatBloc: setReadMessage failed: $e');
+      logger.w('ChatBloc: markConversationRead failed: $e');
       // Lỗi đọc tin nhắn không ảnh hưởng đến trải nghiệm người dùng
     }
   }

@@ -1,5 +1,5 @@
+import 'package:army_ecommerce/models/product_model.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:army_ecommerce/models/marketplace_models.dart';
 
 void main() {
   group('ProductModel.fromJson', () {

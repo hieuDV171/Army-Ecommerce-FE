@@ -1,8 +1,10 @@
+import 'package:army_ecommerce/blocs/marketplace/product_search/product_search_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/product_search/product_search_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/product_search/product_search_state.dart';
+import 'package:army_ecommerce/models/brand_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:army_ecommerce/blocs/marketplace/marketplace_bloc.dart';
-import 'package:army_ecommerce/blocs/marketplace/marketplace_event.dart';
-import 'package:army_ecommerce/blocs/marketplace/marketplace_state.dart';
-import 'package:army_ecommerce/models/marketplace_models.dart';
+
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 
 class MockMarketplaceRepository implements MarketplaceRepository {
