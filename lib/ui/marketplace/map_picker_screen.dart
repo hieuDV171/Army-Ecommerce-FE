@@ -7,6 +7,7 @@ import '../util/constants/app_colors.dart';
 import '../util/constants/app_radius.dart';
 import '../util/constants/app_spacing.dart';
 import '../util/widgets/app_button.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class MapPickerScreen extends StatefulWidget {
   final double? initialLat;
@@ -49,9 +50,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dịch vụ định vị GPS chưa được bật.')),
-          );
+          AppSnackBar.show(context, message: 'Dịch vụ định vị GPS chưa được bật.');
         }
         return;
       }
@@ -61,9 +60,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Quyền định vị GPS bị từ chối.')),
-            );
+            AppSnackBar.show(context, message: 'Quyền định vị GPS bị từ chối.');
           }
           return;
         }
@@ -71,11 +68,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Quyền định vị bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.'),
-            ),
-          );
+          AppSnackBar.show(context, message: 'Quyền định vị bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.');
         }
         return;
       }
@@ -93,9 +86,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi lấy vị trí: $e')),
-        );
+        AppSnackBar.showError(context, message: 'Lỗi khi lấy vị trí: $e');
       }
     } finally {
       if (mounted) {

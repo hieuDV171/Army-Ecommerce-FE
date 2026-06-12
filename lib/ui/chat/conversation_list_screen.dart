@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/constants/app_colors.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 const Color _greyBackground = AppColors.greyBackground;
 
@@ -103,9 +104,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}')),
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         builder: (context, state) {

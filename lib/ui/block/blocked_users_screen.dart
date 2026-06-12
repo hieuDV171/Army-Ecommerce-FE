@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
@@ -79,17 +80,10 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
             final message = state.isBlocked
                 ? 'Đã chặn ${state.username}'
                 : 'Đã bỏ chặn ${state.username}';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                duration: const Duration(seconds: 2),
-                backgroundColor: state.isBlocked ? Colors.black87 : _shopeeOrange(context),
-              ),
-            );
+            final Color color = state.isBlocked ? Colors.black87 : _shopeeOrange(context);
+            AppSnackBar.show(context, message: message, backgroundColor: color, duration: const Duration(seconds: 2));
           } else if (state is BlockFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}')),
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         builder: (context, state) {

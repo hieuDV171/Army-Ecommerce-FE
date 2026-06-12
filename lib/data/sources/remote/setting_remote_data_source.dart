@@ -1,3 +1,4 @@
+import 'package:army_ecommerce/core/network/api_exception.dart';
 import 'package:army_ecommerce/models/api_response.dart';
 import 'package:army_ecommerce/models/push_setting_model.dart';
 import '../../../core/constants/api_paths.dart';
@@ -26,7 +27,7 @@ class SettingRemoteDataSource {
               (json) => PushSettingModel.fromJson(json as Map<String, dynamic>)
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi lấy cài đặt thông báo: $e');
     }
@@ -62,7 +63,7 @@ class SettingRemoteDataSource {
             (json) => json?.toString(),
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi cập nhật cài đặt thông báo: $e');
     }

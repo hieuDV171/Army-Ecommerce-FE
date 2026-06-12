@@ -32,6 +32,7 @@ import '../marketplace_shared.dart';
 import '../product_form_page.dart';
 import '../../util/theme/special_app_theme.dart';
 import 'product_detail_page.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class SellerListingsPage extends StatefulWidget {
   final String userId;
@@ -187,7 +188,7 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
                                 crossAxisCount: 2,
                                 mainAxisSpacing: AppSpacing.md,
                                 crossAxisSpacing: AppSpacing.md,
-                                childAspectRatio: 0.66,
+                                childAspectRatio: 0.60,
                               ),
                               itemBuilder: (context, index) {
                                 if (index >= _products.length) {
@@ -282,6 +283,56 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     if (_scrollController.position.pixels >= threshold) {
       _loadMoreProducts();
     }
+  }
+
+  void _showZoomedAvatar(BuildContext context, String imageUrl, String name) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 80),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadUser() async {
@@ -381,9 +432,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 
   void _toggleFollow() {
     if (_isBlocked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bạn đã chặn người dùng này, không thể thực hiện thao tác.')),
-      );
+      AppSnackBar.showError(context, message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.');
       return;
     }
     final authState = context.read<AuthBloc>().state;
@@ -416,7 +465,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: context.specialTheme.primaryColor),
             child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -492,7 +541,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(backgroundColor: context.specialTheme.primaryColor),
             child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -510,18 +559,14 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 
   void _openChat() {
     if (_isBlocked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bạn đã chặn người dùng này, không thể thực hiện thao tác.')),
-      );
+      AppSnackBar.showError(context, message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.');
       return;
     }
     final authState = context.read<AuthBloc>().state;
     final token = authState.currentUser?.token ?? '';
     if (checkLogin(context, token: token)) {
       if (_isBlocked) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bạn đã chặn người này, không thể thực hiện thao tác.')),
-        );
+        AppSnackBar.showError(context, message: 'Bạn đã chặn người này, không thể thực hiện thao tác.');
         return;
       }
       final currentUserId = authState.currentUser?.id ?? '';
@@ -576,13 +621,9 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                 final msg = state.isFollowed
                     ? 'Theo dõi ${state.username} thành công'
                     : 'Đã hủy theo dõi ${state.username}';
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(msg), backgroundColor: AppColors.primary),
-                );
+                AppSnackBar.show(context, message: msg, backgroundColor: context.specialTheme.primaryColor);
               } else if (state is FollowFailure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lỗi: ${state.error}')),
-                );
+                AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
               }
             },
           ),
@@ -595,13 +636,9 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                 final msg = state.isBlocked
                     ? 'Đã chặn ${state.username}'
                     : 'Đã bỏ chặn ${state.username}';
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(msg)),
-                );
+                AppSnackBar.show(context, message: msg);
               } else if (state is BlockFailure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lỗi: ${state.error}')),
-                );
+                AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
               }
             },
           ),
@@ -621,9 +658,16 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                       children: [
                         Row(
                           children: [
-                            displayAvatar != null && displayAvatar.isNotEmpty
-                                ? CircleAvatar(radius: 36, backgroundImage: NetworkImage(displayAvatar))
-                                : const CircleAvatar(radius: 36, child: Icon(Icons.storefront)),
+                            GestureDetector(
+                              onTap: () {
+                                if (displayAvatar != null && displayAvatar.isNotEmpty) {
+                                  _showZoomedAvatar(context, displayAvatar, displayName);
+                                }
+                              },
+                              child: displayAvatar != null && displayAvatar.isNotEmpty
+                                  ? CircleAvatar(radius: 36, backgroundImage: NetworkImage(displayAvatar))
+                                  : const CircleAvatar(radius: 36, child: Icon(Icons.storefront)),
+                            ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Column(
@@ -758,7 +802,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                               crossAxisCount: 2,
                               mainAxisSpacing: AppSpacing.md,
                               crossAxisSpacing: AppSpacing.md,
-                              childAspectRatio: 0.66,
+                              childAspectRatio: 0.60,
                             ),
                             itemBuilder: (context, index) {
                               final product = _products[index];

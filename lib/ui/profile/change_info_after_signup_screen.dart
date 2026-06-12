@@ -9,6 +9,7 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../core/services/session_manager.dart';
 import '../util/widgets/image_crop_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ChangeInfoAfterSignupScreen extends StatefulWidget {
   final String currentUsername;
@@ -69,12 +70,11 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
   }
 
   void _onSubmit() async {
-    final messenger = ScaffoldMessenger.of(context);
     final authBloc = context.read<AuthBloc>();
 
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      messenger.showSnackBar(const SnackBar(content: Text('Tên không được bỏ trống')));
+      AppSnackBar.show(context, message: 'Tên không được bỏ trống');
       return;
     }
 
@@ -84,9 +84,7 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
       if (!mounted) return;
 
       if (fileSize > 2097152) { // (2 * 1024 * 1024 bytes)
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Dung lượng ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB')),
-        );
+        AppSnackBar.showError(context, message: 'Dung lượng ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB');
         return;
       }
     }
@@ -107,9 +105,7 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
             final navigator = Navigator.of(context);
             final updatedUser = state.updatedUser;
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
-            );
+            AppSnackBar.showSuccess(context, message: 'Cập nhật hồ sơ thành công!');
 
             // Nếu màn này được push từ Login/OTP thì trả kết quả về cho màn trước.
             // Nếu đây là root screen (điều hướng từ main.dart), không được pop vì sẽ tạo màn đen.
@@ -121,7 +117,7 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
             // Nếu là root screen, main.dart sẽ tự động vẽ lại và chuyển sang HomeScreen
             // nhờ trạng thái AuthSuccess được emit tiếp theo trong AuthBloc.
           } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: ${state.error}')));
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         child: Scaffold(

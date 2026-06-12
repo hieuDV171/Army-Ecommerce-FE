@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'create_new_password_screen.dart';
 import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class VerifyOtpScreen extends StatefulWidget{
   final String phoneNumber;
@@ -41,9 +42,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
       // Thông báo cho đồng chí biết mã đã được điền tự động
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Mã xác thực tạm thời: ${widget.tempOtp}'))
-        );
+        AppSnackBar.show(context, message: 'Mã xác thực tạm thời: ${widget.tempOtp}');
       });
     }
   }
@@ -54,9 +53,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
     // Mã OTP gồm 6 ký tự (số kèm chữ)
     if (otpCode.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mã xác thực phải gồm đúng 6 ký tự')),
-      );
+      AppSnackBar.show(context, message: 'Mã xác thực phải gồm đúng 6 ký tự');
       return;
     }
 
@@ -93,16 +90,12 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                 )
             );
           } else if (state is AuthSuccess && !widget.isForgotPassword) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Xác thực OTP thành công!')),
-            );
+            AppSnackBar.showSuccess(context, message: 'Xác thực OTP thành công!');
             // Không thực hiện Navigator.push hay Navigator.pushAndRemoveUntil nữa.
             // main.dart đang lắng nghe AuthSuccess ở root và sẽ tự động điều hướng.
           } else if (state is AuthFailure) {
             // XÁC THỰC THẤT BẠI -> Hiển thị thông báo lỗi
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}')),
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         child: Scaffold(

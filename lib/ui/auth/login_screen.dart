@@ -12,6 +12,7 @@ import '../util/widgets/app_button.dart';
 import '../util/widgets/app_text_field.dart';
 
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,16 +39,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (phone.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
     if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mật khẩu phải có ít nhất 6 ký tự')),
-      );
+      AppSnackBar.show(context, message: 'Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
@@ -62,116 +59,125 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Đăng nhập thành công')),
-            );
+            AppSnackBar.showSuccess(context, message: 'Đăng nhập thành công');
             // Không thực hiện Navigator.push/pushReplacement nữa.
             // main.dart lắng nghe AuthSuccess ở root và tự động điều hướng.
           } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}')),
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         builder: (context, state) {
           return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 32),
-                  (() {
-                    final specialTheme = context.specialTheme;
-                    final iconWidget = Icon(
-                      Icons.military_tech,
-                      size: 76,
-                      color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
-                    );
-                    if (specialTheme.useGradient) {
-                      return ShaderMask(
-                        shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
-                        child: iconWidget,
-                      );
-                    }
-                    return iconWidget;
-                  }()),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'Army E-commerce',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Đăng nhập để tiếp tục mua bán quân nhu',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                  ),
-                  const SizedBox(height: 36),
-                  AppTextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    label: 'Số điện thoại',
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppTextField(
-                    controller: _passwordController,
-                    obscureText: _isObscure,
-                    label: 'Mật khẩu',
-                    suffixIcon: IconButton(
-                      tooltip: _isObscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-                      icon: Icon(
-                        _isObscure ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isObscure = !_isObscure;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  AppButton(
-                    label: 'Đăng nhập',
-                    isLoading: state is AuthLoading,
-                    onPressed: _onLoginPressed,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ForgotPasswordScreen(),
-                            ),
+                      const SizedBox(height: 48),
+                      (() {
+                        final specialTheme = context.specialTheme;
+                        final iconWidget = Icon(
+                          Icons.military_tech,
+                          size: 76,
+                          color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                        );
+                        if (specialTheme.useGradient) {
+                          return ShaderMask(
+                            shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
+                            child: iconWidget,
                           );
-                        },
-                        child: const Text('Quên mật khẩu'),
+                        }
+                        return iconWidget;
+                      }()),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        'Army E-commerce',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignupScreen(),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Đăng nhập để tiếp tục mua bán quân nhu',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
                             ),
-                          );
-                        },
-                        child: const Text('Đăng ký'),
+                      ),
+                      const SizedBox(height: 36),
+                      AppTextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        label: 'Số điện thoại',
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      AppTextField(
+                        controller: _passwordController,
+                        obscureText: _isObscure,
+                        label: 'Mật khẩu',
+                        suffixIcon: IconButton(
+                          tooltip: _isObscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
+                          icon: Icon(
+                            _isObscure ? Icons.visibility_off : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isObscure = !_isObscure;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      AppButton(
+                        label: 'Đăng nhập',
+                        isLoading: state is AuthLoading,
+                        onPressed: _onLoginPressed,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Quên mật khẩu'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SignupScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text('Đăng ký'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: IconButton(
+                    tooltip: 'Đóng',
+                    icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
             ),
           );
         },

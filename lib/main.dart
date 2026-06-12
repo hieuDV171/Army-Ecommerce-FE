@@ -143,9 +143,13 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         RepositoryProvider<MarketplaceRepository>(
-          create: (context) => MarketplaceRepositoryImpl(
-            remoteDataSource: MarketplaceRemoteDataSource(dioClient: widget.dioClient),
-          ),
+          create: (context) {
+            final repo = MarketplaceRepositoryImpl(
+              remoteDataSource: MarketplaceRemoteDataSource(dioClient: widget.dioClient),
+            );
+            CartManager().setRepository(repo);
+            return repo;
+          },
         ),
         // Repository của thành viên phụ trách API follow/block/chat/notification
         RepositoryProvider<FollowRepository>(
@@ -215,6 +219,11 @@ class _MyAppState extends State<MyApp> {
                 } catch (e) {
                   debugPrint('⚠️ Không thể đăng ký FCM token: $e');
                 }
+                CartManager().syncCart();
+              }
+
+              if (state is AuthLogoutSuccess || state is Unauthenticated) {
+                CartManager().clearCartLocalOnly();
               }
 
               if (state is AuthSuccess || state is AuthLogoutSuccess || state is Unauthenticated) {

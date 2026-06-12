@@ -44,8 +44,10 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     );
 
     // Tải danh sách thương hiệu nếu có categoryId
-    if (event.categoryId != null) {
+    if (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') {
       add(ProductSearchBrandsRequested(categoryId: event.categoryId));
+    } else {
+      emit(state.copyWith(brands: const [], brandId: null));
     }
 
     await _loadPage(emit, index: 0, replace: true);
@@ -79,8 +81,10 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     );
 
     // Tải danh sách thương hiệu nếu có categoryId
-    if (event.categoryId != null) {
+    if (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') {
       add(ProductSearchBrandsRequested(categoryId: event.categoryId));
+    } else {
+      emit(state.copyWith(brands: const [], brandId: null));
     }
 
     await _loadPage(emit, index: 0, replace: true);

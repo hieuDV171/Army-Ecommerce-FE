@@ -11,6 +11,7 @@ import '../../models/user_model.dart';
 import '../util/widgets/image_crop_screen.dart';
 import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class SetUserInfoScreen extends StatefulWidget {
   final UserModel currentUser;
@@ -119,7 +120,6 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
   }
 
   Future<void> _submit() async {
-    final messenger = ScaffoldMessenger.of(context);
     final authBloc = context.read<AuthBloc>();
 
     final email = _emailController.text.trim();
@@ -141,19 +141,17 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
     ].any((value) => value.isNotEmpty);
 
     if (!hasAnyTextChange && _avatarFile == null && _coverImageFile == null && _coverImageWebFile == null) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Vui lòng thay đổi ít nhất một trường thông tin')),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng thay đổi ít nhất một trường thông tin');
       return;
     }
 
     if (email.isNotEmpty && !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-      messenger.showSnackBar(const SnackBar(content: Text('Email không hợp lệ')));
+      AppSnackBar.showError(context, message: 'Email không hợp lệ');
       return;
     }
 
     if (password.isNotEmpty && password.length < 6) {
-      messenger.showSnackBar(const SnackBar(content: Text('Mật khẩu phải có ít nhất 6 ký tự')));
+      AppSnackBar.show(context, message: 'Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
 
@@ -161,7 +159,8 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
       if (file == null) return true;
       final size = await file.length();
       if (size > 2 * 1024 * 1024) {
-        messenger.showSnackBar(SnackBar(content: Text('$label quá lớn. Vui lòng chọn file dưới 2MB')));
+        if (!mounted) return false;
+        AppSnackBar.showError(context, message: '$label quá lớn. Vui lòng chọn file dưới 2MB');
         return false;
       }
       return true;
@@ -196,14 +195,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
       listenWhen: (previous, current) => current is SetUserInfoSuccess || current is SetUserInfoFailure,
       listener: (context, state) {
         if (state is SetUserInfoSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cập nhật hồ sơ thành công')),
-          );
+          AppSnackBar.showSuccess(context, message: 'Cập nhật hồ sơ thành công');
           Navigator.pop(context, state.user);
         } else if (state is SetUserInfoFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: ${state.error}')),
-          );
+          AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
         }
       },
       builder: (context, state) {

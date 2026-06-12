@@ -13,6 +13,7 @@ import '../util/constants/app_spacing.dart';
 import '../util/widgets/app_text_field.dart';
 import '../util/widgets/empty_state.dart';
 import '../util/widgets/error_state.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ConversationPage extends StatelessWidget {
   const ConversationPage({super.key});
@@ -183,9 +184,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       child: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error)),
-            );
+            AppSnackBar.showError(context, message: state.error);
           }
         },
         builder: (context, state) {

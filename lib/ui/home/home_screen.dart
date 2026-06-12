@@ -1029,6 +1029,56 @@ class _ProfileTabBody extends StatelessWidget {
     required this.onLogout,
   });
 
+  void _showZoomedAvatar(BuildContext context, String imageUrl, String name) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 80),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isGuest = userId.isEmpty;
@@ -1061,18 +1111,25 @@ class _ProfileTabBody extends StatelessWidget {
             child: Column(
               children: [
                 // Avatar
-                CircleAvatar(
-                  radius: 46,
-                  backgroundColor: Colors.white,
+                GestureDetector(
+                  onTap: () {
+                    if (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty) {
+                      _showZoomedAvatar(context, avatarUrl!, username);
+                    }
+                  },
                   child: CircleAvatar(
-                    radius: 44,
+                    radius: 46,
                     backgroundColor: Colors.white,
-                    backgroundImage: (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
-                        ? NetworkImage(avatarUrl!)
-                        : null,
-                    child: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
-                        ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)
-                        : null,
+                    child: CircleAvatar(
+                      radius: 44,
+                      backgroundColor: Colors.white,
+                      backgroundImage: (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
+                          ? NetworkImage(avatarUrl!)
+                          : null,
+                      child: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
+                          ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)
+                          : null,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),

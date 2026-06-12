@@ -16,6 +16,7 @@ import '../../util/widgets/price_text.dart';
 import '../../util/widgets/section_header.dart';
 import '../../util/widgets/status_chip.dart';
 import 'widgets/order_card.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class BuyerOrderDetailPage extends StatefulWidget {
   final String orderId;
@@ -78,18 +79,14 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
       await action();
       if (!mounted) return;
       _shouldRefreshOnPop = true;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(successMessage)));
+      AppSnackBar.show(context, message: successMessage);
       if (!skipReload) {
         setState(_load);
         await _refresh();
       }
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      AppSnackBar.showError(context, message: error.toString());
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -528,11 +525,7 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     if (!mounted) return;
 
     if (addresses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bạn cần có ít nhất 1 địa chỉ để chỉnh sửa đơn hàng'),
-        ),
-      );
+      AppSnackBar.show(context, message: 'Bạn cần có ít nhất 1 địa chỉ để chỉnh sửa đơn hàng');
       return;
     }
 

@@ -9,6 +9,7 @@ import 'package:army_ecommerce/ui/marketplace/order/buyer_order_detail_page.dart
 import 'package:army_ecommerce/ui/marketplace/product/product_detail_page.dart';
 import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
@@ -195,9 +196,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       body: BlocConsumer<NotificationBloc, NotificationState>(
         listener: (context, state) {
           if (state is NotificationFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}')),
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         builder: (context, state) {

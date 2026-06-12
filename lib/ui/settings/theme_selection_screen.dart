@@ -5,6 +5,7 @@ import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/constants/app_radius.dart';
 import 'package:army_ecommerce/ui/util/constants/app_spacing.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ThemeSelectionScreen extends StatefulWidget {
   const ThemeSelectionScreen({super.key});
@@ -419,12 +420,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   dark: _selectedDark,
                   useGradient: _useGradient,
                 );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Đã áp dụng giao diện tùy biến của đồng chí!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                AppSnackBar.show(context, message: 'Đã áp dụng giao diện tùy biến của đồng chí!', backgroundColor: Colors.green, duration: Duration(seconds: 2));
               },
         child: Text(
           isCustomActive ? 'Đang áp dụng giao diện này' : 'Áp Dụng Giao Diện Tùy Biến',

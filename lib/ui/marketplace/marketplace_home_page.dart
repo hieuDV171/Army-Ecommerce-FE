@@ -10,6 +10,7 @@ import 'package:army_ecommerce/models/category_model.dart';
 import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
 import 'package:army_ecommerce/ui/notification/notification_screen.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -76,9 +77,7 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
     return BlocConsumer<HomeBloc, HomeState>(
       listener: (context, state) {
         if (state.errorMessage != null && !state.isInitialLoading) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage!)),
-          );
+          AppSnackBar.showError(context, message: state.errorMessage!);
         }
       },
       builder: (context, state) {
@@ -90,6 +89,12 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
         }
 
         if (state.errorMessage != null && state.products.isEmpty) {
+          if (ErrorState.isNetworkError(state.errorMessage)) {
+            return const SingleChildScrollView(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: ShimmerProductGrid(),
+            );
+          }
           return ErrorState(
             message: state.errorMessage!,
             onRetry: () => context.read<HomeBloc>().add(HomeRequested()),
@@ -154,7 +159,7 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                       crossAxisCount: 2,
                       mainAxisSpacing: AppSpacing.md,
                       crossAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 0.66,
+                      childAspectRatio: 0.60,
                     ),
                     itemBuilder: (context, index) {
                       final product = state.products[index];

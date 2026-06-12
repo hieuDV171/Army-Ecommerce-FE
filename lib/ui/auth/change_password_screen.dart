@@ -1,9 +1,11 @@
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -32,13 +34,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final newP = _newPassController.text.trim();
     final confP = _confirmPassController.text.trim();
 
+    if (newP == oldP) {
+      AppSnackBar.showError(context, message: 'Trùng mật khẩu cũ');
+      return;
+    }
+
     if (newP != confP) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Xác nhận mật khẩu không khớp')));
+      AppSnackBar.show(context, message: 'Xác nhận mật khẩu không khớp');
       return;
     }
 
     context.read<AuthBloc>().add(
-        ChangePasswordRequested(oldPassword: oldP, newPassword: newP)
+      ChangePasswordRequested(oldPassword: oldP, newPassword: newP),
     );
   }
 
@@ -48,14 +55,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       listener: (context, state) {
         if (state is OldPasswordVerifySuccess) {
           setState(() => _isStep2 = true); // NHẢY SANG BƯỚC 2
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Xác minh thành công! Hãy nhập mật khẩu mới')),
+          AppSnackBar.showSuccess(
+            context,
+            message: 'Xác minh thành công! Hãy nhập mật khẩu mới',
           );
         } else if (state is ChangePasswordSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đổi mật khẩu thành công!')));
+          AppSnackBar.showSuccess(context, message: 'Đổi mật khẩu thành công!');
           Navigator.pop(context); // Quay lại trang cá nhân
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+          AppSnackBar.showError(context, message: state.error);
         }
       },
       child: Scaffold(
@@ -77,12 +85,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         TextField(
           controller: _oldPassController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Mật khẩu hiện tại', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            labelText: 'Mật khẩu hiện tại',
+            border: OutlineInputBorder(),
+          ),
         ),
         const SizedBox(height: 30),
         ElevatedButton(
           onPressed: _onVerifyOldPass,
-          style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+          ),
           child: const Text('XÁC NHẬN'),
         ),
       ],
@@ -96,21 +109,32 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         TextField(
           controller: _newPassController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Mật khẩu mới', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            labelText: 'Mật khẩu mới',
+            border: OutlineInputBorder(),
+          ),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _confirmPassController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Xác nhận mật khẩu mới', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            labelText: 'Xác nhận mật khẩu mới',
+            border: OutlineInputBorder(),
+          ),
         ),
         const SizedBox(height: 30),
         BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             return ElevatedButton(
               onPressed: state is AuthLoading ? null : _onSubmitChange,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), backgroundColor: Colors.orange),
-              child: state is AuthLoading ? const CircularProgressIndicator() : const Text('THAY ĐỔI'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: context.specialTheme.primaryColor,
+              ),
+              child: state is AuthLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('THAY ĐỔI'),
             );
           },
         ),

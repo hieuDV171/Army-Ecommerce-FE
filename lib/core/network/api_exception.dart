@@ -1,6 +1,33 @@
+import 'package:dio/dio.dart';
 import '../constants/response_code.dart';
 
 class ApiException implements Exception {
+  static String getMessage(Object? error, [String fallback = "Lỗi kết nối mạng"]) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    if (error is DioException) {
+      if (error.error is ApiException) {
+        return (error.error as ApiException).message;
+      }
+      final data = error.response?.data;
+      if (data is Map<String, dynamic>) {
+        final msg = data['message']?.toString();
+        if (msg != null && msg.isNotEmpty) {
+          return msg;
+        }
+      }
+      return error.message ?? fallback;
+    }
+    if (error is Exception) {
+      final str = error.toString();
+      if (str.startsWith('Exception: ')) {
+        return str.substring('Exception: '.length);
+      }
+      return str;
+    }
+    return error?.toString() ?? fallback;
+  }
   final String code;
   final String message;
   final int? statusCode;

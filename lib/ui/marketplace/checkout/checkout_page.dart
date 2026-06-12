@@ -13,6 +13,7 @@ import '../../util/widgets/error_state.dart';
 import '../../util/widgets/loading_overlay.dart';
 import '../../util/widgets/price_text.dart';
 import '../../util/widgets/section_header.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class CheckoutPage extends StatelessWidget {
   final List<CartItem> items;
@@ -49,7 +50,7 @@ class _CheckoutViewState extends State<_CheckoutView> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          AppSnackBar.show(context, message: message);
         }
         if (state.successMessage != null) {
           CartManager().clearCart();

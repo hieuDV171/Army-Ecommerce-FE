@@ -200,6 +200,7 @@ class ProductModel {
   ProductModel copyWith({
     int? likeCount,
     bool? isLiked,
+    String? comment,
   }) {
     return ProductModel(
       id: id,
@@ -220,7 +221,7 @@ class ProductModel {
       condition: condition,
       created: created,
       like: likeCount != null ? likeCount.toString() : like,
-      comment: comment,
+      comment: comment ?? this.comment,
       sellerName: sellerName,
       sellerLocation: sellerLocation,
       rating: rating,
@@ -381,23 +382,43 @@ List<ProductSizeModel> _readProductSizeList(Map<String, dynamic> json, List<Stri
 
 class CommentModel {
   final String id;
-  final String author;
+  final String authorName;
+  final String authorId;
   final String content;
   final String? createdAt;
+  final String? avatar;
 
   const CommentModel({
     required this.id,
-    required this.author,
+    required this.authorName,
+    required this.authorId,
     required this.content,
     this.createdAt,
+    this.avatar,
   });
+
+  CommentModel copyWith({
+    String? authorName,
+    String? avatar,
+  }) {
+    return CommentModel(
+      id: id,
+      authorName: authorName ?? this.authorName,
+      authorId: authorId,
+      content: content,
+      createdAt: createdAt,
+      avatar: avatar ?? this.avatar,
+    );
+  }
 
   factory CommentModel.fromJson(Map<String, dynamic> json) {
     return CommentModel(
       id: readString(json, ['id', 'comment_id']),
-      author: readString(json, ['username', 'author', 'user_name'], fallback: 'Người dùng'),
+      authorName: readString(json, ['username', 'author', 'user_name', 'name'], fallback: 'Người dùng'),
+      authorId: readString(json, ['user_id', 'author_id', 'id'], fallback: ''),
       content: readString(json, ['content', 'message'], fallback: ''),
       createdAt: readOptionalString(json, ['created_at', 'createdAt']),
+      avatar: readOptionalString(json, ['avatar', 'image', 'user_avatar']),
     );
   }
 }
@@ -409,6 +430,7 @@ class RateModel {
   final int level;
   final String? createdAt;
   final String? productId;
+  final String? avatar;
 
   const RateModel({
     required this.id,
@@ -417,6 +439,7 @@ class RateModel {
     required this.level,
     this.createdAt,
     this.productId,
+    this.avatar,
   });
 
   factory RateModel.fromJson(Map<String, dynamic> json) {
@@ -427,6 +450,7 @@ class RateModel {
       level: readInt(json, ['level', 'rate', 'rating']) ?? 0,
       createdAt: readOptionalString(json, ['created_at', 'createdAt', 'time']),
       productId: readOptionalString(json, ['product_id', 'productId']),
+      avatar: readOptionalString(json, ['avatar']),
     );
   }
 }

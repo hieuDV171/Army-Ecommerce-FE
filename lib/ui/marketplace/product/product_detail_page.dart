@@ -6,6 +6,7 @@ import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 
@@ -29,6 +30,7 @@ import '../../util/widgets/section_header.dart';
 import '../../util/widgets/shimmer_box.dart';
 import '../product_form_page.dart';
 import 'seller_listings_page.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final String productId;
@@ -79,6 +81,69 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     super.dispose();
   }
 
+  Widget _safeImageNetwork(
+    String url, {
+    double? width,
+    double? height,
+    BoxFit fit = BoxFit.cover,
+  }) {
+    if (url.isEmpty ||
+        (!url.startsWith('http://') && !url.startsWith('https://'))) {
+      return Container(
+        width: width,
+        height: height,
+        color: AppColors.border,
+        child: const Icon(
+          Icons.broken_image_outlined,
+          color: AppColors.textSecondary,
+        ),
+      );
+    }
+    return Image.network(
+      url,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) => Container(
+        width: width,
+        height: height,
+        color: AppColors.border,
+        child: const Icon(
+          Icons.broken_image_outlined,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  String _formatBestOffers(String? value) {
+    if (value == null || value.isEmpty || value == '[]') {
+      return '0%';
+    }
+    final clean = value
+        .replaceAll('[', '')
+        .replaceAll(']', '')
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .trim();
+    if (clean.isEmpty) {
+      return '0%';
+    }
+    final numVal = num.tryParse(clean);
+    if (numVal == null) {
+      return value;
+    }
+    if (numVal <= 100) {
+      return '$numVal%';
+    } else {
+      try {
+        return '${NumberFormat.decimalPattern('vi_VN').format(numVal)} xu';
+      } catch (_) {
+        return '$numVal xu';
+      }
+    }
+  }
+
   List<String> _collectDisplayImages(ProductModel product) {
     if (product.images.isNotEmpty) {
       return product.images
@@ -95,7 +160,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          AppSnackBar.show(context, message: message);
         }
       },
       builder: (context, state) {
@@ -104,7 +169,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           isLoading: state.isSubmitting,
           child: Scaffold(
             appBar: AppBar(
-              backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+              backgroundColor: context.specialTheme.useGradient
+                  ? Colors.transparent
+                  : context.specialTheme.primaryDarkColor,
               flexibleSpace: context.specialTheme.useGradient
                   ? Container(
                       decoration: BoxDecoration(
@@ -119,50 +186,64 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               ),
               actions: [
                 if (product != null) ...[
-                  Builder(builder: (context) {
-                    final authState = context.read<AuthBloc>().state;
-                    final currentUserId = authState.currentUser?.id ?? '';
-                    final sellerId = product.seller?.id ?? '';
-                    final isOwnProduct = sellerId.isNotEmpty && sellerId.toString() == currentUserId.toString();
-                    if (isOwnProduct) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'Chỉnh sửa',
-                            icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                            onPressed: () async {
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProductFormPage(product: product),
-                                ),
-                              );
-                              if (result == true && context.mounted) {
-                                context.read<ProductDetailBloc>().add(ProductDetailRequested(product.id));
-                              }
-                            },
-                          ),
-                          IconButton(
-                            tooltip: 'Xóa',
-                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                            onPressed: () => _confirmDeleteProduct(context, product.id),
-                          ),
-                        ],
+                  Builder(
+                    builder: (context) {
+                      final authState = context.read<AuthBloc>().state;
+                      final currentUserId = authState.currentUser?.id ?? '';
+                      final sellerId = product.seller?.id ?? '';
+                      final isOwnProduct =
+                          sellerId.isNotEmpty &&
+                          sellerId.toString() == currentUserId.toString();
+                      if (isOwnProduct) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Chỉnh sửa',
+                              icon: const Icon(
+                                Icons.edit_outlined,
+                                color: Colors.white,
+                              ),
+                              onPressed: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        ProductFormPage(product: product),
+                                  ),
+                                );
+                                if (result == true && context.mounted) {
+                                  context.read<ProductDetailBloc>().add(
+                                    ProductDetailRequested(product.id),
+                                  );
+                                }
+                              },
+                            ),
+                            IconButton(
+                              tooltip: 'Xóa',
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                              ),
+                              onPressed: () =>
+                                  _confirmDeleteProduct(context, product.id),
+                            ),
+                          ],
+                        );
+                      }
+                      return IconButton(
+                        tooltip: 'Báo cáo',
+                        onPressed: () {
+                          final authState = context.read<AuthBloc>().state;
+                          final token = authState.currentUser?.token ?? '';
+                          if (checkLogin(context, token: token)) {
+                            _showReportSheet(context);
+                          }
+                        },
+                        icon: const Icon(Icons.flag_outlined),
                       );
-                    }
-                    return IconButton(
-                      tooltip: 'Báo cáo',
-                      onPressed: () {
-                        final authState = context.read<AuthBloc>().state;
-                        final token = authState.currentUser?.token ?? '';
-                        if (checkLogin(context, token: token)) {
-                          _showReportSheet(context);
-                        }
-                      },
-                      icon: const Icon(Icons.flag_outlined),
-                    );
-                  }),
+                    },
+                  ),
                 ],
               ],
             ),
@@ -191,69 +272,95 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       ),
                     ),
                   )
-                : Builder(builder: (context) {
-                    final authState = context.read<AuthBloc>().state;
-                    final currentUserId = authState.currentUser?.id ?? '';
-                    final sellerId = product.seller?.id ?? '';
-                    final isOwnProduct = sellerId.isNotEmpty && sellerId == currentUserId;
-                    final canChat = !isOwnProduct && sellerId.isNotEmpty;
-                    return SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: canChat
-                                    ? () {
-                                        final token = authState.currentUser?.token ?? '';
-                                        if (checkLogin(context, token: token)) {
-                                          final chatBloc = context.read<ChatBloc>();
-                                          Navigator.push(
+                : Builder(
+                    builder: (context) {
+                      final authState = context.read<AuthBloc>().state;
+                      final currentUserId = authState.currentUser?.id ?? '';
+                      final sellerId = product.seller?.id ?? '';
+                      final isOwnProduct =
+                          sellerId.isNotEmpty && sellerId == currentUserId;
+                      final canChat = !isOwnProduct && sellerId.isNotEmpty;
+                      return SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: canChat
+                                      ? () {
+                                          final token =
+                                              authState.currentUser?.token ??
+                                              '';
+                                          if (checkLogin(
                                             context,
-                                            MaterialPageRoute(
-                                              builder: (_) => BlocProvider.value(
-                                                value: chatBloc,
-                                                child: ChatScreen(
-                                                  partnerId: sellerId,
-                                                  partnerUsername:
-                                                      product.sellerName ?? 'Người bán',
-                                                  partnerAvatar: product.seller?.avatar,
-                                                  currentUserId: currentUserId,
-                                                  productId: product.id,
-                                                  productTitle: product.title,
-                                                  productPrice: product.price,
-                                                  productImageUrl: product.imageUrls.isNotEmpty
-                                                      ? product.imageUrls.first
-                                                      : null,
-                                                ),
+                                            token: token,
+                                          )) {
+                                            final chatBloc = context
+                                                .read<ChatBloc>();
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    BlocProvider.value(
+                                                      value: chatBloc,
+                                                      child: ChatScreen(
+                                                        partnerId: sellerId,
+                                                        partnerUsername:
+                                                            product
+                                                                .sellerName ??
+                                                            'Người bán',
+                                                        partnerAvatar: product
+                                                            .seller
+                                                            ?.avatar,
+                                                        currentUserId:
+                                                            currentUserId,
+                                                        productId: product.id,
+                                                        productTitle:
+                                                            product.title,
+                                                        productPrice:
+                                                            product.price,
+                                                        productImageUrl:
+                                                            product
+                                                                .imageUrls
+                                                                .isNotEmpty
+                                                            ? product
+                                                                  .imageUrls
+                                                                  .first
+                                                            : null,
+                                                      ),
+                                                    ),
                                               ),
-                                            ),
-                                          ).then((_) {
-                                            if (token.isNotEmpty) {
-                                              chatBloc.add(LoadConversationsRequested());
-                                            }
-                                          });
+                                            ).then((_) {
+                                              if (token.isNotEmpty) {
+                                                chatBloc.add(
+                                                  LoadConversationsRequested(),
+                                                );
+                                              }
+                                            });
+                                          }
                                         }
-                                      }
-                                    : null,
-                                icon: const Icon(Icons.chat_bubble_outline),
-                                label: const Text('Chat'),
+                                      : null,
+                                  icon: const Icon(Icons.chat_bubble_outline),
+                                  label: const Text('Chat'),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: AppButton(
-                                label: 'Thêm giỏ hàng',
-                                icon: Icons.add_shopping_cart,
-                                onPressed: isOwnProduct ? null : () => _showAddToCartSheet(context, product),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: AppButton(
+                                  label: 'Thêm giỏ hàng',
+                                  icon: Icons.add_shopping_cart,
+                                  // onPressed: isOwnProduct ? null : () => _showAddToCartSheet(context, product),
+                                  onPressed: () =>
+                                      _showAddToCartSheet(context, product),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  }),
+                      );
+                    },
+                  ),
             body: _buildBody(context, state),
           ),
         );
@@ -281,7 +388,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
         const Divider(height: 32),
         Row(
           children: [
-            const ShimmerBox(height: 50, width: 50, borderRadius: BorderRadius.all(Radius.circular(25))),
+            const ShimmerBox(
+              height: 50,
+              width: 50,
+              borderRadius: BorderRadius.all(Radius.circular(25)),
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
@@ -309,10 +420,14 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     }
 
     final images = _collectDisplayImages(product);
-    final sellerName = product.seller?.name ?? product.sellerName ?? 'Người bán';
-    final sellerScore = product.seller?.score ?? (product.rating?.toStringAsFixed(1));
-    final sellerListing = product.seller?.listing ?? (product.soldCount?.toString());
-    final displayRating = product.rating ?? double.tryParse(product.seller?.score ?? '');
+    final sellerName =
+        product.seller?.name ?? product.sellerName ?? 'Người bán';
+    final sellerScore =
+        product.seller?.score ?? (product.rating?.toStringAsFixed(1));
+    final sellerListing =
+        product.seller?.listing ?? (product.soldCount?.toString());
+    final displayRating =
+        product.rating ?? double.tryParse(product.seller?.score ?? '');
 
     final priceNewNumber = num.tryParse(product.priceNew ?? '');
     final hasPriceNew = priceNewNumber != null && priceNewNumber > 0;
@@ -348,7 +463,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           });
                         },
                         itemBuilder: (context, index) {
-                          return Image.network(images[index], fit: BoxFit.cover);
+                          return _safeImageNetwork(
+                            images[index],
+                            fit: BoxFit.cover,
+                          );
                         },
                       ),
               ),
@@ -382,7 +500,12 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           SizedBox(
             height: 84,
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                0,
+              ),
               scrollDirection: Axis.horizontal,
               itemCount: images.length,
               separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
@@ -400,7 +523,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.transparent,
                         width: 2,
                       ),
                       borderRadius: BorderRadius.circular(AppRadius.sm + 2),
@@ -408,7 +533,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     padding: const EdgeInsets.all(2),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Image.network(
+                      child: _safeImageNetwork(
                         image,
                         width: 64,
                         height: 64,
@@ -452,13 +577,14 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     ),
                 ],
               ),
-              if ((product.bestOffers ?? '').isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Ưu đãi: ${product.bestOffers}',
-                  style: TextStyle(color: context.specialTheme.primaryColor, fontWeight: FontWeight.w600),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Ưu đãi: ${_formatBestOffers(product.bestOffers)}',
+                style: TextStyle(
+                  color: context.specialTheme.primaryColor,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -474,17 +600,27 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           final authState = context.read<AuthBloc>().state;
                           final token = authState.currentUser?.token ?? '';
                           if (checkLogin(context, token: token)) {
-                            context.read<ProductDetailBloc>().add(ProductLikeToggled());
+                            context.read<ProductDetailBloc>().add(
+                              ProductLikeToggled(),
+                            );
                           }
                         },
                         icon: Icon(
-                          product.isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: product.isLiked ? AppColors.danger : AppColors.textSecondary,
+                          product.isLiked
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: product.isLiked
+                              ? AppColors.danger
+                              : AppColors.textSecondary,
                         ),
                       ),
                       Text(likeText),
                       const SizedBox(width: AppSpacing.md),
-                      const Icon(Icons.mode_comment_outlined, size: 18, color: AppColors.textSecondary),
+                      const Icon(
+                        Icons.mode_comment_outlined,
+                        size: 18,
+                        color: AppColors.textSecondary,
+                      ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(commentText),
                     ],
@@ -511,7 +647,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const Divider(height: 32),
               const SectionHeader(title: 'Mô tả'),
               const SizedBox(height: AppSpacing.sm),
-              Text(product.described.isEmpty ? 'Chưa có mô tả.' : product.described),
+              Text(
+                product.described.isEmpty
+                    ? 'Chưa có mô tả.'
+                    : product.described,
+              ),
               const Divider(height: 32),
               const SectionHeader(title: 'Thông tin sản phẩm'),
               const SizedBox(height: AppSpacing.sm),
@@ -526,11 +666,13 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               if ((product.weight ?? '').isNotEmpty)
                 _MetaRow(label: 'Khối lượng', value: product.weight!),
               if (product.dimension.isNotEmpty)
-                _MetaRow(label: 'Kích thước', value: product.dimension.join(' x ')),
+                _MetaRow(
+                  label: 'Kích thước',
+                  value: product.dimension.join(' x '),
+                ),
               if ((product.state ?? '').isNotEmpty)
                 _MetaRow(label: 'Trạng thái', value: product.state!),
-              if ((product.canEdit ?? '').isNotEmpty)
-                _MetaRow(label: 'Có thể sửa', value: product.canEdit!),
+              // Hide canEdit row
               if ((product.isBlocked ?? '').isNotEmpty)
                 _MetaRow(label: 'Bị chặn', value: product.isBlocked!),
               if ((product.banned ?? '').isNotEmpty)
@@ -542,20 +684,35 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const SizedBox(height: AppSpacing.sm),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: product.seller?.avatar != null && product.seller!.avatar!.isNotEmpty
-                    ? CircleAvatar(backgroundImage: NetworkImage(product.seller!.avatar!))
+                leading:
+                    product.seller?.avatar != null &&
+                        product.seller!.avatar!.isNotEmpty
+                    ? CircleAvatar(
+                        backgroundImage: NetworkImage(product.seller!.avatar!),
+                      )
                     : const CircleAvatar(child: Icon(Icons.storefront)),
                 title: Text(sellerName),
-                subtitle: Text(product.sellerLocation ?? product.shipsFrom ?? 'Chưa có vị trí'),
+                subtitle: Text(
+                  product.sellerLocation ??
+                      product.shipsFrom ??
+                      'Chưa có vị trí',
+                ),
                 trailing: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if ((sellerScore ?? '').isNotEmpty) Text('Điểm: $sellerScore'),
-                    if ((sellerListing ?? '').isNotEmpty) Text('Listing: $sellerListing'),
+                    if ((sellerScore ?? '').isNotEmpty)
+                      Text('Điểm: $sellerScore'),
+                    if ((sellerListing ?? '').isNotEmpty)
+                      Text('Listing: $sellerListing'),
                   ],
                 ),
                 onTap: () {
+                  final authState = context.read<AuthBloc>().state;
+                  final token = authState.currentUser?.token ?? '';
+                  if (!checkLogin(context, token: token)) {
+                    return;
+                  }
                   final userId = product.seller?.id ?? '';
                   if (userId.isEmpty) return;
                   Navigator.push(
@@ -635,9 +792,27 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 ...state.comments.map(
                   (comment) => ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                    title: Text(comment.author),
+                    leading:
+                        comment.avatar != null && comment.avatar!.isNotEmpty
+                        ? CircleAvatar(
+                            backgroundImage: NetworkImage(comment.avatar!),
+                          )
+                        : const CircleAvatar(child: Icon(Icons.person_outline)),
+                    title: Text(comment.authorName),
                     subtitle: Text(comment.content),
+                  ),
+                ),
+              if (state.comments.length >= 20)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  child: Center(
+                    child: Text(
+                      'Kéo xuống để tải thêm bình luận...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -674,7 +849,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     child: firstImg != null && firstImg.isNotEmpty
-                        ? Image.network(
+                        ? _safeImageNetwork(
                             firstImg,
                             width: 80,
                             height: 80,
@@ -684,17 +859,24 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                             width: 80,
                             height: 80,
                             color: Colors.grey[200],
-                            child: const Icon(Icons.inventory_2_outlined, color: Colors.grey),
+                            child: const Icon(
+                              Icons.inventory_2_outlined,
+                              color: Colors.grey,
+                            ),
                           ),
                   ),
                   SizedBox(
-                    width: 240, // Đảm bảo text không chiếm hết chiều ngang gây đẩy wrap
+                    width:
+                        240, // Đảm bảo text không chiếm hết chiều ngang gây đẩy wrap
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           product.title,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -740,7 +922,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   const Expanded(
                     child: Text(
                       'Số lượng:',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   Row(
@@ -754,7 +939,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       ),
                       Text(
                         '$quantity',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         onPressed: () => setState(() => quantity++),
@@ -767,7 +955,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const Divider(height: 24),
 
               // Confirm Button
-               Wrap(
+              Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: AppSpacing.md,
@@ -788,11 +976,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     icon: Icons.add_shopping_cart,
                     onPressed: () {
                       if (product.sizes.isNotEmpty && selectedSize == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Vui lòng chọn phân loại / kích thước'),
-                            duration: Duration(seconds: 2),
-                          ),
+                        AppSnackBar.show(
+                          context,
+                          message: 'Vui lòng chọn phân loại / kích thước',
+                          duration: Duration(seconds: 2),
                         );
                         return;
                       }
@@ -815,11 +1002,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       );
 
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Đã thêm $quantity sản phẩm vào giỏ hàng'),
-                          duration: const Duration(seconds: 2),
-                        ),
+                      AppSnackBar.show(
+                        context,
+                        message: 'Đã thêm $quantity sản phẩm vào giỏ hàng',
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
                       );
                     },
                   ),
@@ -834,6 +1021,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
 
   void _showCommentSheet(BuildContext context) {
     final controller = TextEditingController();
+    final authState = context.read<AuthBloc>().state;
+    final user = authState.currentUser;
+
     AppBottomSheet.show<void>(
       context: context,
       child: Column(
@@ -844,7 +1034,14 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           AppButton(
             label: 'Gửi bình luận',
             onPressed: () {
-              context.read<ProductDetailBloc>().add(ProductCommentSent(controller.text));
+              context.read<ProductDetailBloc>().add(
+                ProductCommentSent(
+                  controller.text,
+                  currentUserId: user?.id,
+                  currentUserName: user?.username,
+                  currentUserAvatar: user?.avatar,
+                ),
+              );
               Navigator.pop(context);
             },
           ),
@@ -854,7 +1051,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   }
 
   void _showReportSheet(BuildContext context) {
-    final subjectController = TextEditingController(text: 'Sản phẩm không phù hợp');
+    final subjectController = TextEditingController(
+      text: 'Sản phẩm không phù hợp',
+    );
     final detailController = TextEditingController();
     AppBottomSheet.show<void>(
       context: context,
@@ -869,11 +1068,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
             label: 'Gửi báo cáo',
             onPressed: () {
               context.read<ProductDetailBloc>().add(
-                    ProductReported(
-                      subject: subjectController.text,
-                      details: detailController.text,
-                    ),
-                  );
+                ProductReported(
+                  subject: subjectController.text,
+                  details: detailController.text,
+                ),
+              );
               Navigator.pop(context);
             },
           ),
@@ -882,12 +1081,17 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     );
   }
 
-  Future<void> _confirmDeleteProduct(BuildContext context, String productId) async {
+  Future<void> _confirmDeleteProduct(
+    BuildContext context,
+    String productId,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Xóa sản phẩm'),
-        content: const Text('Bạn có chắc chắn muốn xóa sản phẩm này không? Thao tác này không thể hoàn tác.'),
+        content: const Text(
+          'Bạn có chắc chắn muốn xóa sản phẩm này không? Thao tác này không thể hoàn tác.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -917,16 +1121,15 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
       await context.read<MarketplaceRepository>().deleteProduct(productId);
       if (!context.mounted) return;
       Navigator.pop(context); // Pop loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Xóa sản phẩm thành công')),
-      );
-      Navigator.pop(context, true); // Pop detail page back to listings, with refresh indicator
+      AppSnackBar.showSuccess(context, message: 'Xóa sản phẩm thành công');
+      Navigator.pop(
+        context,
+        true,
+      ); // Pop detail page back to listings, with refresh indicator
     } catch (e) {
       if (!context.mounted) return;
       Navigator.pop(context); // Pop loading dialog
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      AppSnackBar.show(context, message: e.toString());
     }
   }
 }
@@ -991,7 +1194,11 @@ class _RatingsSectionState extends State<_RatingsSection> {
     });
     final repo = context.read<MarketplaceRepository>();
     try {
-      final rates = await repo.getRates(productId: widget.productId, index: 0, count: 20);
+      final rates = await repo.getRates(
+        productId: widget.productId,
+        index: 0,
+        count: 20,
+      );
       if (!mounted) return;
       setState(() {
         _rates = rates;
@@ -1014,7 +1221,10 @@ class _RatingsSectionState extends State<_RatingsSection> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Viết đánh giá', style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text(
+            'Viết đánh giá',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: AppSpacing.sm),
           ValueListenableBuilder<int>(
             valueListenable: levelNotifier,
@@ -1024,7 +1234,9 @@ class _RatingsSectionState extends State<_RatingsSection> {
                 final star = i + 1;
                 return IconButton(
                   icon: Icon(
-                    level >= star ? Icons.star_rounded : Icons.star_border_rounded,
+                    level >= star
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
                     color: AppColors.warning,
                   ),
                   onPressed: () => levelNotifier.value = star,
@@ -1041,7 +1253,10 @@ class _RatingsSectionState extends State<_RatingsSection> {
               final authState = context.read<AuthBloc>().state;
               final userId = authState.currentUser?.id ?? '';
               if (userId.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bạn cần đăng nhập để đánh giá')));
+                AppSnackBar.show(
+                  context,
+                  message: 'Bạn cần đăng nhập để đánh giá',
+                );
                 return;
               }
               final level = levelNotifier.value;
@@ -1049,17 +1264,17 @@ class _RatingsSectionState extends State<_RatingsSection> {
               Navigator.pop(context);
               try {
                 await context.read<MarketplaceRepository>().setRates(
-                      userId: userId,
-                      level: level,
-                      content: content,
-                      productId: widget.productId,
-                    );
+                  userId: userId,
+                  level: level,
+                  content: content,
+                  productId: widget.productId,
+                );
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi đánh giá')));
+                AppSnackBar.showSuccess(context, message: 'Đã gửi đánh giá');
                 await _loadRates();
               } catch (e) {
                 if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                AppSnackBar.showError(context, message: 'Lỗi: $e');
               } finally {
                 if (mounted) {}
               }
@@ -1072,19 +1287,31 @@ class _RatingsSectionState extends State<_RatingsSection> {
 
   @override
   Widget build(BuildContext context) {
+    if (_error != null) {
+      return const SizedBox.shrink();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionHeader(title: 'Đánh giá', actionLabel: 'Viết', onActionTap: _openWriteSheet),
+        SectionHeader(
+          title: 'Đánh giá',
+          actionLabel: 'Viết',
+          onActionTap: _openWriteSheet,
+        ),
         const SizedBox(height: AppSpacing.sm),
-        if (_isLoading) const Center(child: CircularProgressIndicator())
-        else if (_error != null) ErrorState(message: _error!, onRetry: _loadRates)
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (_error != null)
+          ErrorState(message: _error!, onRetry: _loadRates)
         else if (_rates.isEmpty)
           const Text('Chưa có đánh giá.')
         else
-        ..._rates.map((r) => ListTile(
+          ..._rates.map(
+            (r) => ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading: r.avatar != null && r.avatar!.isNotEmpty
+                  ? CircleAvatar(backgroundImage: NetworkImage(r.avatar!))
+                  : const CircleAvatar(child: Icon(Icons.person_outline)),
               title: Text(r.author),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1094,7 +1321,8 @@ class _RatingsSectionState extends State<_RatingsSection> {
                   Text(r.content),
                 ],
               ),
-            )),
+            ),
+          ),
       ],
     );
   }

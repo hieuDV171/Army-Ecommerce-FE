@@ -19,6 +19,7 @@ class ApiPaths {
   static const setPushSetting = '/push_settings/set_push_setting';
 
   // Marketplace & Products
+  static const getUserListings = '/api/get_user_listings';
   static const categories = '/api/get_categories';
   static const brands = '/api/get_list_brands';
   static const listProducts = '/api/get_list_products';
@@ -41,11 +42,17 @@ class ApiPaths {
   static String newsDetail(String id) => '/News/$id';
 
   // Orders & Addresses
+  static const getShipFrom = '/order/get_ship_from';
   static const getListOrderAddress = '/order/get_list_order_address';
   static const addOrderAddress = '/order/add_order_address';
   static String updateAddress(String id) => '/order/update/$id';
   static String deleteAddress(String id) => '/order/delete/$id';
   static const getListPurchases = '/order/get_list_purchases';
+  static const getListPurchasesSeller = '/order/get_list_purchases_seller';
+  static const getCart = '/order/get_cart';
+  static const addCart = '/order/add_cart';
+  static const editCart = '/order/edit_cart';
+  static const deleteCart = '/order/delete_cart';
   static const getPurchase = '/order/get_purchase';
   static const getShipFee = '/order/get_ship_fee';
   static const createOrder = '/order/create_order';
@@ -81,4 +88,10 @@ class ApiPaths {
   // Notifications
   static const getNotification = '/notification/get_notification';
   static const setReadNotification = '/notification/set_read_notification';
+
+  // Rewards
+  static const addRewardProof = '/rewards/add_reward_proof';
+  static const getRewardProof = '/rewards/get_reward_proof';
+  static const getRewardHistory = '/rewards/get_reward_history';
+  static const createRewardAppeal = '/rewards/create_reward_appeal';
 }

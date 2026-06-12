@@ -12,6 +12,7 @@ import '../../util/widgets/app_button.dart';
 import '../../util/widgets/loading_overlay.dart';
 import '../../util/theme/special_app_theme.dart';
 import 'address_form_page.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class AddressListPage extends StatelessWidget {
   const AddressListPage({super.key});
@@ -34,16 +35,10 @@ class _AddressListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<AddressBloc, AddressState>(
       listener: (context, state) {
-        final message = state.successMessage ?? state.errorMessage;
-        if (message != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: state.successMessage != null
-                  ? AppColors.success
-                  : AppColors.danger,
-            ),
-          );
+        if (state.successMessage != null) {
+          AppSnackBar.showSuccess(context, message: state.successMessage!);
+        } else if (state.errorMessage != null) {
+          AppSnackBar.showError(context, message: state.errorMessage!);
         }
       },
       builder: (context, state) {
@@ -282,24 +277,50 @@ class _AddressCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: const Text('Sửa'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: context.specialTheme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  TextButton.icon(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    label: const Text('Xóa'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: context.specialTheme.primaryColor,
-                    ),
+                  if (address.address != null && address.address!.isNotEmpty && address.address != address.fullAddress)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.specialTheme.primaryColor,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Text(
+                        address.address!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton.icon(
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Sửa'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: context.specialTheme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      TextButton.icon(
+                        onPressed: onDelete,
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: const Text('Xóa'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: context.specialTheme.primaryColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

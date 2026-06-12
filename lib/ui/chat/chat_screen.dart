@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/constants/app_colors.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ChatScreen extends StatefulWidget {
   final String partnerId;
@@ -133,9 +134,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   _scrollToBottom();
                 } else if (state is ChatFailure) {
                   setState(() => _isSending = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Gửi thất bại: ${state.error}')),
-                  );
+                  AppSnackBar.showError(context, message: 'Gửi thất bại: ${state.error}');
                 }
               },
               builder: (context, state) {

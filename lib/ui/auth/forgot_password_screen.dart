@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -21,9 +22,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final phone = _phoneController.text.trim();
     // Validate cơ bản tại client: bắt đầu bằng số 0 và đủ 10 số
     if (!RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Số điện thoại không hợp lệ')),
-      );
+      AppSnackBar.showError(context, message: 'Số điện thoại không hợp lệ');
       return;
     }
 
@@ -50,9 +49,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             );
           } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}'))
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         child: Scaffold(

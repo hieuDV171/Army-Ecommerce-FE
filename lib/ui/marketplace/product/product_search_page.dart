@@ -3,6 +3,7 @@ import 'package:army_ecommerce/blocs/marketplace/product_search/product_search_e
 import 'package:army_ecommerce/blocs/marketplace/product_search/product_search_state.dart';
 import 'package:army_ecommerce/models/brand_model.dart';
 import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/models/category_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +14,7 @@ import '../../util/constants/app_radius.dart';
 import '../../util/constants/app_spacing.dart';
 import '../../util/widgets/app_bottom_sheet.dart';
 import '../../util/widgets/app_text_field.dart';
+import '../../util/widgets/app_snackbar.dart';
 import '../../util/widgets/app_button.dart';
 import '../../util/widgets/empty_state.dart';
 import '../../util/widgets/error_state.dart';
@@ -48,11 +50,53 @@ class _SearchView extends StatefulWidget {
 class _SearchViewState extends State<_SearchView> {
   final TextEditingController _keywordController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  String _sortBy = 'default';
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+  }
+
+  Widget _buildSortRow() {
+    final specialTheme = context.specialTheme;
+    final options = [
+      ('Mặc định', 'default'),
+      ('Tên A-Z', 'name_asc'),
+      ('Tên Z-A', 'name_desc'),
+      ('Giá tăng', 'price_asc'),
+      ('Giá giảm', 'price_desc'),
+    ];
+    return Container(
+      height: 38,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        scrollDirection: Axis.horizontal,
+        itemCount: options.length,
+        separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.xs),
+        itemBuilder: (context, idx) {
+          final opt = options[idx];
+          final isSelected = _sortBy == opt.$2;
+          return ChoiceChip(
+            label: Text(opt.$1),
+            selected: isSelected,
+            selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
+            checkmarkColor: specialTheme.primaryColor,
+            labelStyle: TextStyle(
+              color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 12,
+            ),
+            onSelected: (selected) {
+              if (selected) {
+                setState(() => _sortBy = opt.$2);
+              }
+            },
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -78,7 +122,10 @@ class _SearchViewState extends State<_SearchView> {
       context: context,
       child: BlocProvider.value(
         value: searchBloc,
-        child: _ProductSearchFilterSheet(state: state),
+        child: _ProductSearchFilterSheet(
+          state: state,
+          currentKeyword: _keywordController.text.trim(),
+        ),
       ),
     );
   }
@@ -87,62 +134,87 @@ class _SearchViewState extends State<_SearchView> {
   Widget build(BuildContext context) {
     return BlocBuilder<ProductSearchBloc, ProductSearchState>(
       builder: (context, state) {
-        return Scaffold(
-          appBar: AppBar(title: const Text('Tìm kiếm')),
-          body: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        controller: _keywordController,
-                        label: 'Từ khóa',
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: Scaffold(
+            appBar: AppBar(title: const Text('Tìm kiếm')),
+            body: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _keywordController,
+                          label: 'Từ khóa',
+                          autofocus: true,
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (value) {
+                            final kw = value.trim();
+                            if (kw.isEmpty) {
+                              context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
+                              return;
+                            }
+                            context.read<ProductSearchBloc>().add(
+                                  ProductSearchRequested(
+                                    keyword: kw,
+                                    categoryId: state.categoryId,
+                                  ),
+                                );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    IconButton.filled(
-                      tooltip: 'Tìm kiếm',
-                      onPressed: () {
-                        context.read<ProductSearchBloc>().add(
-                              ProductSearchRequested(
-                                keyword: _keywordController.text.trim(),
-                                categoryId: state.categoryId,
-                              ),
-                            );
-                      },
-                      icon: const Icon(Icons.search),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    IconButton(
-                      tooltip: 'Lọc kết quả',
-                      onPressed: () => _openFilterSheet(context, state),
-                      icon: const Icon(Icons.tune),
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.sm),
+                      IconButton.filled(
+                        tooltip: 'Tìm kiếm',
+                        onPressed: () {
+                          final kw = _keywordController.text.trim();
+                          if (kw.isEmpty) {
+                            context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
+                            return;
+                          }
+                          context.read<ProductSearchBloc>().add(
+                                ProductSearchRequested(
+                                  keyword: kw,
+                                  categoryId: state.categoryId,
+                                ),
+                              );
+                        },
+                        icon: const Icon(Icons.search),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      IconButton(
+                        tooltip: 'Lọc kết quả',
+                        onPressed: () => _openFilterSheet(context, state),
+                        icon: const Icon(Icons.tune),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              // Hiển thị danh sách thương hiệu nếu có categoryId
-              if (state.categoryId != null)
-                _BrandsList(
-                  brands: state.brands,
-                  isLoading: state.isBrandsLoading,
-                  selectedBrandId: state.brandId,
-                  onBrandSelected: (brandId) {
-                    context.read<ProductSearchBloc>().add(
-                          ProductSearchFiltered(
-                            keyword: state.keyword,
-                            categoryId: state.categoryId,
-                            brandId: brandId,
-                            priceMin: state.priceMin,
-                            priceMax: state.priceMax,
-                          ),
-                        );
-                  },
-                ),
-              Expanded(child: _buildResult(context, state)),
-            ],
+                // Hiển thị danh sách thương hiệu nếu có categoryId
+                if (state.categoryId != null)
+                  _BrandsList(
+                    brands: state.brands,
+                    isLoading: state.isBrandsLoading,
+                    selectedBrandId: state.brandId,
+                    onBrandSelected: (brandId) {
+                      context.read<ProductSearchBloc>().add(
+                            ProductSearchFiltered(
+                              keyword: state.keyword,
+                              categoryId: state.categoryId,
+                              brandId: brandId,
+                              priceMin: state.priceMin,
+                              priceMax: state.priceMax,
+                            ),
+                          );
+                    },
+                  ),
+                _buildSortRow(),
+                Expanded(child: _buildResult(context, state)),
+              ],
+            ),
           ),
         );
       },
@@ -157,6 +229,12 @@ class _SearchViewState extends State<_SearchView> {
       );
     }
     if (state.errorMessage != null && state.products.isEmpty) {
+      if (ErrorState.isNetworkError(state.errorMessage)) {
+        return const Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: ShimmerProductGrid(),
+        );
+      }
       return ErrorState(
         message: state.errorMessage!,
         onRetry: () => context.read<ProductSearchBloc>().add(
@@ -185,6 +263,17 @@ class _SearchViewState extends State<_SearchView> {
       );
     }
 
+    final sortedProducts = List<ProductModel>.from(state.products);
+    if (_sortBy == 'name_asc') {
+      sortedProducts.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    } else if (_sortBy == 'name_desc') {
+      sortedProducts.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+    } else if (_sortBy == 'price_asc') {
+      sortedProducts.sort((a, b) => a.price.compareTo(b.price));
+    } else if (_sortBy == 'price_desc') {
+      sortedProducts.sort((a, b) => b.price.compareTo(a.price));
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
         context.read<ProductSearchBloc>().add(
@@ -208,18 +297,18 @@ class _SearchViewState extends State<_SearchView> {
       child: GridView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(AppSpacing.lg),
-        itemCount: state.products.length + (state.isLoadingMore ? 2 : 0),
+        itemCount: sortedProducts.length + (state.isLoadingMore ? 2 : 0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.66,
+          childAspectRatio: 0.60,
         ),
         itemBuilder: (context, index) {
-          if (index >= state.products.length) {
+          if (index >= sortedProducts.length) {
             return const Center(child: CircularProgressIndicator());
           }
-          final product = state.products[index];
+          final product = sortedProducts[index];
           return ProductCard(
             product: productCardDataFromModel(product),
             onTap: () => Navigator.push(
@@ -235,8 +324,12 @@ class _SearchViewState extends State<_SearchView> {
 
 class _ProductSearchFilterSheet extends StatefulWidget {
   final ProductSearchState state;
+  final String currentKeyword;
 
-  const _ProductSearchFilterSheet({required this.state});
+  const _ProductSearchFilterSheet({
+    required this.state,
+    required this.currentKeyword,
+  });
 
   @override
   State<_ProductSearchFilterSheet> createState() => _ProductSearchFilterSheetState();
@@ -245,15 +338,18 @@ class _ProductSearchFilterSheet extends StatefulWidget {
 class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   late List<ProductBrandInfo> _availableBrands;
   String? _selectedBrandId;
-  late double _currentMinPrice;
-  late double _currentMaxPrice;
-  late double _minPriceBound;
-  late double _maxPriceBound;
+  final TextEditingController _minPriceController = TextEditingController();
+  final TextEditingController _maxPriceController = TextEditingController();
+
+  List<CategoryModel> _categories = [];
+  bool _isCategoriesLoading = false;
+  String? _selectedCategoryId;
 
   @override
   void initState() {
     super.initState();
     _selectedBrandId = widget.state.brandId;
+    _selectedCategoryId = widget.state.categoryId;
 
     // Collect brands from products
     final Map<String, ProductBrandInfo> brandMap = {};
@@ -272,57 +368,173 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     }
     _availableBrands = brandMap.values.toList();
 
-    // Determine price range bounds
-    final products = widget.state.products;
-    if (products.isNotEmpty) {
-      _minPriceBound = products.map((p) => p.price.toDouble()).reduce((a, b) => a < b ? a : b);
-      _maxPriceBound = products.map((p) => p.price.toDouble()).reduce((a, b) => a > b ? a : b);
-    } else {
-      _minPriceBound = 0;
-      _maxPriceBound = 10000000;
-    }
+    _minPriceController.text = widget.state.priceMin != null ? widget.state.priceMin!.toInt().toString() : '';
+    _maxPriceController.text = widget.state.priceMax != null ? widget.state.priceMax!.toInt().toString() : '';
 
-    if (_minPriceBound == _maxPriceBound) {
-      _maxPriceBound = _minPriceBound + 100000;
-    }
+    _fetchCategories();
+  }
 
-    _currentMinPrice = (widget.state.priceMin?.toDouble() ?? _minPriceBound).clamp(_minPriceBound, _maxPriceBound);
-    _currentMaxPrice = (widget.state.priceMax?.toDouble() ?? _maxPriceBound).clamp(_minPriceBound, _maxPriceBound);
-    if (_currentMinPrice > _currentMaxPrice) {
-      _currentMinPrice = _minPriceBound;
-      _currentMaxPrice = _maxPriceBound;
+  Future<void> _fetchCategories() async {
+    if (!mounted) return;
+    setState(() {
+      _isCategoriesLoading = true;
+    });
+    try {
+      final repo = context.read<MarketplaceRepository>();
+      final categories = await repo.getCategories();
+      if (mounted) {
+        setState(() {
+          _categories = categories;
+          _isCategoriesLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isCategoriesLoading = false;
+        });
+      }
     }
   }
 
-  String _formatPrice(num value) {
+  @override
+  void dispose() {
+    _minPriceController.dispose();
+    _maxPriceController.dispose();
+    super.dispose();
+  }
+
+  void _increaseMinPrice() {
+    final text = _minPriceController.text.trim();
+    final current = double.tryParse(text) ?? 0.0;
+    final newValue = current + 100000;
+    setState(() {
+      _minPriceController.text = newValue.toInt().toString();
+    });
+  }
+
+  void _decreaseMinPrice() {
+    final text = _minPriceController.text.trim();
+    final current = double.tryParse(text) ?? 0.0;
+    final newValue = (current - 100000).clamp(0.0, double.infinity);
+    setState(() {
+      _minPriceController.text = newValue.toInt().toString();
+    });
+  }
+
+  void _increaseMaxPrice() {
+    final text = _maxPriceController.text.trim();
+    final current = double.tryParse(text) ?? 0.0;
+    final newValue = current + 100000;
+    setState(() {
+      _maxPriceController.text = newValue.toInt().toString();
+    });
+  }
+
+  void _decreaseMaxPrice() {
+    final text = _maxPriceController.text.trim();
+    final current = double.tryParse(text) ?? 0.0;
+    final newValue = (current - 100000).clamp(0.0, double.infinity);
+    setState(() {
+      _maxPriceController.text = newValue.toInt().toString();
+    });
+  }
+
+  String _formatPriceText(String text) {
+    if (text.isEmpty) return '0 xu';
+    final val = double.tryParse(text);
+    if (val == null) return '0 xu';
     try {
-      return '${NumberFormat.decimalPattern('vi_VN').format(value)} xu';
+      return '${NumberFormat.decimalPattern('vi_VN').format(val)} xu';
     } catch (_) {
-      return '${value.toStringAsFixed(0)} xu';
+      return '${val.toStringAsFixed(0)} xu';
     }
   }
 
   void _applyFilter() {
+    if (widget.currentKeyword.isEmpty) {
+      context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
+      return;
+    }
+    final minPriceVal = double.tryParse(_minPriceController.text.trim())?.round();
+    final maxPriceVal = double.tryParse(_maxPriceController.text.trim())?.round();
+
     context.read<ProductSearchBloc>().add(
           ProductSearchFiltered(
-            keyword: widget.state.keyword,
-            categoryId: widget.state.categoryId,
+            keyword: widget.currentKeyword,
+            categoryId: _selectedCategoryId,
             brandId: _selectedBrandId,
-            priceMin: _currentMinPrice.round(),
-            priceMax: _currentMaxPrice.round(),
+            priceMin: minPriceVal,
+            priceMax: maxPriceVal,
           ),
         );
     Navigator.of(context).pop();
   }
 
   void _clearFilter() {
+    if (widget.currentKeyword.isEmpty) {
+      context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
+      return;
+    }
     context.read<ProductSearchBloc>().add(
           ProductSearchRequested(
-            keyword: widget.state.keyword,
-            categoryId: widget.state.categoryId,
+            keyword: widget.currentKeyword,
+            categoryId: null,
           ),
         );
     Navigator.of(context).pop();
+  }
+
+  Widget _buildPriceSpinnerField({
+    required TextEditingController controller,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
+  }) {
+    final specialTheme = context.specialTheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              onChanged: (val) => setState(() {}),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                iconSize: 18,
+                icon: const Icon(Icons.keyboard_arrow_up),
+                onPressed: onIncrement,
+                color: specialTheme.primaryColor,
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                iconSize: 18,
+                icon: const Icon(Icons.keyboard_arrow_down),
+                onPressed: onDecrement,
+                color: specialTheme.primaryColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -346,6 +558,56 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Danh mục',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (_isCategoriesLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_categories.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Text(
+                  'Không có danh mục nào',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+              )
+            else
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: _categories.map((category) {
+                  final isSelected = _selectedCategoryId == category.id;
+                  return ChoiceChip(
+                    label: Text(category.name),
+                    selected: isSelected,
+                    selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
+                    checkmarkColor: specialTheme.primaryColor,
+                    labelStyle: TextStyle(
+                      color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedCategoryId = selected ? category.id : null;
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Thương hiệu',
@@ -389,41 +651,69 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                 }).toList(),
               ),
             const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Khoảng giá',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                Text(
-                  '${_formatPrice(_currentMinPrice)} - ${_formatPrice(_currentMaxPrice)}',
-                  style: TextStyle(
-                    color: specialTheme.primaryColor,
+            Text(
+              'Khoảng giá',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Giá tối thiểu',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _buildPriceSpinnerField(
+                        controller: _minPriceController,
+                        onIncrement: _increaseMinPrice,
+                        onDecrement: _decreaseMinPrice,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatPriceText(_minPriceController.text),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: specialTheme.primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Giá tối đa',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      _buildPriceSpinnerField(
+                        controller: _maxPriceController,
+                        onIncrement: _increaseMaxPrice,
+                        onDecrement: _decreaseMaxPrice,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatPriceText(_maxPriceController.text),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: specialTheme.primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            RangeSlider(
-              values: RangeValues(_currentMinPrice, _currentMaxPrice),
-              min: _minPriceBound,
-              max: _maxPriceBound,
-              activeColor: specialTheme.primaryColor,
-              inactiveColor: AppColors.border,
-              labels: RangeLabels(
-                _formatPrice(_currentMinPrice),
-                _formatPrice(_currentMaxPrice),
-              ),
-              onChanged: (values) {
-                setState(() {
-                  _currentMinPrice = values.start;
-                  _currentMaxPrice = values.end;
-                });
-              },
             ),
             const SizedBox(height: AppSpacing.lg),
             Row(

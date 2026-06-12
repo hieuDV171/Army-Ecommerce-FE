@@ -43,8 +43,12 @@ class NewsDetailPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
+            final errorStr = snapshot.error.toString();
+            if (ErrorState.isNetworkError(errorStr)) {
+              return const Center(child: CircularProgressIndicator());
+            }
             return ErrorState(
-              message: snapshot.error.toString(),
+              message: errorStr,
               onRetry: () {},
             );
           }

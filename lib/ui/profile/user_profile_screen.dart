@@ -7,6 +7,7 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../models/user_model.dart';
 import 'set_user_info_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String? userId;
@@ -38,6 +39,56 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   String _valueOf(String? value) => value == null || value.trim().isEmpty ? '-' : value;
+
+  void _showZoomedAvatar(BuildContext context, String imageUrl, String name) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 80),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                left: 16,
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   String _boolLabel(bool? value) {
     if (value == null) return '-';
@@ -100,9 +151,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           setState(() {
             _errorMessage = state.error;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi lấy hồ sơ: ${state.error}')),
-          );
+          AppSnackBar.showError(context, message: 'Lỗi lấy hồ sơ: ${state.error}');
         } else if (state is SetUserInfoSuccess) {
           setState(() {
             _profile = state.user;
@@ -211,20 +260,27 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                           children: [
                                             // Centered avatar with white circular border
                                             Center(
-                                              child: Container(
-                                                padding: const EdgeInsets.all(4),
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.white,
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: CircleAvatar(
-                                                  radius: avatarRadius,
-                                                  backgroundImage: profile.avatar != null && profile.avatar!.isNotEmpty
-                                                      ? NetworkImage(profile.avatar!)
-                                                      : null,
-                                                  child: profile.avatar == null || profile.avatar!.isEmpty
-                                                      ? const Icon(Icons.person, size: 56, color: Colors.grey)
-                                                      : null,
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  if (profile.avatar != null && profile.avatar!.isNotEmpty) {
+                                                    _showZoomedAvatar(context, profile.avatar!, profile.username);
+                                                  }
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(4),
+                                                  decoration: const BoxDecoration(
+                                                    color: Colors.white,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: CircleAvatar(
+                                                    radius: avatarRadius,
+                                                    backgroundImage: profile.avatar != null && profile.avatar!.isNotEmpty
+                                                        ? NetworkImage(profile.avatar!)
+                                                        : null,
+                                                    child: profile.avatar == null || profile.avatar!.isEmpty
+                                                        ? const Icon(Icons.person, size: 56, color: Colors.grey)
+                                                        : null,
+                                                  ),
                                                 ),
                                               ),
                                             ),

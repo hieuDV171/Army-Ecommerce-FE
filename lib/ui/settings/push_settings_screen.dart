@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
 import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class PushSettingsScreen extends StatefulWidget {
   const PushSettingsScreen({super.key});
@@ -265,17 +266,12 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
                 _currentSettings = state.data;
                 _draftSettings = state.data;
               });
-              if (state.message != null) {
+              if (state.isUpdate && state.message != null) {
                 _playSuccessAnimation();
               }
             }
             if (state is PushSettingError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              AppSnackBar.showError(context, message: state.error);
             }
           }
         ),
@@ -307,9 +303,7 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
         announcement == null &&
         soundOn == null &&
         soundDefault == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không có thay đổi để lưu')),
-      );
+      AppSnackBar.show(context, message: 'Không có thay đổi để lưu');
       return;
     }
 

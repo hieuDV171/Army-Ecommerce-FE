@@ -13,6 +13,19 @@ class ErrorState extends StatelessWidget {
     this.onRetry,
   });
 
+  static bool isNetworkError(String? msg) {
+    if (msg == null) return false;
+    final m = msg.toLowerCase();
+    return m.contains('502') ||
+        m.contains('connection') ||
+        m.contains('failed host') ||
+        m.contains('socketexception') ||
+        m.contains('lỗi kết nối') ||
+        m.contains('timeout') ||
+        m.contains('handshake') ||
+        m.contains('network');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(

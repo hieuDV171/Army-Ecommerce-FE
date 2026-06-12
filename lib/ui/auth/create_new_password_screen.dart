@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class CreateNewPasswordScreen extends StatefulWidget {
   final String phoneNumber;
@@ -32,7 +33,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
     final error = _validatePassword(pass);
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      AppSnackBar.showError(context, message: error);
       return;
     }
 
@@ -48,7 +49,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
           if (state is ResetPasswordSuccess) {
             _showSuccessAndGoHome(context, state.user);
           } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error)));
+            AppSnackBar.showError(context, message: state.error);
           }
         },
         child: Scaffold(

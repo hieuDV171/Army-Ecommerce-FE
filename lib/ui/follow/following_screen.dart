@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
@@ -83,17 +84,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
             final message = state.isFollowed
                 ? 'Theo dõi ${state.username} thành công'
                 : 'Đã hủy theo dõi ${state.username}';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                duration: const Duration(seconds: 2),
-                backgroundColor: _shopeeOrange(context),
-              ),
-            );
+            AppSnackBar.show(context, message: message, backgroundColor: _shopeeOrange(context), duration: const Duration(seconds: 2));
           } else if (state is FollowFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.error}')),
-            );
+            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
         },
         builder: (context, state) {

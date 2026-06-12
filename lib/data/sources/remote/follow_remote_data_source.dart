@@ -1,3 +1,4 @@
+import 'package:army_ecommerce/core/network/api_exception.dart';
 import 'package:army_ecommerce/core/api/dio_client.dart';
 import 'package:army_ecommerce/core/constants/api_paths.dart';
 import 'package:army_ecommerce/models/api_response.dart';
@@ -22,7 +23,7 @@ class FollowRemoteDataSource {
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Lỗi kết nối mạng');
+      throw Exception(ApiException.getMessage(e));
     }
   }
 
@@ -42,7 +43,7 @@ class FollowRemoteDataSource {
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Lỗi kết nối mạng');
+      throw Exception(ApiException.getMessage(e));
     }
   }
 
@@ -62,7 +63,7 @@ class FollowRemoteDataSource {
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Lỗi kết nối mạng');
+      throw Exception(ApiException.getMessage(e));
     }
   }
 }

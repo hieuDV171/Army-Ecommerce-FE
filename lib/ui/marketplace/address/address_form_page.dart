@@ -14,6 +14,7 @@ import '../../util/widgets/app_text_field.dart';
 import '../../util/widgets/loading_overlay.dart';
 import '../../util/theme/special_app_theme.dart';
 import '../map_picker_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class AddressFormPage extends StatefulWidget {
   final AddressModel? address;
@@ -34,6 +35,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
   late final TextEditingController _longitudeCtrl;
   bool _isDefault = false;
   bool _isSubmitting = false;
+  String? _selectedTag;
 
   List<ProvinceModel> _provinces = [];
   List<WardModel> _wards = [];
@@ -59,7 +61,19 @@ class _AddressFormPageState extends State<AddressFormPage> {
       text: widget.address?.receiverName ?? '',
     );
     _phoneCtrl = TextEditingController(text: widget.address?.phone ?? '');
-    _addressCtrl = TextEditingController(text: widget.address?.address ?? '');
+    
+    final initialAddress = widget.address?.address ?? '';
+    if (initialAddress.isEmpty || initialAddress == widget.address?.fullAddress) {
+      _selectedTag = null;
+      _addressCtrl = TextEditingController(text: '');
+    } else if (initialAddress == 'Nhà riêng' || initialAddress == 'Văn phòng' || initialAddress == 'Trường học') {
+      _selectedTag = initialAddress;
+      _addressCtrl = TextEditingController(text: initialAddress);
+    } else {
+      _selectedTag = 'Khác';
+      _addressCtrl = TextEditingController(text: initialAddress);
+    }
+
     _fullAddressCtrl = TextEditingController(
       text: widget.address?.fullAddress ?? '',
     );
@@ -116,9 +130,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingProvinces = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải danh mục tỉnh/thành phố: $e')),
-      );
+      AppSnackBar.showError(context, message: 'Lỗi tải danh mục tỉnh/thành phố: $e');
     }
   }
 
@@ -148,9 +160,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingWards = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải danh mục phường/xã: $e')),
-      );
+      AppSnackBar.showError(context, message: 'Lỗi tải danh mục phường/xã: $e');
     }
   }
 
@@ -239,34 +249,17 @@ class _AddressFormPageState extends State<AddressFormPage> {
         phone.isEmpty ||
         fullAddress.isEmpty ||
         addressDetail.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm',
-          ),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm', backgroundColor: AppColors.danger);
       return;
     }
 
     if (_selectedProvinceModel == null || _selectedWardModel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chọn Tỉnh/Thành phố và Phường/Xã'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng chọn Tỉnh/Thành phố và Phường/Xã', backgroundColor: AppColors.danger);
       return;
     }
 
     if (latitude.isEmpty || longitude.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập Độ rộng (Lat) và Độ dài (Lng)'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng nhập Độ rộng (Lat) và Độ dài (Lng)', backgroundColor: AppColors.danger);
       return;
     }
 
@@ -315,20 +308,10 @@ class _AddressFormPageState extends State<AddressFormPage> {
         setState(() => _isSubmitting = state.isSubmitting);
 
         if (state.successMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.successMessage!),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          AppSnackBar.show(context, message: state.successMessage!, backgroundColor: AppColors.success);
           Navigator.pop(context, true);
         } else if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: AppColors.danger,
-            ),
-          );
+          AppSnackBar.show(context, message: state.errorMessage!, backgroundColor: AppColors.danger);
         }
       },
       child: LoadingOverlay(
@@ -342,6 +325,51 @@ class _AddressFormPageState extends State<AddressFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(
+                  'Tên địa chỉ (Tùy chọn)',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  children: ['Nhà riêng', 'Văn phòng', 'Trường học', 'Khác'].map((tag) {
+                    final isSelected = _selectedTag == tag;
+                    return ChoiceChip(
+                      label: Text(tag),
+                      selected: isSelected,
+                      selectedColor: context.specialTheme.primaryColor.withValues(alpha: 0.2),
+                      checkmarkColor: context.specialTheme.primaryColor,
+                      labelStyle: TextStyle(
+                        color: isSelected ? context.specialTheme.primaryColor : AppColors.textSecondary,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTag = tag;
+                            if (tag != 'Khác') {
+                              _addressCtrl.text = tag;
+                            } else {
+                              _addressCtrl.text = '';
+                            }
+                          } else {
+                            _selectedTag = null;
+                            _addressCtrl.text = '';
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (_selectedTag == 'Khác') ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  AppTextField(
+                    controller: _addressCtrl,
+                    label: 'Tên địa chỉ khác',
+                    hint: 'VD: Nhà bạn gái, Kho hàng...',
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
                 AppTextField(
                   controller: _receiverNameCtrl,
                   label: 'Tên người nhận *',
@@ -432,12 +460,6 @@ class _AddressFormPageState extends State<AddressFormPage> {
                   controller: _fullAddressCtrl,
                   label: 'Địa chỉ đầy đủ *',
                   hint: 'VD: 123 Đường ABC, Phường XYZ, Quận 1, TP.HCM',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(
-                  controller: _addressCtrl,
-                  label: 'Tên địa chỉ (tùy chọn)',
-                  hint: 'VD: Nhà riêng, Văn phòng',
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 AppTextField(

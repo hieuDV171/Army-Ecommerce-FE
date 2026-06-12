@@ -2,6 +2,7 @@ import 'package:army_ecommerce/blocs/marketplace/notification/notification_bloc.
 import 'package:army_ecommerce/blocs/marketplace/notification/notification_event.dart';
 import 'package:army_ecommerce/blocs/marketplace/notification/notification_state.dart';
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../util/constants/app_colors.dart';
@@ -9,6 +10,7 @@ import '../../util/constants/app_spacing.dart';
 import '../../util/widgets/empty_state.dart';
 import '../../util/widgets/error_state.dart';
 import '../../util/widgets/loading_overlay.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class NotificationListPage extends StatelessWidget {
   const NotificationListPage({super.key});
@@ -62,16 +64,14 @@ class _NotificationListViewState extends State<_NotificationListView> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          AppSnackBar.show(context, message: message);
         }
       },
       builder: (context, state) {
         return LoadingOverlay(
           isLoading: state.isSubmitting,
           child: Scaffold(
-            appBar: AppBar(title: const Text('Thong bao')),
+            appBar: AppBar(title: const Text('Thông báo')),
             body: _buildBody(context, state),
           ),
         );
@@ -91,7 +91,7 @@ class _NotificationListViewState extends State<_NotificationListView> {
       );
     }
     if (state.notifications.isEmpty) {
-      return const EmptyState(title: 'Chua co thong bao');
+      return const EmptyState(title: 'Chưa có thông báo');
     }
 
     return RefreshIndicator(
@@ -113,14 +113,14 @@ class _NotificationListViewState extends State<_NotificationListView> {
             leading: CircleAvatar(
               backgroundColor: notification.read
                   ? AppColors.surface
-                  : AppColors.primary.withValues(alpha: 0.12),
+                  : context.specialTheme.primaryColor.withValues(alpha: 0.12),
               child: Icon(
                 notification.read
                     ? Icons.notifications_none
                     : Icons.notifications_active,
                 color: notification.read
                     ? AppColors.textSecondary
-                    : AppColors.primary,
+                    : context.specialTheme.primaryColor,
               ),
             ),
             title: Text(
@@ -140,7 +140,7 @@ class _NotificationListViewState extends State<_NotificationListView> {
             ),
             trailing: notification.read
                 ? null
-                : const Icon(Icons.circle, size: 10, color: AppColors.primary),
+                : Icon(Icons.circle, size: 10, color: context.specialTheme.primaryColor),
             onTap: notification.read
                 ? null
                 : () => context.read<NotificationBloc>().add(

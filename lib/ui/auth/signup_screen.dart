@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../util/widgets/app_button.dart';
 import '../util/widgets/app_text_field.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -51,7 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
     // Chạy bộ kiểm tra tại app trước
     final error = _validateData(phone, pass);
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar((SnackBar(content: Text(error),)));
+      AppSnackBar.showError(context, message: error);
       return;
     }
 
@@ -83,9 +84,7 @@ class _SignupScreenState extends State<SignupScreen> {
           listener: (context, state) {
             if (state is AuthSignupSuccess) {
               // Đăng ký thành công -> Chuyển sang màn hình xác thực OTP
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đăng ký thành công, vui lòng xác thực OTP')),
-              );
+              AppSnackBar.showSuccess(context, message: 'Đăng ký thành công, vui lòng xác thực OTP');
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -98,13 +97,9 @@ class _SignupScreenState extends State<SignupScreen> {
               );
             } else if (state is AuthSuccess) {
               // Không điều hướng trực tiếp — main.dart sẽ tự xử lý khi nhận AuthSuccess
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Xác thực thành công!')),
-              );
+              AppSnackBar.showSuccess(context, message: 'Xác thực thành công!');
             } else if (state is AuthFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Lỗi: ${state.error}"))
-              );
+              AppSnackBar.showError(context, message: "Lỗi: ${state.error}");
             }
           },
           builder: (context, state) {

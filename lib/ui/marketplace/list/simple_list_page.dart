@@ -9,6 +9,7 @@ import '../../util/constants/app_spacing.dart';
 import '../../util/widgets/empty_state.dart';
 import '../../util/widgets/error_state.dart';
 import '../../util/widgets/loading_overlay.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ProductListPage extends StatelessWidget {
   final String title;
@@ -83,9 +84,7 @@ class _SimpleListPageState extends State<SimpleListPage> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          AppSnackBar.show(context, message: message);
         }
       },
       builder: (context, state) {
@@ -101,7 +100,7 @@ class _SimpleListPageState extends State<SimpleListPage> {
   }
 
   Widget _buildBody(BuildContext context, SimpleListState state) {
-    if (state.isInitialLoading) {
+    if (state.isInitialLoading || (state.errorMessage != null && ErrorState.isNetworkError(state.errorMessage))) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.errorMessage != null && state.items.isEmpty) {
@@ -195,13 +194,11 @@ class _SimpleListBodyState extends State<SimpleListBody> {
       listener: (context, state) {
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          AppSnackBar.show(context, message: message);
         }
       },
       builder: (context, state) {
-        if (state.isInitialLoading) {
+        if (state.isInitialLoading || (state.errorMessage != null && ErrorState.isNetworkError(state.errorMessage))) {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.errorMessage != null && state.items.isEmpty) {

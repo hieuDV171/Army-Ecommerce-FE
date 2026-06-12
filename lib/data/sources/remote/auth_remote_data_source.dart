@@ -10,6 +10,7 @@
 // =============================================================================
 
 
+import 'package:army_ecommerce/core/network/api_exception.dart';
 import 'dart:io';
 
 import 'package:army_ecommerce/core/constants/response_code.dart';
@@ -44,7 +45,7 @@ class AuthRemoteDataSource {
 
     } on DioException catch (e) {
       // Bắt lỗi liên quan đến server
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi đăng nhâp: $e');
     }
@@ -67,7 +68,7 @@ class AuthRemoteDataSource {
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? 'Lỗi kết nối mạng');
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi đăng ký: $e');
     }
@@ -88,7 +89,7 @@ class AuthRemoteDataSource {
         ),
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi đăng xuất: $e');
     }
@@ -128,7 +129,7 @@ class AuthRemoteDataSource {
     //      (json) => UserModel.fromJson(json as Map<String, dynamic>)
     //   );
     // } on DioException catch (e) {
-    //   throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+    //   throw Exception(ApiException.getMessage(e));
     // } catch (e) {
     //   throw Exception('Lỗi kiểm tra OTP đăng ký: $e');
     // }
@@ -150,7 +151,7 @@ class AuthRemoteDataSource {
   //     );
   //
   //   } on DioException catch (e) {
-  //     throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+  //     throw Exception(ApiException.getMessage(e));
   //   } catch (e) {
   //     throw Exception('Lỗi tạo OTP: $e');
   //   }
@@ -169,7 +170,7 @@ class AuthRemoteDataSource {
 
       return response.data;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     }
   }
   // [!!!] HẾT ĐOẠN TẠM THỜI [!!!]
@@ -188,7 +189,7 @@ class AuthRemoteDataSource {
               (json) => json?.toString()
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi kiểm tra OTP: $e');
     }
@@ -216,7 +217,7 @@ class AuthRemoteDataSource {
               (json) => UserModel.fromJson(json as Map<String, dynamic>)
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi lấy thông tin người dùng: $e');
     }
@@ -237,7 +238,7 @@ class AuthRemoteDataSource {
               (json) => UserModel.fromJson(json as Map<String, dynamic>)
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi đặt lại mật khẩu: $e');
     }
@@ -264,7 +265,7 @@ class AuthRemoteDataSource {
               (json) => json.toString()
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi thay đổi mật khẩu: $e');
     }
@@ -293,7 +294,7 @@ class AuthRemoteDataSource {
               (json) => json.toString()
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi thiết lập token thiết bị: $e');
     }
@@ -344,7 +345,7 @@ class AuthRemoteDataSource {
               (json) => UserModel.fromJson(json as Map<String, dynamic>)
       );
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi thay đổi thông tin: $e');
     }
@@ -463,7 +464,7 @@ class AuthRemoteDataSource {
 
       return parsedResponse;
     } on DioException catch (e) {
-      throw Exception(e.response?.data['message'] ?? "Lỗi kết nối mạng");
+      throw Exception(ApiException.getMessage(e));
     } catch (e) {
       throw Exception('Lỗi cập nhật thông tin người dùng: $e');
     }

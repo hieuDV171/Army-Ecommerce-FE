@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:army_ecommerce/core/services/cart_manager.dart';
 import 'package:army_ecommerce/models/address_model.dart';
 import 'package:army_ecommerce/models/brand_model.dart';
 import 'package:army_ecommerce/models/category_model.dart';
@@ -87,6 +88,11 @@ abstract class MarketplaceRepository {
   Future<List<WardModel>> getWards(int provinceId);
 
   Future<List<OrderModel>> getOrders({String? state, int index = 0, int count = 20});
+  Future<List<OrderModel>> getOrdersSeller({
+    String? state,
+    int index = 0,
+    int count = 20,
+  });
 
   Future<OrderModel?> getOrderDetail(String id);
 
@@ -164,15 +170,28 @@ abstract class MarketplaceRepository {
 
   Future<void> postAction(String path, Map<String, dynamic> data);
 
-  /// [STUB — BE chưa implement] Lịch sử quy đổi điểm thưởng.
-  /// Endpoint dự kiến: POST /rewards/get_reward_history
+  // Cart operations
+  Future<List<CartItem>> getCart();
+  Future<void> addCartItem(String productId, int quantity);
+  Future<void> editCartItem(String productId, int quantity);
+  Future<void> deleteCartItem(String productId);
+
+  // Rewards operations
+  Future<Map<String, dynamic>?> addRewardProof({
+    required String description,
+    String? videoUrl,
+    String? imageUrl,
+  });
+
+  Future<Map<String, dynamic>> getRewardProof(String rewardId);
+
+  /// Lịch sử quy đổi điểm thưởng.
   Future<List<RewardHistoryModel>> getRewardHistory({
-    int index = 0,
+    int index = 1,
     int count = 20,
   });
 
-  /// [STUB — BE chưa implement] Tạo yêu cầu khiếu nại điểm thưởng.
-  /// Endpoint dự kiến: POST /rewards/create_reward_appeal
+  /// Tạo yêu cầu khiếu nại điểm thưởng.
   Future<RewardAppealModel> createRewardAppeal({
     required String rewardId,
     String? reason,

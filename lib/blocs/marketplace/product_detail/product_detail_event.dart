@@ -18,11 +18,14 @@ class ProductLikeToggled extends ProductDetailEvent {}
 
 class ProductCommentSent extends ProductDetailEvent {
   final String content;
+  final String? currentUserId;
+  final String? currentUserName;
+  final String? currentUserAvatar;
 
-  ProductCommentSent(this.content);
+  ProductCommentSent(this.content, {this.currentUserId, this.currentUserName, this.currentUserAvatar});
 
   @override
-  List<Object?> get props => [content];
+  List<Object?> get props => [content, currentUserId, currentUserName, currentUserAvatar];
 }
 
 class ProductReported extends ProductDetailEvent {

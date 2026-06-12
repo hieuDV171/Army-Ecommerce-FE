@@ -78,6 +78,7 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
           code: response.code,
           message: response.message,
           data: updatedSettings,
+          isUpdate: true,
         ));
 
         // Tự động fetch lại từ server ở background để sync dữ liệu mới nhất

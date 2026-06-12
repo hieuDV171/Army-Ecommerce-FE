@@ -13,6 +13,7 @@ import '../../util/widgets/price_text.dart';
 import '../../util/widgets/section_header.dart';
 import '../../util/widgets/status_chip.dart';
 import 'widgets/order_card.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class SellerOrderDetailPage extends StatefulWidget {
   final String orderId;
@@ -53,12 +54,12 @@ class _SellerOrderDetailPageState extends State<SellerOrderDetailPage> {
     try {
       await action();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
+      AppSnackBar.showSuccess(context, message: successMessage);
       setState(_load);
       await _refresh();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      AppSnackBar.showError(context, message: error.toString());
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -66,9 +67,7 @@ class _SellerOrderDetailPageState extends State<SellerOrderDetailPage> {
 
   Future<void> _handleAccept(OrderModel order) async {
     if (order.buyerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy ID người mua')),
-      );
+      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
       return;
     }
     await _submit(
@@ -83,9 +82,7 @@ class _SellerOrderDetailPageState extends State<SellerOrderDetailPage> {
 
   Future<void> _handleReject(OrderModel order) async {
     if (order.buyerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy ID người mua')),
-      );
+      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
       return;
     }
     await _submit(
@@ -100,9 +97,7 @@ class _SellerOrderDetailPageState extends State<SellerOrderDetailPage> {
 
   Future<void> _handleMarkShipped(OrderModel order) async {
     if (order.buyerId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy ID người mua')),
-      );
+      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
       return;
     }
     await _submit(

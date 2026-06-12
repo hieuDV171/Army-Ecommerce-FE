@@ -60,6 +60,27 @@ class DioClient {
             );
           }
 
+          final data = response.data;
+          if (data is Map<String, dynamic>) {
+            final code = data['code']?.toString();
+            if (code != null && code.isNotEmpty) {
+              if (code != '1000' && code != '1010' && code != '9994') {
+                final apiException = ApiResponseParser.exceptionFromData(
+                  data,
+                  statusCode: response.statusCode,
+                );
+                return handler.reject(
+                  DioException(
+                    requestOptions: response.requestOptions,
+                    response: response,
+                    type: DioExceptionType.badResponse,
+                    error: apiException,
+                  ),
+                );
+              }
+            }
+          }
+
           return handler.next(response);
         },
         // 3. KHI CÓ LỖI — xử lý token hết hạn và bọc lỗi thành ApiException

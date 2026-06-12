@@ -42,20 +42,38 @@ class RewardHistoryModel {
   final String? rewardId;
   final int receivedCoin;
   final int availableBalance;
+  final String? description;
+  final num? aiScore;
+  final String? createdAt;
+  final String? videoUrl;
+  final String? imageUrl;
 
   const RewardHistoryModel({
     required this.userId,
     this.rewardId,
     required this.receivedCoin,
     required this.availableBalance,
+    this.description,
+    this.aiScore,
+    this.createdAt,
+    this.videoUrl,
+    this.imageUrl,
   });
 
   factory RewardHistoryModel.fromJson(Map<String, dynamic> json) {
+    final userJson = json['user'];
+    final parsedUserId = userJson is Map ? readString(Map<String, dynamic>.from(userJson), ['id']) : readString(json, ['user_id']);
+
     return RewardHistoryModel(
-      userId: readString(json, ['user_id']),
-      rewardId: readOptionalString(json, ['reward_id']),
-      receivedCoin: (json['received_coin'] ?? 0) as int,
-      availableBalance: (json['available_balance'] ?? 0) as int,
+      userId: parsedUserId,
+      rewardId: readOptionalString(json, ['id', 'reward_id']),
+      receivedCoin: readNum(json, ['reward_coin', 'received_coin']).toInt(),
+      availableBalance: readNum(json, ['available_balance']).toInt(),
+      description: readOptionalString(json, ['description']),
+      aiScore: readDouble(json, ['ai_score']),
+      createdAt: readOptionalString(json, ['created_at']),
+      videoUrl: readOptionalString(json, ['video_url']),
+      imageUrl: readOptionalString(json, ['image_url']),
     );
   }
 }
@@ -74,9 +92,12 @@ class RewardAppealModel {
   });
 
   factory RewardAppealModel.fromJson(Map<String, dynamic> json) {
+    final proofJson = json['proof'];
+    final parsedRewardId = proofJson is Map ? readOptionalString(Map<String, dynamic>.from(proofJson), ['id']) : readOptionalString(json, ['reward_id', 'proof_id']);
+
     return RewardAppealModel(
-      appealId: readOptionalString(json, ['appeal_id']),
-      rewardId: readOptionalString(json, ['reward_id']),
+      appealId: readOptionalString(json, ['id', 'appeal_id']),
+      rewardId: parsedRewardId,
       videoId: readOptionalString(json, ['video_id']),
       status: readOptionalString(json, ['status']),
     );

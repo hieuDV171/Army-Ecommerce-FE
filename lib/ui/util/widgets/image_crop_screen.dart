@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ImageCropScreen extends StatefulWidget {
   final File imageFile;
@@ -207,9 +208,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         print('Error cropping image: $e');
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể cắt ảnh: $e')),
-        );
+        AppSnackBar.showError(context, message: 'Không thể cắt ảnh: $e');
       }
     } finally {
       if (mounted) {

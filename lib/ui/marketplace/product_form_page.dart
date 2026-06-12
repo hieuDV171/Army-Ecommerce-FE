@@ -14,6 +14,7 @@ import '../util/constants/app_spacing.dart';
 import '../util/widgets/app_button.dart';
 import '../util/widgets/loading_overlay.dart';
 import '../util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ProductFormPage extends StatefulWidget {
   final ProductModel? product;
@@ -154,9 +155,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   Future<void> _pickImage() async {
     if (_existingImages.length - _deletedImages.length + _newImageFiles.length >= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Chỉ được chọn tối đa 4 hình ảnh')),
-      );
+      AppSnackBar.show(context, message: 'Chỉ được chọn tối đa 4 hình ảnh');
       return;
     }
 
@@ -251,9 +250,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
               final weight = double.tryParse(weightController.text.trim());
 
               if (size.isEmpty || color.isEmpty || stock == null || stock < 0 || weight == null || weight < 0) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin hợp lệ')),
-                );
+                AppSnackBar.show(dialogContext, message: 'Vui lòng nhập đầy đủ thông tin hợp lệ');
                 return;
               }
 
@@ -286,24 +283,18 @@ class _ProductFormPageState extends State<ProductFormPage> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedWarehouse == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn Kho hàng (Địa chỉ gửi)')),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng chọn Kho hàng (Địa chỉ gửi)');
       return;
     }
 
     if (_variants.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sản phẩm cần có ít nhất 1 phân loại hàng (kích cỡ/màu sắc...)')),
-      );
+      AppSnackBar.show(context, message: 'Sản phẩm cần có ít nhất 1 phân loại hàng (kích cỡ/màu sắc...)');
       return;
     }
 
     final remainingImagesCount = _existingImages.length - _deletedImages.length + _newImageFiles.length;
     if (remainingImagesCount == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng thêm ít nhất 1 hình ảnh sản phẩm')),
-      );
+      AppSnackBar.show(context, message: 'Vui lòng thêm ít nhất 1 hình ảnh sản phẩm');
       return;
     }
 
@@ -363,9 +354,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
         await _repository.updateProduct(widget.product!.id, payload);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cập nhật sản phẩm thành công')),
-        );
+        AppSnackBar.showSuccess(context, message: 'Cập nhật sản phẩm thành công');
       } else {
         final payload = <String, dynamic>{
           'title': title,
@@ -381,17 +370,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
         await _repository.addProduct(payload);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thêm sản phẩm thành công')),
-        );
+        AppSnackBar.showSuccess(context, message: 'Thêm sản phẩm thành công');
       }
 
       Navigator.pop(context, true); // Pop back to listing and trigger refresh
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e')),
-      );
+      AppSnackBar.showError(context, message: 'Lỗi: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

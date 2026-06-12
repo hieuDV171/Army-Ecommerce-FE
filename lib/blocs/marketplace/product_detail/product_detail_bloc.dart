@@ -1,3 +1,4 @@
+import 'package:army_ecommerce/models/product_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repositories/marketplace_repository.dart';
 import 'product_detail_event.dart';
@@ -67,9 +68,21 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
       await marketplaceRepository.sendComment(productId, event.content.trim());
+      
+      // Sau khi gửi thành công, tải lại danh sách bình luận
       final comments = await marketplaceRepository.getComments(productId);
+
+      final product = state.product;
+      ProductModel? updatedProduct = product;
+      if (product != null) {
+        final currentCount = int.tryParse(product.comment ?? '') ?? 0;
+        updatedProduct = product.copyWith(
+          comment: (currentCount + 1).toString(),
+        );
+      }
       emit(
         state.copyWith(
+          product: updatedProduct,
           comments: comments,
           isSubmitting: false,
           successMessage: 'Đã gửi bình luận',
