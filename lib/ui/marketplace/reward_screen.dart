@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:army_ecommerce/ui/util/widgets/error_state.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1111,7 +1112,7 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
 
     if (_error != null && _history.isEmpty) {
       final errStr = _error!;
-      if (errStr.contains('502')) {
+      if (ErrorState.isNetworkError(errStr)) {
         return const Center(child: CircularProgressIndicator());
       }
       return Center(

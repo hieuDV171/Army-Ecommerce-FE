@@ -29,12 +29,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     emit(
       state.copyWith(
         keyword: event.keyword,
-        categoryId: event.categoryId,
-        brandId: event.brandId,
-        priceMin: event.priceMin,
-        priceMax: event.priceMax,
+        categoryId: () => event.categoryId,
+        brandId: () => event.brandId,
+        priceMin: () => event.priceMin,
+        priceMax: () => event.priceMax,
         useListProductsApi: !hasCondition,
-        lastId: null,
+        lastId: () => null,
         products: const [],
         index: 0,
         isInitialLoading: true,
@@ -47,7 +47,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     if (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') {
       add(ProductSearchBrandsRequested(categoryId: event.categoryId));
     } else {
-      emit(state.copyWith(brands: const [], brandId: null));
+      emit(state.copyWith(brands: const [], brandId: () => null));
     }
 
     await _loadPage(emit, index: 0, replace: true);
@@ -66,12 +66,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     emit(
       state.copyWith(
         keyword: event.keyword,
-        categoryId: event.categoryId,
-        brandId: event.brandId,
-        priceMin: event.priceMin,
-        priceMax: event.priceMax,
+        categoryId: () => event.categoryId,
+        brandId: () => event.brandId,
+        priceMin: () => event.priceMin,
+        priceMax: () => event.priceMax,
         useListProductsApi: !hasCondition,
-        lastId: null,
+        lastId: () => null,
         products: const [],
         index: 0,
         isInitialLoading: true,
@@ -84,7 +84,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     if (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') {
       add(ProductSearchBrandsRequested(categoryId: event.categoryId));
     } else {
-      emit(state.copyWith(brands: const [], brandId: null));
+      emit(state.copyWith(brands: const [], brandId: () => null));
     }
 
     await _loadPage(emit, index: 0, replace: true);
@@ -94,7 +94,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchRefreshed event,
     Emitter<ProductSearchState> emit,
   ) async {
-    emit(state.copyWith(isRefreshing: true, index: 0, lastId: null, clearError: true));
+    emit(state.copyWith(isRefreshing: true, index: 0, lastId: () => null, clearError: true));
     await _loadPage(emit, index: 0, replace: true);
   }
 
@@ -162,7 +162,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
           isInitialLoading: false,
           isRefreshing: false,
           isLoadingMore: false,
-          lastId: lastId ?? state.lastId,
+          lastId: () => lastId ?? state.lastId,
           hasReachedEnd: products.length < state.count,
           index: merged.length,
           clearError: true,

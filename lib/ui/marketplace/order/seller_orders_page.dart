@@ -77,6 +77,7 @@ class _SellerOrderListState extends State<_SellerOrderList> {
   bool _hasReachedEnd = false;
   String? _error;
   bool _isActionInProgress = false;
+  bool _isManualActionExpanded = false;
 
   late final TextEditingController _manualPurchaseIdController;
   late final TextEditingController _manualBuyerIdController;
@@ -171,15 +172,22 @@ class _SellerOrderListState extends State<_SellerOrderList> {
   }
 
   Future<void> _handleAccept(OrderModel order) async {
-    if (order.buyerId == null) {
-      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-      return;
-    }
+    final repository = context.read<MarketplaceRepository>();
     setState(() => _isActionInProgress = true);
     try {
-      await context.read<MarketplaceRepository>().setAcceptBuyer(
+      String? buyerId = order.buyerId;
+      if (buyerId == null) {
+        final detail = await repository.getOrderDetail(order.id);
+        buyerId = detail?.buyerId;
+      }
+      if (buyerId == null) {
+        if (!mounted) return;
+        AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
+        return;
+      }
+      await repository.setAcceptBuyer(
             order.id,
-            order.buyerId!,
+            buyerId,
             true,
           );
       if (!mounted) return;
@@ -187,22 +195,37 @@ class _SellerOrderListState extends State<_SellerOrderList> {
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
+      final errorMsg = e.toString();
+      if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
+        AppSnackBar.showError(
+          context,
+          message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
+        );
+      } else {
+        AppSnackBar.showError(context, message: 'Lỗi: $e');
+      }
     } finally {
       if (mounted) setState(() => _isActionInProgress = false);
     }
   }
 
   Future<void> _handleReject(OrderModel order) async {
-    if (order.buyerId == null) {
-      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-      return;
-    }
+    final repository = context.read<MarketplaceRepository>();
     setState(() => _isActionInProgress = true);
     try {
-      await context.read<MarketplaceRepository>().setAcceptBuyer(
+      String? buyerId = order.buyerId;
+      if (buyerId == null) {
+        final detail = await repository.getOrderDetail(order.id);
+        buyerId = detail?.buyerId;
+      }
+      if (buyerId == null) {
+        if (!mounted) return;
+        AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
+        return;
+      }
+      await repository.setAcceptBuyer(
             order.id,
-            order.buyerId!,
+            buyerId,
             false,
           );
       if (!mounted) return;
@@ -210,29 +233,52 @@ class _SellerOrderListState extends State<_SellerOrderList> {
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
+      final errorMsg = e.toString();
+      if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
+        AppSnackBar.showError(
+          context,
+          message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
+        );
+      } else {
+        AppSnackBar.showError(context, message: 'Lỗi: $e');
+      }
     } finally {
       if (mounted) setState(() => _isActionInProgress = false);
     }
   }
 
   Future<void> _handleMarkShipped(OrderModel order) async {
-    if (order.buyerId == null) {
-      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-      return;
-    }
+    final repository = context.read<MarketplaceRepository>();
     setState(() => _isActionInProgress = true);
     try {
-      await context.read<MarketplaceRepository>().sellerMarkAsShipped(
+      String? buyerId = order.buyerId;
+      if (buyerId == null) {
+        final detail = await repository.getOrderDetail(order.id);
+        buyerId = detail?.buyerId;
+      }
+      if (buyerId == null) {
+        if (!mounted) return;
+        AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
+        return;
+      }
+      await repository.sellerMarkAsShipped(
             order.id,
-            buyerId: order.buyerId,
+            buyerId: buyerId,
           );
       if (!mounted) return;
       AppSnackBar.showSuccess(context, message: 'Đơn hàng đã được đánh dấu vận chuyển');
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
+      final errorMsg = e.toString();
+      if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
+        AppSnackBar.showError(
+          context,
+          message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
+        );
+      } else {
+        AppSnackBar.showError(context, message: 'Lỗi: $e');
+      }
     } finally {
       if (mounted) setState(() => _isActionInProgress = false);
     }
@@ -332,63 +378,80 @@ class _SellerOrderListState extends State<_SellerOrderList> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Thao tác thủ công',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _manualPurchaseIdController,
-                    label: 'Mã đơn hàng',
-                    hint: 'purchase_id',
-                    keyboardType: TextInputType.number,
+                const Text(
+                  'Thao tác thủ công',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: AppTextField(
-                    controller: _manualBuyerIdController,
-                    label: 'Mã người mua',
-                    hint: 'buyer_id',
-                    keyboardType: TextInputType.number,
-                  ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  icon: Icon(_isManualActionExpanded ? Icons.expand_less : Icons.expand_more),
+                  onPressed: () {
+                    setState(() {
+                      _isManualActionExpanded = !_isManualActionExpanded;
+                    });
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (isPending) ...[
-                  OutlinedButton(
-                    onPressed: _handleManualReject,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.danger),
+            if (_isManualActionExpanded) ...[
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: _manualPurchaseIdController,
+                      label: 'Mã đơn hàng',
+                      hint: 'purchase_id',
+                      keyboardType: TextInputType.number,
                     ),
-                    child: const Text('Từ chối'),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  ElevatedButton(
-                    onPressed: _handleManualAccept,
-                    child: const Text('Chấp nhận'),
-                  ),
-                ] else ...[
-                  ElevatedButton.icon(
-                    onPressed: _handleManualMarkShipped,
-                    icon: const Icon(Icons.local_shipping_outlined, size: 16),
-                    label: const Text('Xác nhận gửi hàng'),
+                  Expanded(
+                    child: AppTextField(
+                      controller: _manualBuyerIdController,
+                      label: 'Mã người mua',
+                      hint: 'buyer_id',
+                      keyboardType: TextInputType.number,
+                    ),
                   ),
                 ],
-              ],
-            ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (isPending) ...[
+                    OutlinedButton(
+                      onPressed: _handleManualReject,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                        side: const BorderSide(color: AppColors.danger),
+                      ),
+                      child: const Text('Từ chối'),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    ElevatedButton(
+                      onPressed: _handleManualAccept,
+                      child: const Text('Chấp nhận'),
+                    ),
+                  ] else ...[
+                    ElevatedButton.icon(
+                      onPressed: _handleManualMarkShipped,
+                      icon: const Icon(Icons.local_shipping_outlined, size: 16),
+                      label: const Text('Xác nhận gửi hàng'),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ],
         ),
       ),

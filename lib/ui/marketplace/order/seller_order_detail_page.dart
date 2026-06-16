@@ -119,10 +119,14 @@ class _SellerOrderDetailPageState extends State<SellerOrderDetailPage> {
         }
 
         if (snapshot.hasError) {
+          final errorMsg = snapshot.error.toString();
+          final isPermissionError = errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002');
           return Scaffold(
             appBar: AppBar(title: const Text('Chi tiết đơn bán')),
             body: ErrorState(
-              message: snapshot.error.toString(),
+              message: isPermissionError
+                  ? 'Do giới hạn phân quyền phía server, thông tin chi tiết đơn bán chỉ có thể được xem bởi Người mua. Người bán vui lòng sử dụng tính năng "Thao tác thủ công" ở màn hình danh sách bên ngoài.'
+                  : errorMsg,
               onRetry: _refresh,
             ),
           );

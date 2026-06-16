@@ -108,9 +108,11 @@ class MarketplaceRemoteDataSource {
     final request = <String, dynamic>{'index': index, 'count': count};
     if (keyword != null && keyword.isNotEmpty) request['keyword'] = keyword;
     if (categoryId != null && categoryId.isNotEmpty) {
-      request['category_id'] = categoryId;
+      request['category_id'] = int.tryParse(categoryId) ?? categoryId;
     }
-    if (brandId != null && brandId.isNotEmpty) request['brand_id'] = brandId;
+    if (brandId != null && brandId.isNotEmpty) {
+      request['brand_id'] = int.tryParse(brandId) ?? brandId;
+    }
     if (productSizeId != null) request['product_size_id'] = productSizeId;
     if (priceMin != null) request['price_min'] = priceMin;
     if (priceMax != null) request['price_max'] = priceMax;

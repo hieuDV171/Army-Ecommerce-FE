@@ -825,11 +825,12 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   void _showAddToCartSheet(BuildContext context, ProductModel product) {
     ProductSizeModel? selectedSize;
     int quantity = 1;
+    String? errorMessage;
 
     AppBottomSheet.show<void>(
       context: context,
       child: StatefulBuilder(
-        builder: (context, setState) {
+        builder: (sheetContext, setState) {
           final firstImg = product.images.isNotEmpty
               ? product.images.first.url
               : (product.imageUrls.isNotEmpty ? product.imageUrls.first : null);
@@ -908,6 +909,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       onSelected: (selected) {
                         setState(() {
                           selectedSize = selected ? size : null;
+                          errorMessage = null; // Clear error on select
                         });
                       },
                     );
@@ -954,6 +956,21 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               ),
               const Divider(height: 24),
 
+              // Error display
+              if (errorMessage != null) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: Text(
+                    errorMessage!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+
               // Confirm Button
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
@@ -976,11 +993,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     icon: Icons.add_shopping_cart,
                     onPressed: () {
                       if (product.sizes.isNotEmpty && selectedSize == null) {
-                        AppSnackBar.show(
-                          context,
-                          message: 'Vui lòng chọn phân loại / kích thước',
-                          duration: Duration(seconds: 2),
-                        );
+                        setState(() {
+                          errorMessage = 'Vui lòng chọn phân loại / kích thước';
+                        });
                         return;
                       }
 
@@ -1001,7 +1016,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                         sellerId: product.seller?.id,
                       );
 
-                      Navigator.pop(context);
+                      Navigator.pop(sheetContext);
                       AppSnackBar.show(
                         context,
                         message: 'Đã thêm $quantity sản phẩm vào giỏ hàng',

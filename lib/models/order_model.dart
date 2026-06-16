@@ -114,8 +114,12 @@ class OrderModel {
       buyerName: readOptionalString(buyerJson ?? json, ['name', 'username', 'buyer_name']),
       buyerPhone: readOptionalString(buyerJson ?? json, ['phonenumber', 'phone', 'phone_number']),
       buyerAddress: readOptionalString(buyerJson ?? json, ['address', 'full_address']),
-      buyerId: readOptionalString(buyerJson ?? json, ['buyer_id', 'id', 'user_id']),
-      sellerId: readOptionalString(sellerJson ?? json, ['seller_id', 'id', 'user_id']),
+      buyerId: buyerJson != null
+          ? readOptionalString(buyerJson, ['id', 'buyer_id', 'user_id', 'buyerId'])
+          : readOptionalString(json, ['buyer_id', 'buyerId', 'user_id']),
+      sellerId: sellerJson != null
+          ? readOptionalString(sellerJson, ['id', 'seller_id', 'user_id', 'sellerId'])
+          : readOptionalString(json, ['seller_id', 'sellerId', 'user_id']),
       summary: itemSummary,
       items: parsedItems,
     );

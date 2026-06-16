@@ -14,7 +14,6 @@ import '../../util/constants/app_radius.dart';
 import '../../util/constants/app_spacing.dart';
 import '../../util/widgets/app_bottom_sheet.dart';
 import '../../util/widgets/app_text_field.dart';
-import '../../util/widgets/app_snackbar.dart';
 import '../../util/widgets/app_button.dart';
 import '../../util/widgets/empty_state.dart';
 import '../../util/widgets/error_state.dart';
@@ -51,6 +50,7 @@ class _SearchViewState extends State<_SearchView> {
   final TextEditingController _keywordController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String _sortBy = 'default';
+  bool _shouldAutofocus = true;
 
   @override
   void initState() {
@@ -132,6 +132,8 @@ class _SearchViewState extends State<_SearchView> {
 
   @override
   Widget build(BuildContext context) {
+    final autofocus = _shouldAutofocus;
+    _shouldAutofocus = false;
     return BlocBuilder<ProductSearchBloc, ProductSearchState>(
       builder: (context, state) {
         return GestureDetector(
@@ -149,14 +151,10 @@ class _SearchViewState extends State<_SearchView> {
                         child: AppTextField(
                           controller: _keywordController,
                           label: 'Từ khóa',
-                          autofocus: true,
+                          autofocus: autofocus,
                           textInputAction: TextInputAction.search,
                           onSubmitted: (value) {
                             final kw = value.trim();
-                            if (kw.isEmpty) {
-                              context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
-                              return;
-                            }
                             context.read<ProductSearchBloc>().add(
                                   ProductSearchRequested(
                                     keyword: kw,
@@ -171,10 +169,6 @@ class _SearchViewState extends State<_SearchView> {
                         tooltip: 'Tìm kiếm',
                         onPressed: () {
                           final kw = _keywordController.text.trim();
-                          if (kw.isEmpty) {
-                            context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
-                            return;
-                          }
                           context.read<ProductSearchBloc>().add(
                                 ProductSearchRequested(
                                   keyword: kw,
@@ -233,6 +227,18 @@ class _SearchViewState extends State<_SearchView> {
         return const Padding(
           padding: EdgeInsets.all(AppSpacing.lg),
           child: ShimmerProductGrid(),
+        );
+      }
+      final hasCondition = state.keyword.trim().isNotEmpty ||
+          (state.categoryId != null && state.categoryId!.isNotEmpty && state.categoryId != '0') ||
+          (state.brandId != null && state.brandId!.isNotEmpty) ||
+          state.priceMin != null ||
+          state.priceMax != null;
+
+      if (!hasCondition) {
+        return const EmptyState(
+          title: 'Tìm kiếm sản phẩm',
+          message: 'Vui lòng nhập từ khóa hoặc chọn bộ lọc để tìm kiếm.',
         );
       }
       return ErrorState(
@@ -452,10 +458,6 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   }
 
   void _applyFilter() {
-    if (widget.currentKeyword.isEmpty) {
-      context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
-      return;
-    }
     final minPriceVal = double.tryParse(_minPriceController.text.trim())?.round();
     final maxPriceVal = double.tryParse(_maxPriceController.text.trim())?.round();
 
@@ -472,10 +474,6 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   }
 
   void _clearFilter() {
-    if (widget.currentKeyword.isEmpty) {
-      context.showErrorSnackBar('Hãy nhập từ khóa của bạn');
-      return;
-    }
     context.read<ProductSearchBloc>().add(
           ProductSearchRequested(
             keyword: widget.currentKeyword,

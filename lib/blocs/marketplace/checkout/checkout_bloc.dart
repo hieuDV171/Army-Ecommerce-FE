@@ -155,7 +155,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
       await marketplaceRepository.createOrder({
         'items': itemsData,
-        'source': 'mobile',
+        'order_source': 0,
+        'source': 0,
         'address_id': addressId,
       });
 

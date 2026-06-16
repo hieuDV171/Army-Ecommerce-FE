@@ -21,18 +21,27 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
-  // Hàm kiểm tra định dạng dữ liệu trước khi gửi lên server[cite: 1]
-  String? _validateData(String phone, String pass) {
-    // 1. Kiểm tra trống[cite: 1]
-    if (phone.isEmpty || pass.isEmpty) return "Các ô không được để trống";
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
-    // 2. Kiểm tra định dạng SĐT (VD: phải có số 0 ở đầu, đủ 10 số)[cite: 1]
+  // Hàm kiểm tra định dạng dữ liệu trước khi gửi lên server
+  String? _validateData(String phone, String pass, String confirmPass) {
+    // 1. Kiểm tra trống
+    if (phone.isEmpty || pass.isEmpty || confirmPass.isEmpty) return "Các ô không được để trống";
+
+    // 2. Kiểm tra định dạng SĐT (VD: phải có số 0 ở đầu, đủ 10 số)
     if (!RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
       return "Số điện thoại không đúng định dạng";
     }
 
-    // 3. Kiểm tra độ dài mật khẩu (6-10 ký tự)[cite: 1]
+    // 3. Kiểm tra độ dài mật khẩu (6-10 ký tự)
     if (pass.length < 6 || pass.length > 10) {
       return "Mật khẩu phải từ 6 đến 10 ký tự";
     }
@@ -42,15 +51,21 @@ class _SignupScreenState extends State<SignupScreen> {
       return "Mật khẩu không được trùng với số điện thoại";
     }
 
+    // 5. Kiểm tra mật khẩu khớp nhau
+    if (pass != confirmPass) {
+      return "Mật khẩu xác nhận không khớp";
+    }
+
     return null; // Dữ liệu hợp lệ
   }
 
   void _onSignupPressed() {
     final phone = _phoneController.text.trim();
     final pass = _passwordController.text.trim();
+    final confirmPass = _confirmPasswordController.text.trim();
 
     // Chạy bộ kiểm tra tại app trước
-    final error = _validateData(phone, pass);
+    final error = _validateData(phone, pass, confirmPass);
     if (error != null) {
       AppSnackBar.showError(context, message: error);
       return;
@@ -116,6 +131,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   AppTextField(
                     controller: _passwordController,
                     label: 'Mật khẩu (6-10 ký tự)',
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 20,),
+                  AppTextField(
+                    controller: _confirmPasswordController,
+                    label: 'Xác nhận mật khẩu',
                     obscureText: true,
                   ),
                   const SizedBox(height: 30,),
