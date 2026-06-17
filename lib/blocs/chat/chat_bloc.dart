@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
+import 'package:army_ecommerce/models/message_model.dart';
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,6 +16,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   int _messagesIndex = 0;
   int numNewMessage = 0;
 
+  StreamSubscription<MessageModel>? _messageSubscription;
+  String? _activePartnerId;
+
   ChatBloc({required this.marketplaceRepository}) : super(ChatInitial()) {
     on<SendMessageRequested>(_onSendMessageRequested);
     on<LoadConversationsRequested>(_onLoadConversationsRequested);
@@ -21,6 +26,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<LoadMessagesRequested>(_onLoadMessagesRequested);
     on<LoadMoreMessagesRequested>(_onLoadMoreMessagesRequested);
     on<MarkMessageReadRequested>(_onMarkMessageReadRequested);
+    on<NewMessageReceived>(_onNewMessageReceived);
+
+    // Subscribe to new messages from Socket.IO stream
+    _messageSubscription = marketplaceRepository.newMessagesStream.listen((message) {
+      if (_activePartnerId != null && message.sender.id.toString() == _activePartnerId) {
+        add(NewMessageReceived(message: message));
+      }
+    });
   }
 
   // Xử lý sự kiện gửi tin nhắn
@@ -57,8 +70,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     LoadConversationsRequested event,
     Emitter<ChatState> emit,
   ) async {
+    _activePartnerId = null;
     emit(ChatLoading());
-    _conversationsIndex = 1;
+    _conversationsIndex = 0;
 
     try {
       final response = await marketplaceRepository.getConversations(
@@ -158,8 +172,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     LoadMessagesRequested event,
     Emitter<ChatState> emit,
   ) async {
+    _activePartnerId = event.partnerId;
     emit(ChatLoading());
-    _messagesIndex = 1;
+    _messagesIndex = 0;
 
     try {
       final response = await marketplaceRepository.getConversation(
@@ -251,5 +266,35 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       logger.w('ChatBloc: markConversationRead failed: $e');
       // Lỗi đọc tin nhắn không ảnh hưởng đến trải nghiệm người dùng
     }
+  }
+
+  // Xử lý chèn tin nhắn mới nhận từ socket
+  void _onNewMessageReceived(
+    NewMessageReceived event,
+    Emitter<ChatState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is MessagesLoaded) {
+      // Tránh trùng lặp tin nhắn (phòng trường hợp API HTTP và Socket cùng về một lúc)
+      final isDuplicate = currentState.messages.any((m) =>
+          m.message == event.message.message &&
+          m.created.millisecondsSinceEpoch == event.message.created.millisecondsSinceEpoch &&
+          m.sender.id == event.message.sender.id);
+
+      if (!isDuplicate) {
+        final updatedList = [event.message, ...currentState.messages];
+        emit(MessagesLoaded(
+          messages: updatedList,
+          hasMore: currentState.hasMore,
+          canSendMessage: currentState.canSendMessage,
+        ));
+      }
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _messageSubscription?.cancel();
+    return super.close();
   }
 }

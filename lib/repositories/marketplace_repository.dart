@@ -149,6 +149,12 @@ abstract class MarketplaceRepository {
 
   Future<SimpleResponse> markConversationRead(String partnerId);
 
+  // WebSocket / Real-time Streams
+  void initSocket(String token);
+  void closeSocket();
+  Stream<MessageModel> get newMessagesStream;
+  Stream<mk.NotificationModel> get newNotificationsStream;
+
   Future<List<mk.NotificationModel>> getNotifications({
     int group = 0,
     int index = 0,

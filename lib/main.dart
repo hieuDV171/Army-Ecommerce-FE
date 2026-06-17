@@ -209,6 +209,7 @@ class _MyAppState extends State<MyApp> {
             listener: (context, state) {
               if (state is AuthSuccess) {
                 final authRepo = RepositoryProvider.of<AuthRepository>(context);
+                final marketplaceRepo = RepositoryProvider.of<MarketplaceRepository>(context);
                 try {
                   FirebaseNotificationService.registerDeviceToken(
                     authRepository: authRepo,
@@ -219,11 +220,23 @@ class _MyAppState extends State<MyApp> {
                 } catch (e) {
                   debugPrint('⚠️ Không thể đăng ký FCM token: $e');
                 }
+                // Khởi tạo kết nối Socket.IO khi đăng nhập hoặc tự động đăng nhập thành công
+                try {
+                  marketplaceRepo.initSocket(state.user.token);
+                } catch (e) {
+                  logger.e('Failed to init Socket.IO in main listener: $e');
+                }
                 CartManager().syncCart();
               }
 
               if (state is AuthLogoutSuccess || state is Unauthenticated) {
                 CartManager().clearCartLocalOnly();
+                // Đóng kết nối Socket.IO khi đăng xuất hoặc chưa xác thực
+                try {
+                  RepositoryProvider.of<MarketplaceRepository>(context).closeSocket();
+                } catch (e) {
+                  logger.e('Failed to close Socket.IO in main listener: $e');
+                }
               }
 
               if (state is AuthSuccess || state is AuthLogoutSuccess || state is Unauthenticated) {

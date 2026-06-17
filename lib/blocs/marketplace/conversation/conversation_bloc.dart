@@ -18,16 +18,16 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationsRequested event,
     Emitter<ConversationState> emit,
   ) async {
-    emit(state.copyWith(isInitialLoading: true, index: 1, clearError: true));
-    await _loadPage(emit, index: 1, replace: true);
+    emit(state.copyWith(isInitialLoading: true, index: 0, clearError: true));
+    await _loadPage(emit, index: 0, replace: true);
   }
 
   Future<void> _onRefreshed(
     ConversationsRefreshed event,
     Emitter<ConversationState> emit,
   ) async {
-    emit(state.copyWith(isRefreshing: true, index: 1, clearError: true));
-    await _loadPage(emit, index: 1, replace: true);
+    emit(state.copyWith(isRefreshing: true, index: 0, clearError: true));
+    await _loadPage(emit, index: 0, replace: true);
   }
 
   Future<void> _onLoadMoreRequested(

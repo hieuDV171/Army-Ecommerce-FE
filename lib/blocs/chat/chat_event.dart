@@ -1,8 +1,18 @@
+import 'package:army_ecommerce/models/message_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class ChatEvent extends Equatable {
   @override
   List<Object?> get props => [];
+}
+
+class NewMessageReceived extends ChatEvent {
+  final MessageModel message;
+
+  NewMessageReceived({required this.message});
+
+  @override
+  List<Object?> get props => [message];
 }
 
 // Sự kiện gửi tin nhắn tới một user

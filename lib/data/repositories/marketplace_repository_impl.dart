@@ -15,11 +15,13 @@ import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/models/wallet_model.dart';
 
 import '../../core/constants/api_paths.dart';
+import '../../core/network/chat_socket_service.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../sources/remote/marketplace_remote_data_source.dart';
 
 class MarketplaceRepositoryImpl implements MarketplaceRepository {
   final MarketplaceRemoteDataSource remoteDataSource;
+  final ChatSocketService _socketService = ChatSocketService();
 
   MarketplaceRepositoryImpl({required this.remoteDataSource});
 
@@ -564,7 +566,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
 
   @override
   Future<ConversationListResponse> getConversations({
-    int index = 1,
+    int index = 0,
     int count = 20,
   }) async {
     final response = await remoteDataSource.post(
@@ -826,6 +828,26 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       );
     }
   }
+
+  @override
+  void initSocket(String token) {
+    _socketService.connect(token);
+  }
+
+  @override
+  void closeSocket() {
+    _socketService.disconnect();
+  }
+
+  @override
+  Stream<MessageModel> get newMessagesStream => _socketService.newMessagesStream.map((data) {
+        return MessageModel.fromJson(data);
+      });
+
+  @override
+  Stream<mk.NotificationModel> get newNotificationsStream => _socketService.newNotificationsStream.map((data) {
+        return mk.NotificationModel.fromJson(data);
+      });
 
   Object _idValue(String value) {
     return int.tryParse(value) ?? value;
