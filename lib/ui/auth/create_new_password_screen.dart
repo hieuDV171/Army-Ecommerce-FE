@@ -21,21 +21,40 @@ class CreateNewPasswordScreen extends StatefulWidget {
 class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
   final TextEditingController _passController = TextEditingController();
   bool _isObscure = true;
+  String? _passwordError;
 
-  // Hàm validate mật khẩu
-  String? _validatePassword(String pass) {
-    if (pass.length < 6 || pass.length > 10) return "Mật khẩu phải từ 6-10 ký tự";
-    return null;
+  @override
+  void initState() {
+    super.initState();
+    _passController.addListener(() {
+      if (_passwordError != null) {
+        setState(() {
+          _passwordError = null;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _passController.dispose();
+    super.dispose();
   }
 
   void _onConfirm() {
     final pass = _passController.text.trim();
-    final error = _validatePassword(pass);
+    
+    setState(() {
+      if (pass.isEmpty) {
+        _passwordError = "Mật khẩu không được để trống";
+      } else if (pass.length < 6 || pass.length > 10) {
+        _passwordError = "Mật khẩu phải từ 6-10 ký tự";
+      } else {
+        _passwordError = null;
+      }
+    });
 
-    if (error != null) {
-      AppSnackBar.showError(context, message: error);
-      return;
-    }
+    if (_passwordError != null) return;
 
     context.read<AuthBloc>().add(
       ResetPasswordRequested(phoneNumber: widget.phoneNumber, newPassword: pass),
@@ -77,6 +96,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                   decoration: InputDecoration(
                     labelText: 'Mật khẩu mới',
                     border: const OutlineInputBorder(),
+                    errorText: _passwordError,
                     suffixIcon: IconButton(
                         onPressed: () => setState(() => _isObscure = !_isObscure),
                         icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility)

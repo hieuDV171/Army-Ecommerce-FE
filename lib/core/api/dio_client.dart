@@ -8,18 +8,21 @@ import '../services/session_manager.dart';
 import '../utils/logger.dart';
 
 class DioClient {
+  static DioClient? _instance;
   late final Dio _dio;
-  final String baseUrl = AppConfig.baseUrl;
+  late String _baseUrl;
 
   DioClient() {
+    _baseUrl = AppConfig.baseUrl;
     _dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: _baseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         contentType: 'application/json',
       ),
     );
+    _instance = this;
 
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -111,6 +114,15 @@ class DioClient {
         },
       ),
     );
+  }
+
+  static DioClient? get instance => _instance;
+
+  String get baseUrl => _baseUrl;
+
+  void updateBaseUrl(String newUrl) {
+    _baseUrl = AppConfig.baseUrl;
+    _dio.options.baseUrl = _baseUrl;
   }
 
   Dio get dio => _dio;

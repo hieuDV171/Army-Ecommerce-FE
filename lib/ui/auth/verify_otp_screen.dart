@@ -29,6 +29,7 @@ class VerifyOtpScreen extends StatefulWidget{
 
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   final TextEditingController _otpController = TextEditingController();
+  String? _otpError;
 
   // ---------------------------------------------------------------------
   // [!!!] ĐOẠN CODE CÀI ĐẶT TẠM THỜI CHO BE TRẢ VỀ OTP TRONG RESPONSE
@@ -45,15 +46,37 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
         AppSnackBar.show(context, message: 'Mã xác thực tạm thời: ${widget.tempOtp}');
       });
     }
+
+    _otpController.addListener(() {
+      if (_otpError != null) {
+        setState(() {
+          _otpError = null;
+        });
+      }
+    });
   }
   // [!!!] ----------------------------------------------------------[!!!]
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
 
   void _onVerifyPressed() {
     final otpCode = _otpController.text.trim();
 
-    // Mã OTP gồm 6 ký tự (số kèm chữ)
-    if (otpCode.length != 6) {
-      AppSnackBar.show(context, message: 'Mã xác thực phải gồm đúng 6 ký tự');
+    setState(() {
+      if (otpCode.isEmpty) {
+        _otpError = 'Mã xác thực không được để trống';
+      } else if (otpCode.length != 6) {
+        _otpError = 'Mã xác thực phải gồm đúng 6 ký tự';
+      } else {
+        _otpError = null;
+      }
+    });
+
+    if (_otpError != null) {
       return;
     }
 
@@ -137,10 +160,11 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
                   const SizedBox(height: 30,),
                   TextField(
                     controller: _otpController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Mã xác thực',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       counterText: "", // Ẩn dòng đếm ký tự mặc định
+                      errorText: _otpError,
                     ),
                     maxLength: 6,
                     textAlign: TextAlign.center,

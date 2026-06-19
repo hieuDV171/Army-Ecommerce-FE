@@ -44,8 +44,11 @@ class AuthRemoteDataSource {
       );
 
     } on DioException catch (e) {
-      // Bắt lỗi liên quan đến server
-      throw Exception(ApiException.getMessage(e));
+      throw ApiException.fromResponse(
+        data: e.response?.data,
+        statusCode: e.response?.statusCode,
+        fallbackMessage: e.message,
+      );
     } catch (e) {
       throw Exception('Lỗi đăng nhâp: $e');
     }

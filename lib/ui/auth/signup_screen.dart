@@ -23,6 +23,36 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
+  String? _phoneError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.addListener(() {
+      if (_phoneError != null) {
+        setState(() {
+          _phoneError = null;
+        });
+      }
+    });
+    _passwordController.addListener(() {
+      if (_passwordError != null) {
+        setState(() {
+          _passwordError = null;
+        });
+      }
+    });
+    _confirmPasswordController.addListener(() {
+      if (_confirmPasswordError != null) {
+        setState(() {
+          _confirmPasswordError = null;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -31,43 +61,43 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  // Hàm kiểm tra định dạng dữ liệu trước khi gửi lên server
-  String? _validateData(String phone, String pass, String confirmPass) {
-    // 1. Kiểm tra trống
-    if (phone.isEmpty || pass.isEmpty || confirmPass.isEmpty) return "Các ô không được để trống";
-
-    // 2. Kiểm tra định dạng SĐT (VD: phải có số 0 ở đầu, đủ 10 số)
-    if (!RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
-      return "Số điện thoại không đúng định dạng";
-    }
-
-    // 3. Kiểm tra độ dài mật khẩu (6-10 ký tự)
-    if (pass.length < 6 || pass.length > 10) {
-      return "Mật khẩu phải từ 6 đến 10 ký tự";
-    }
-
-    // 4. Mật khẩu không được trùng số điện thoại
-    if (pass == phone) {
-      return "Mật khẩu không được trùng với số điện thoại";
-    }
-
-    // 5. Kiểm tra mật khẩu khớp nhau
-    if (pass != confirmPass) {
-      return "Mật khẩu xác nhận không khớp";
-    }
-
-    return null; // Dữ liệu hợp lệ
-  }
-
   void _onSignupPressed() {
     final phone = _phoneController.text.trim();
     final pass = _passwordController.text.trim();
     final confirmPass = _confirmPasswordController.text.trim();
 
-    // Chạy bộ kiểm tra tại app trước
-    final error = _validateData(phone, pass, confirmPass);
-    if (error != null) {
-      AppSnackBar.showError(context, message: error);
+    setState(() {
+      // 1. Kiểm tra Số điện thoại
+      if (phone.isEmpty) {
+        _phoneError = "Số điện thoại không được để trống";
+      } else if (!RegExp(r'^(?:\+84|84|0)[0-9]{9}$').hasMatch(phone)) {
+        _phoneError = "Số điện thoại không đúng định dạng";
+      } else {
+        _phoneError = null;
+      }
+
+      // 2. Kiểm tra Mật khẩu
+      if (pass.isEmpty) {
+        _passwordError = "Mật khẩu không được để trống";
+      } else if (pass.length < 6 || pass.length > 10) {
+        _passwordError = "Mật khẩu phải từ 6 đến 10 ký tự";
+      } else if (pass == phone) {
+        _passwordError = "Mật khẩu không được trùng với số điện thoại";
+      } else {
+        _passwordError = null;
+      }
+
+      // 3. Kiểm tra Xác nhận mật khẩu
+      if (confirmPass.isEmpty) {
+        _confirmPasswordError = "Xác nhận mật khẩu không được để trống";
+      } else if (pass != confirmPass) {
+        _confirmPasswordError = "Mật khẩu xác nhận không khớp";
+      } else {
+        _confirmPasswordError = null;
+      }
+    });
+
+    if (_phoneError != null || _passwordError != null || _confirmPasswordError != null) {
       return;
     }
 
@@ -126,18 +156,21 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _phoneController,
                     label: "Số điện thoại",
                     keyboardType: TextInputType.phone,
+                    errorText: _phoneError,
                   ),
                   const SizedBox(height: 20,),
                   AppTextField(
                     controller: _passwordController,
                     label: 'Mật khẩu (6-10 ký tự)',
                     obscureText: true,
+                    errorText: _passwordError,
                   ),
                   const SizedBox(height: 20,),
                   AppTextField(
                     controller: _confirmPasswordController,
                     label: 'Xác nhận mật khẩu',
                     obscureText: true,
+                    errorText: _confirmPasswordError,
                   ),
                   const SizedBox(height: 30,),
                   AppButton(

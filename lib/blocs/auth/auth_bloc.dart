@@ -1,6 +1,7 @@
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
+import 'package:army_ecommerce/core/network/api_exception.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
@@ -45,6 +46,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           final errorMessage = response.message.isNotEmpty ? response.message : responseCode.message;
           emit(AuthFailure(error: errorMessage, code: response.code));
         }
+      } on ApiException catch (e) {
+        emit(AuthFailure(error: e.message, code: e.code));
       } catch (e) {
         // 6. Nếu có lỗi kết nối hoặc lỗi khác, chuyển sang trạng thái AuthFailure với thông báo lỗi chung
         emit(AuthFailure(error: e.toString(), code: ResponseCode.exception.code));

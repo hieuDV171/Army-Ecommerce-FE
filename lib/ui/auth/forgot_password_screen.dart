@@ -17,14 +17,40 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final TextEditingController _phoneController = TextEditingController();
+  String? _phoneError;
+
+  @override
+  void initState() {
+    super.initState();
+    _phoneController.addListener(() {
+      if (_phoneError != null) {
+        setState(() {
+          _phoneError = null;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   void _onSubmit() {
     final phone = _phoneController.text.trim();
-    // Validate cơ bản tại client: bắt đầu bằng số 0 và đủ 10 số
-    if (!RegExp(r'^0[0-9]{9}$').hasMatch(phone)) {
-      AppSnackBar.showError(context, message: 'Số điện thoại không hợp lệ');
-      return;
-    }
+    
+    setState(() {
+      if (phone.isEmpty) {
+        _phoneError = 'Số điện thoại không được để trống';
+      } else if (!RegExp(r'^(?:\+84|84|0)[0-9]{9}$').hasMatch(phone)) {
+        _phoneError = 'Số điện thoại không hợp lệ';
+      } else {
+        _phoneError = null;
+      }
+    });
+
+    if (_phoneError != null) return;
 
     // Gửi sự kiện vào BLoC
     context.read<AuthBloc>().add(ForgotPasswordRequested(phoneNumber: phone));
@@ -78,10 +104,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 TextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Số điện thoại',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.phone),
+                    errorText: _phoneError,
                   ),
                 ),
                 const SizedBox(height: 30,),

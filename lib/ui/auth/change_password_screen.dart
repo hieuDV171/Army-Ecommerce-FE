@@ -21,9 +21,51 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   bool _isStep2 = false; // Chuyển đổi giữa 2 giao diện
 
+  String? _oldPassError;
+  String? _newPassError;
+  String? _confirmPassError;
+
+  @override
+  void initState() {
+    super.initState();
+    _oldPassController.addListener(() {
+      if (_oldPassError != null) {
+        setState(() {
+          _oldPassError = null;
+        });
+      }
+    });
+    _newPassController.addListener(() {
+      if (_newPassError != null) {
+        setState(() {
+          _newPassError = null;
+        });
+      }
+    });
+    _confirmPassController.addListener(() {
+      if (_confirmPassError != null) {
+        setState(() {
+          _confirmPassError = null;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _oldPassController.dispose();
+    _newPassController.dispose();
+    _confirmPassController.dispose();
+    super.dispose();
+  }
+
   void _onVerifyOldPass() {
     final oldP = _oldPassController.text.trim();
-    if (oldP.isEmpty) return;
+    setState(() {
+      _oldPassError = oldP.isEmpty ? 'Mật khẩu hiện tại không được để trống' : null;
+    });
+
+    if (_oldPassError != null) return;
 
     // Bắn event xác minh mật khẩu cũ qua API Login
     context.read<AuthBloc>().add(VerifyOldPasswordRequested(oldPassword: oldP));
@@ -34,13 +76,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final newP = _newPassController.text.trim();
     final confP = _confirmPassController.text.trim();
 
-    if (newP == oldP) {
-      AppSnackBar.showError(context, message: 'Trùng mật khẩu cũ');
-      return;
-    }
+    setState(() {
+      if (newP.isEmpty) {
+        _newPassError = 'Mật khẩu mới không được để trống';
+      } else if (newP.length < 6 || newP.length > 10) {
+        _newPassError = 'Mật khẩu phải từ 6 đến 10 ký tự';
+      } else if (newP == oldP) {
+        _newPassError = 'Mật khẩu mới không được trùng với mật khẩu cũ';
+      } else {
+        _newPassError = null;
+      }
 
-    if (newP != confP) {
-      AppSnackBar.show(context, message: 'Xác nhận mật khẩu không khớp');
+      if (confP.isEmpty) {
+        _confirmPassError = 'Xác nhận mật khẩu mới không được để trống';
+      } else if (newP != confP) {
+        _confirmPassError = 'Mật khẩu xác nhận không khớp';
+      } else {
+        _confirmPassError = null;
+      }
+    });
+
+    if (_newPassError != null || _confirmPassError != null) {
       return;
     }
 
@@ -85,9 +141,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         TextField(
           controller: _oldPassController,
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Mật khẩu hiện tại',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
+            errorText: _oldPassError,
           ),
         ),
         const SizedBox(height: 30),
@@ -109,18 +166,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         TextField(
           controller: _newPassController,
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Mật khẩu mới',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
+            errorText: _newPassError,
           ),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _confirmPassController,
           obscureText: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Xác nhận mật khẩu mới',
-            border: OutlineInputBorder(),
+            border: const OutlineInputBorder(),
+            errorText: _confirmPassError,
           ),
         ),
         const SizedBox(height: 30),

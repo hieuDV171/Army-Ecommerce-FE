@@ -2,6 +2,7 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
+import 'package:army_ecommerce/core/config/app_config.dart';
 import 'package:army_ecommerce/data/repositories/block_repository_impl.dart';
 import 'package:army_ecommerce/data/repositories/follow_repository_impl.dart';
 import 'package:army_ecommerce/data/repositories/notification_repository_impl.dart';
@@ -64,6 +65,9 @@ Future<void> main() async {
 
   // Load file .env
   await dotenv.load(fileName: ".env");
+
+  // Khởi tạo AppConfig
+  await AppConfig.initialize();
 
   // Khởi tạo DioClient dùng chung cho toàn bộ app
   final dioClient = DioClient();
