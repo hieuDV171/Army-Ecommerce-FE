@@ -1503,7 +1503,7 @@ class _RatingsSectionState extends State<_RatingsSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const SectionHeader(title: 'Đánh giá'),
+            const Expanded(child: SectionHeader(title: 'Đánh giá')),
             PopupMenuButton<int>(
               initialValue: _selectedStarFilter,
               onSelected: (star) {
