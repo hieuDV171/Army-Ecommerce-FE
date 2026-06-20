@@ -6,6 +6,7 @@ import 'product_card.dart';
 class ProductGrid extends StatelessWidget {
   final List<ProductCardData> products;
   final ValueChanged<ProductCardData>? onProductTap;
+  final ValueChanged<ProductCardData>? onLikeTap;
   final ScrollPhysics? physics;
   final bool shrinkWrap;
 
@@ -13,6 +14,7 @@ class ProductGrid extends StatelessWidget {
     super.key,
     required this.products,
     this.onProductTap,
+    this.onLikeTap,
     this.physics,
     this.shrinkWrap = false,
   });
@@ -27,13 +29,14 @@ class ProductGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: AppSpacing.md,
         crossAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.60,
+        childAspectRatio: 0.51,
       ),
       itemBuilder: (context, index) {
         final product = products[index];
         return ProductCard(
           product: product,
           onTap: () => onProductTap?.call(product),
+          onLikeTap: onLikeTap != null ? () => onLikeTap!.call(product) : null,
         );
       },
     );

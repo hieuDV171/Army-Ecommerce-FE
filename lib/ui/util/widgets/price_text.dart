@@ -40,3 +40,96 @@ class PriceText extends StatelessWidget {
     return textWidget;
   }
 }
+
+class DiscountPriceRow extends StatelessWidget {
+  final num originalPrice;
+  final String? priceNew;
+  final String? bestOffers;
+  final double fontSize;
+  final Color? priceColor;
+  final bool isVertical;
+
+  const DiscountPriceRow({
+    super.key,
+    required this.originalPrice,
+    this.priceNew,
+    this.bestOffers,
+    this.fontSize = 14,
+    this.priceColor,
+    this.isVertical = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final priceNewNumber = num.tryParse(priceNew ?? '');
+    final hasPriceNew = priceNewNumber != null && priceNewNumber > 0;
+    
+    num discountedPrice = originalPrice;
+    if (hasPriceNew && priceNewNumber < originalPrice) {
+      discountedPrice = priceNewNumber;
+    } else if (bestOffers != null && bestOffers!.isNotEmpty && bestOffers != '[]') {
+      final clean = bestOffers!
+          .replaceAll('[', '')
+          .replaceAll(']', '')
+          .replaceAll('"', '')
+          .replaceAll("'", '')
+          .trim();
+      final numVal = num.tryParse(clean);
+      if (numVal != null) {
+        if (numVal <= 100) {
+          discountedPrice = originalPrice * (1 - numVal / 100);
+        } else {
+          discountedPrice = (originalPrice - numVal).clamp(0, originalPrice);
+        }
+      }
+    }
+
+    final formattedOriginal = NumberFormat.decimalPattern('vi_VN').format(originalPrice);
+
+    if (isVertical) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          PriceText(
+            price: discountedPrice,
+            color: priceColor,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$formattedOriginal xu',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              decoration: TextDecoration.lineThrough,
+              color: Colors.grey[500],
+              fontSize: fontSize - 2,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        PriceText(
+          price: discountedPrice,
+          color: priceColor,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$formattedOriginal xu',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            decoration: TextDecoration.lineThrough,
+            color: Colors.grey[500],
+            fontSize: fontSize - 2,
+          ),
+        ),
+      ],
+    );
+  }
+}

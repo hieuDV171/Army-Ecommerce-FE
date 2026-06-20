@@ -141,7 +141,7 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
                         backgroundImage: _selectedImage != null
                             ? FileImage(_selectedImage!)
                             : (_currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty
-                                ? NetworkImage(_currentAvatarUrl!)
+                                ? SessionManager.getImageProvider(_currentAvatarUrl!)
                                 : null),
                         child: (_selectedImage == null && (_currentAvatarUrl == null || _currentAvatarUrl!.isEmpty))
                             ? const Icon(Icons.person, size: 60, color: Colors.grey)

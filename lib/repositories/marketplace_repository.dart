@@ -63,6 +63,8 @@ abstract class MarketplaceRepository {
 
   Future<void> saveSearch(String keyword);
 
+  Future<void> delSavedSearch({String? searchId, String? keyword});
+
   Future<List<MarketplaceItem>> getNews({int index = 0, int count = 20});
 
   Future<MarketplaceItem?> getNewsDetail(String id);

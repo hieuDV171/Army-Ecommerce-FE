@@ -33,7 +33,8 @@ class SearchPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => ProductSearchBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(ProductSearchRequested(categoryId: categoryId)),
+      )..add(ProductSearchRequested(categoryId: categoryId))
+       ..add(ProductSearchSavedSearchesRequested()),
       child: const _SearchView(),
     );
   }
@@ -56,6 +57,13 @@ class _SearchViewState extends State<_SearchView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _keywordController.addListener(_onKeywordChanged);
+  }
+
+  void _onKeywordChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Widget _buildSortRow() {
@@ -101,6 +109,7 @@ class _SearchViewState extends State<_SearchView> {
 
   @override
   void dispose() {
+    _keywordController.removeListener(_onKeywordChanged);
     _keywordController.dispose();
     _scrollController
       ..removeListener(_onScroll)
@@ -216,6 +225,74 @@ class _SearchViewState extends State<_SearchView> {
   }
 
   Widget _buildResult(BuildContext context, ProductSearchState state) {
+    final showHistory = _keywordController.text.trim().isEmpty &&
+        (state.categoryId == null || state.categoryId!.isEmpty || state.categoryId == '0') &&
+        (state.brandId == null || state.brandId!.isEmpty) &&
+        state.priceMin == null &&
+        state.priceMax == null;
+
+    if (showHistory) {
+      if (state.isSavedSearchesLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (state.savedSearches.isEmpty) {
+        return const EmptyState(
+          title: 'Tìm kiếm sản phẩm',
+          message: 'Vui lòng nhập từ khóa hoặc chọn bộ lọc để tìm kiếm.',
+        );
+      }
+      return ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.history, color: AppColors.textSecondary, size: 18),
+              SizedBox(width: AppSpacing.xs),
+              Text(
+                'Tìm kiếm gần đây',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: state.savedSearches.map((item) {
+              return InputChip(
+                label: Text(item.title),
+                onPressed: () {
+                  _keywordController.text = item.title;
+                  context.read<ProductSearchBloc>().add(
+                        ProductSearchRequested(
+                          keyword: item.title,
+                          categoryId: state.categoryId,
+                        ),
+                      );
+                },
+                onDeleted: () {
+                  context.read<ProductSearchBloc>().add(
+                        ProductSearchDelSavedSearchRequested(
+                          searchId: item.id,
+                        ),
+                      );
+                },
+                deleteIconColor: Colors.red,
+                backgroundColor: AppColors.border.withValues(alpha: 0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+    }
+
     if (state.isInitialLoading) {
       return const Padding(
         padding: EdgeInsets.all(AppSpacing.lg),
@@ -308,7 +385,7 @@ class _SearchViewState extends State<_SearchView> {
           crossAxisCount: 2,
           mainAxisSpacing: AppSpacing.md,
           crossAxisSpacing: AppSpacing.md,
-          childAspectRatio: 0.60,
+          childAspectRatio: 0.51,
         ),
         itemBuilder: (context, index) {
           if (index >= sortedProducts.length) {
@@ -319,8 +396,11 @@ class _SearchViewState extends State<_SearchView> {
             product: productCardDataFromModel(product),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ProductDetailPage(productId: product.id)),
+              MaterialPageRoute(builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock)),
             ),
+            onLikeTap: () {
+              context.read<ProductSearchBloc>().add(ProductSearchProductLikeToggled(product.id));
+            },
           );
         },
       ),

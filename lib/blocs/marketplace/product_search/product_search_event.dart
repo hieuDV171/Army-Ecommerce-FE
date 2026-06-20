@@ -55,3 +55,24 @@ class ProductSearchBrandsRequested extends ProductSearchEvent {
   @override
   List<Object?> get props => [categoryId];
 }
+
+class ProductSearchProductLikeToggled extends ProductSearchEvent {
+  final String productId;
+
+  ProductSearchProductLikeToggled(this.productId);
+
+  @override
+  List<Object?> get props => [productId];
+}
+
+class ProductSearchSavedSearchesRequested extends ProductSearchEvent {}
+
+class ProductSearchDelSavedSearchRequested extends ProductSearchEvent {
+  final String? searchId;
+  final String? keyword;
+
+  ProductSearchDelSavedSearchRequested({this.searchId, this.keyword});
+
+  @override
+  List<Object?> get props => [searchId, keyword];
+}

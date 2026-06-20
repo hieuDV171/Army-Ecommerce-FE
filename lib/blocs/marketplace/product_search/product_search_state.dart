@@ -1,5 +1,6 @@
 import 'package:army_ecommerce/models/brand_model.dart';
 import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/models/model_helpers.dart';
 import 'package:equatable/equatable.dart';
 
 class ProductSearchState extends Equatable {
@@ -20,6 +21,8 @@ class ProductSearchState extends Equatable {
   final int index;
   final int count;
   final int? lastId;
+  final List<MarketplaceItem> savedSearches;
+  final bool isSavedSearchesLoading;
 
   const ProductSearchState({
     this.products = const [],
@@ -39,6 +42,8 @@ class ProductSearchState extends Equatable {
     this.index = 0,
     this.count = 20,
     this.lastId,
+    this.savedSearches = const [],
+    this.isSavedSearchesLoading = false,
   });
 
   ProductSearchState copyWith({
@@ -59,6 +64,8 @@ class ProductSearchState extends Equatable {
     int? index,
     int? count,
     int? Function()? lastId,
+    List<MarketplaceItem>? savedSearches,
+    bool? isSavedSearchesLoading,
     bool clearError = false,
   }) {
     return ProductSearchState(
@@ -79,6 +86,8 @@ class ProductSearchState extends Equatable {
       index: index ?? this.index,
       count: count ?? this.count,
       lastId: lastId != null ? lastId() : this.lastId,
+      savedSearches: savedSearches ?? this.savedSearches,
+      isSavedSearchesLoading: isSavedSearchesLoading ?? this.isSavedSearchesLoading,
     );
   }
 
@@ -101,5 +110,7 @@ class ProductSearchState extends Equatable {
     index,
     count,
     lastId,
+    savedSearches,
+    isSavedSearchesLoading,
   ];
 }

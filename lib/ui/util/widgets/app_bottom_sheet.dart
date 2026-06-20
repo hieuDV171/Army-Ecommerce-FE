@@ -50,7 +50,11 @@ class AppBottomSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
-              child,
+              Flexible(
+                child: SingleChildScrollView(
+                  child: child,
+                ),
+              ),
             ],
           ),
         ),

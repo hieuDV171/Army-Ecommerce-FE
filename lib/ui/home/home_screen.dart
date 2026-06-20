@@ -508,7 +508,7 @@ class _HomeDrawer extends StatelessWidget {
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               backgroundImage: !isGuest && avatarUrl != null && avatarUrl!.isNotEmpty
-                  ? NetworkImage(avatarUrl!)
+                  ? SessionManager.getImageProvider(avatarUrl!)
                   : null,
               child: isGuest || avatarUrl == null || avatarUrl!.isEmpty
                   ? Icon(Icons.person, size: 42, color: context.specialTheme.primaryDarkColor)
@@ -1043,8 +1043,8 @@ class _ProfileTabBody extends StatelessWidget {
               InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
+                child: Image(
+                  image: SessionManager.getImageProvider(imageUrl),
                   fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
@@ -1099,7 +1099,7 @@ class _ProfileTabBody extends StatelessWidget {
                   : null,
               image: (!isGuest && coverImageUrl != null && coverImageUrl!.isNotEmpty)
                   ? DecorationImage(
-                      image: NetworkImage(coverImageUrl!),
+                      image: SessionManager.getImageProvider(coverImageUrl!),
                       fit: BoxFit.cover,
                       colorFilter: ColorFilter.mode(
                         Colors.black.withValues(alpha: 0.3),
@@ -1124,7 +1124,7 @@ class _ProfileTabBody extends StatelessWidget {
                       radius: 44,
                       backgroundColor: Colors.white,
                       backgroundImage: (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
-                          ? NetworkImage(avatarUrl!)
+                          ? SessionManager.getImageProvider(avatarUrl!)
                           : null,
                       child: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
                           ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)

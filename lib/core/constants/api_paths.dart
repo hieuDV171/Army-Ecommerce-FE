@@ -26,7 +26,8 @@ class ApiPaths {
   static const productDetail = '/api/get_products';
   static const search = '/api/search';
   static const saveSearch = '/api/save_search';
-  static const savedSearches = '/api/get_saved_searches';
+  static const getListSavedSearch = '/api/get_list_saved_search';
+  static const delSavedSearch = '/api/del_saved_search';
   static const likeProduct = '/api/like_product';
   static const getCommentsProduct = '/api/get_comments_product';
   static const setCommentsProduct = '/api/set_comments_product';

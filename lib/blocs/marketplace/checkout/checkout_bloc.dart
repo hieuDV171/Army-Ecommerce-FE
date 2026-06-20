@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repositories/marketplace_repository.dart';
+import '../../../core/network/api_exception.dart';
 import 'checkout_event.dart';
 import 'checkout_state.dart';
 
@@ -155,8 +156,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
       await marketplaceRepository.createOrder({
         'items': itemsData,
-        'order_source': 0,
-        'source': 0,
+        'order_source': event.orderSource,
+        'source': event.orderSource,
         'address_id': addressId,
       });
 
@@ -167,7 +168,14 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+      final errorStr = error.toString();
+      final isProductNotExisted = (error is ApiException && error.code == '9992') ||
+                                  errorStr.contains('Product is not existed');
+      if (isProductNotExisted) {
+        emit(state.copyWith(isSubmitting: false, isProductNotExisted: true));
+      } else {
+        emit(state.copyWith(isSubmitting: false, errorMessage: errorStr));
+      }
     }
   }
 }

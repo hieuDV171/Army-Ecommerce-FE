@@ -150,7 +150,9 @@ class ProductModel {
   final int? soldCount;
   final String? bestOffers;
   final int likeCount;
+  final int commentCount;
   final bool isLiked;
+  final bool isStock;
   final String? state;
   final String? isBlocked;
   final String? canEdit;
@@ -186,7 +188,9 @@ class ProductModel {
     this.soldCount,
     this.bestOffers,
     this.likeCount = 0,
+    this.commentCount = 0,
     this.isLiked = false,
+    this.isStock = true,
     this.state,
     this.isBlocked,
     this.canEdit,
@@ -199,7 +203,9 @@ class ProductModel {
 
   ProductModel copyWith({
     int? likeCount,
+    int? commentCount,
     bool? isLiked,
+    bool? isStock,
     String? comment,
   }) {
     return ProductModel(
@@ -228,7 +234,9 @@ class ProductModel {
       soldCount: soldCount,
       bestOffers: bestOffers,
       likeCount: likeCount ?? this.likeCount,
+      commentCount: commentCount ?? this.commentCount,
       isLiked: isLiked ?? this.isLiked,
+      isStock: isStock ?? this.isStock,
       state: state,
       isBlocked: isBlocked,
       canEdit: canEdit,
@@ -321,7 +329,9 @@ class ProductModel {
       soldCount: readInt(sellerJson ?? json, ['listing', 'sold', 'sold_count', 'total_sold']),
       bestOffers: readOptionalString(json, ['best_offers']),
       likeCount: readInt(json, ['like_count', 'likes', 'like']) ?? int.tryParse(likeText ?? '') ?? 0,
+      commentCount: readInt(json, ['comment_count', 'comments', 'comment']) ?? int.tryParse(readOptionalString(json, ['comment', 'comment_count']) ?? '') ?? 0,
       isLiked: readBool(json, ['is_liked', 'liked']) ?? false,
+      isStock: readBool(json, ['is_stock', 'isStock']) ?? true,
       state: readOptionalString(json, ['state']),
       isBlocked: readOptionalString(json, ['is_blocked']),
       canEdit: readOptionalString(json, ['can_edit']),
@@ -426,31 +436,37 @@ class CommentModel {
 class RateModel {
   final String id;
   final String author;
+  final String? authorId;
   final String content;
   final int level;
   final String? createdAt;
   final String? productId;
   final String? avatar;
+  final String? purchaseId;
 
   const RateModel({
     required this.id,
     required this.author,
+    this.authorId,
     required this.content,
     required this.level,
     this.createdAt,
     this.productId,
     this.avatar,
+    this.purchaseId,
   });
 
   factory RateModel.fromJson(Map<String, dynamic> json) {
     return RateModel(
       id: readString(json, ['id', 'rate_id']),
       author: readString(json, ['username', 'author', 'user_name'], fallback: 'Người dùng'),
+      authorId: readOptionalString(json, ['reviewer_id', 'author_id', 'user_id', 'userId']),
       content: readString(json, ['content', 'message', 'review'], fallback: ''),
       level: readInt(json, ['level', 'rate', 'rating']) ?? 0,
-      createdAt: readOptionalString(json, ['created_at', 'createdAt', 'time']),
+      createdAt: readOptionalString(json, ['created_at', 'createdAt', 'time', 'created']),
       productId: readOptionalString(json, ['product_id', 'productId']),
       avatar: readOptionalString(json, ['avatar']),
+      purchaseId: readOptionalString(json, ['purchase_id', 'purchaseId']),
     );
   }
 }

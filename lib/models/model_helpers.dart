@@ -16,7 +16,7 @@ class MarketplaceItem extends Equatable {
   factory MarketplaceItem.fromJson(Map<String, dynamic> json) {
     return MarketplaceItem(
       id: readString(json, ['id', 'notification_id', 'purchase_id', 'conversation_id']),
-      title: readString(json, ['title', 'name', 'username', 'status'], fallback: 'Mục dữ liệu'),
+      title: readString(json, ['title', 'name', 'username', 'status', 'keyword'], fallback: 'Mục dữ liệu'),
       subtitle: readString(
         json,
         ['message', 'content', 'description', 'address', 'last_message'],

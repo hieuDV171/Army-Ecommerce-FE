@@ -23,11 +23,26 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     _productId = event.productId;
     emit(state.copyWith(isLoading: true, clearMessages: true));
     try {
-      final product = await marketplaceRepository.getProductDetail(event.productId);
-      final comments = await marketplaceRepository.getComments(event.productId);
+      final productFuture = marketplaceRepository.getProductDetail(event.productId);
+      final commentsFuture = marketplaceRepository.getComments(event.productId);
+
+      final product = await productFuture;
+      final comments = await commentsFuture;
+
+      ProductModel? updatedProduct = product;
+      if (product != null) {
+        bool resolvedIsStock;
+        if (event.isStock != null) {
+          resolvedIsStock = event.isStock!;
+        } else {
+          resolvedIsStock = product.sizes.isEmpty || product.sizes.any((v) => (v.stock ?? 0) > 0);
+        }
+        updatedProduct = product.copyWith(isStock: resolvedIsStock);
+      }
+
       emit(
         state.copyWith(
-          product: product,
+          product: updatedProduct,
           comments: comments,
           isLoading: false,
           clearMessages: true,

@@ -14,6 +14,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     on<ProductSearchRefreshed>(_onRefreshed);
     on<ProductSearchLoadMoreRequested>(_onLoadMoreRequested);
     on<ProductSearchBrandsRequested>(_onBrandsRequested);
+    on<ProductSearchProductLikeToggled>(_onProductLikeToggled);
+    on<ProductSearchSavedSearchesRequested>(_onSavedSearchesRequested);
+    on<ProductSearchDelSavedSearchRequested>(_onDelSavedSearchRequested);
   }
 
   Future<void> _onRequested(
@@ -25,6 +28,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         (event.brandId != null && event.brandId!.isNotEmpty) ||
         event.priceMin != null ||
         event.priceMax != null;
+
+    if (event.keyword.trim().isNotEmpty) {
+      try {
+        await marketplaceRepository.saveSearch(event.keyword.trim());
+      } catch (_) {}
+    }
 
     emit(
       state.copyWith(
@@ -57,6 +66,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchFiltered event,
     Emitter<ProductSearchState> emit,
   ) async {
+    if (event.keyword.trim().isNotEmpty) {
+      try {
+        await marketplaceRepository.saveSearch(event.keyword.trim());
+      } catch (_) {}
+    }
+
     final hasCondition = event.keyword.trim().isNotEmpty ||
         (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') ||
         (event.brandId != null && event.brandId!.isNotEmpty) ||
@@ -186,5 +201,63 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
       map[product.id] = product;
     }
     return map.values.toList();
+  }
+
+  Future<void> _onProductLikeToggled(
+    ProductSearchProductLikeToggled event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    final originalProducts = List<ProductModel>.from(state.products);
+    final updatedProducts = state.products.map((product) {
+      if (product.id == event.productId) {
+        final newIsLiked = !product.isLiked;
+        final newLikeCount = newIsLiked
+            ? product.likeCount + 1
+            : (product.likeCount - 1).clamp(0, 999999).toInt();
+        return product.copyWith(isLiked: newIsLiked, likeCount: newLikeCount);
+      }
+      return product;
+    }).toList();
+
+    emit(state.copyWith(products: updatedProducts));
+
+    try {
+      await marketplaceRepository.likeProduct(event.productId);
+    } catch (error) {
+      emit(state.copyWith(products: originalProducts, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onSavedSearchesRequested(
+    ProductSearchSavedSearchesRequested event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    emit(state.copyWith(isSavedSearchesLoading: true));
+    try {
+      final saved = await marketplaceRepository.getSavedSearches();
+      emit(state.copyWith(savedSearches: saved, isSavedSearchesLoading: false));
+    } catch (error) {
+      emit(state.copyWith(isSavedSearchesLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onDelSavedSearchRequested(
+    ProductSearchDelSavedSearchRequested event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    try {
+      await marketplaceRepository.delSavedSearch(
+        searchId: event.searchId,
+        keyword: event.keyword,
+      );
+      final updatedList = state.savedSearches.where((item) {
+        if (event.searchId != null && item.id == event.searchId) return false;
+        if (event.keyword != null && item.title == event.keyword) return false;
+        return true;
+      }).toList();
+      emit(state.copyWith(savedSearches: updatedList));
+    } catch (error) {
+      emit(state.copyWith(errorMessage: error.toString()));
+    }
   }
 }

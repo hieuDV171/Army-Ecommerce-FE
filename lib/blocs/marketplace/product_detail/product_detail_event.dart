@@ -7,11 +7,12 @@ abstract class ProductDetailEvent extends Equatable {
 
 class ProductDetailRequested extends ProductDetailEvent {
   final String productId;
+  final bool? isStock;
 
-  ProductDetailRequested(this.productId);
+  ProductDetailRequested(this.productId, {this.isStock});
 
   @override
-  List<Object?> get props => [productId];
+  List<Object?> get props => [productId, isStock];
 }
 
 class ProductLikeToggled extends ProductDetailEvent {}

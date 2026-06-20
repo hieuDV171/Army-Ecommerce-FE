@@ -2,8 +2,11 @@ import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/models/message_model.dart';
+import 'package:army_ecommerce/ui/marketplace/product/seller_listings_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../util/constants/app_colors.dart';
 import '../util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
@@ -237,33 +240,48 @@ class _ChatScreenState extends State<ChatScreen> {
         onPressed: () => Navigator.pop(context),
       ),
       titleSpacing: 0,
-      title: Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.grey[200],
-            backgroundImage: (widget.partnerAvatar != null &&
-                    widget.partnerAvatar!.isNotEmpty)
-                ? NetworkImage(widget.partnerAvatar!)
-                : null,
-            child: (widget.partnerAvatar == null || widget.partnerAvatar!.isEmpty)
-                ? Icon(Icons.person, size: 20, color: Colors.grey[500])
-                : null,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              widget.partnerUsername,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+      title: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SellerInfoPage(
+                userId: widget.partnerId,
+                sellerName: widget.partnerUsername,
+                avatarUrl: widget.partnerAvatar,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          );
+        },
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: (widget.partnerAvatar != null &&
+                      widget.partnerAvatar!.isNotEmpty)
+                  ? NetworkImage(widget.partnerAvatar!)
+                  : null,
+              child: (widget.partnerAvatar == null || widget.partnerAvatar!.isEmpty)
+                  ? Icon(Icons.person, size: 20, color: Colors.grey[500])
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                widget.partnerUsername,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -506,14 +524,7 @@ class _MessageBubble extends StatelessWidget {
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message.message,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isMine ? Colors.white : Colors.black87,
-                      height: 1.4,
-                    ),
-                  ),
+                  _buildMessageText(message.message, isMine, context),
                   const SizedBox(height: 3),
                   Text(
                     _formatTime(message.created),
@@ -540,6 +551,76 @@ class _MessageBubble extends StatelessWidget {
     final h = time.hour.toString().padLeft(2, '0');
     final m = time.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+
+  Widget _buildMessageText(String text, bool isMine, BuildContext context) {
+    final List<InlineSpan> spans = [];
+    final regExp = RegExp(r'(https?:\/\/[^\s]+)', caseSensitive: false);
+    final matches = regExp.allMatches(text);
+
+    int lastMatchEnd = 0;
+    for (final match in matches) {
+      if (match.start > lastMatchEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastMatchEnd, match.start),
+          style: TextStyle(
+            fontSize: 14,
+            color: isMine ? Colors.white : Colors.black87,
+            height: 1.4,
+          ),
+        ));
+      }
+
+      final url = match.group(0)!;
+      spans.add(TextSpan(
+        text: url,
+        style: TextStyle(
+          fontSize: 14,
+          color: isMine ? Colors.white : Colors.blue,
+          decoration: TextDecoration.underline,
+          decorationColor: isMine ? Colors.white : Colors.blue,
+          height: 1.4,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () async {
+            final uri = Uri.tryParse(url);
+            if (uri != null) {
+              try {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } catch (e) {
+                debugPrint('Error launching url: $e');
+              }
+            }
+          },
+      ));
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastMatchEnd),
+        style: TextStyle(
+          fontSize: 14,
+          color: isMine ? Colors.white : Colors.black87,
+          height: 1.4,
+        ),
+      ));
+    }
+
+    if (spans.isEmpty) {
+      return Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          color: isMine ? Colors.white : Colors.black87,
+          height: 1.4,
+        ),
+      );
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
   }
 }
 

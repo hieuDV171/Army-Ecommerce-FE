@@ -22,7 +22,7 @@ class ShimmerProductGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: AppSpacing.md,
         crossAxisSpacing: AppSpacing.md,
-        childAspectRatio: 0.60,
+        childAspectRatio: 0.51,
       ),
       itemBuilder: (context, index) {
         return const Column(

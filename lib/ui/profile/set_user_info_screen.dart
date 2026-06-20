@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/services/session_manager.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -196,6 +197,7 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
       listener: (context, state) {
         if (state is SetUserInfoSuccess) {
           AppSnackBar.showSuccess(context, message: 'Cập nhật hồ sơ thành công');
+          SessionManager.updateAvatarCacheBustKey();
           Navigator.pop(context, state.user);
         } else if (state is SetUserInfoFailure) {
           AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
@@ -231,8 +233,8 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                       backgroundImage: _avatarFile != null
                           ? FileImage(_avatarFile!)
                           : (widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty
-                              ? NetworkImage(widget.currentUser.avatar!)
-                              : null) as ImageProvider?,
+                              ? SessionManager.getImageProvider(widget.currentUser.avatar!)
+                              : null),
                       child: (_avatarFile == null && (widget.currentUser.avatar == null || widget.currentUser.avatar!.isEmpty))
                           ? const Icon(Icons.person, size: 52, color: Colors.grey)
                           : null,

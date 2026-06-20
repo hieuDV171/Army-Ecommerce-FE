@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/services/session_manager.dart';
 import '../util/constants/app_colors.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
@@ -8,6 +9,10 @@ import '../../blocs/auth/auth_state.dart';
 import '../../models/user_model.dart';
 import 'set_user_info_screen.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
+import '../../blocs/follow/follow_bloc.dart';
+import '../../repositories/follow_repository.dart';
+import '../follow/followers_screen.dart';
+import '../follow/following_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String? userId;
@@ -33,6 +38,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   bool get _isOwnProfile => widget.userId == null;
 
   void _loadProfile() {
+    SessionManager.updateAvatarCacheBustKey();
     context.read<AuthBloc>().add(
       GetUserInfoRequested(userId: widget.userId == null ? null : int.tryParse(widget.userId!)),
     );
@@ -54,8 +60,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
+                child: Image(
+                  image: SessionManager.getImageProvider(imageUrl),
                   fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
@@ -134,6 +140,38 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     _loadProfile();
   }
 
+  Widget _buildStatItem(String label, int value, {VoidCallback? onTap}) {
+    final item = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value.toString(),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+    if (onTap != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: item,
+      );
+    }
+    return item;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
@@ -153,6 +191,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           });
           AppSnackBar.showError(context, message: 'Lỗi lấy hồ sơ: ${state.error}');
         } else if (state is SetUserInfoSuccess) {
+          SessionManager.updateAvatarCacheBustKey();
           setState(() {
             _profile = state.user;
             _errorMessage = null;
@@ -232,7 +271,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                   decoration: BoxDecoration(
                                     image: profile.coverImage != null && profile.coverImage!.isNotEmpty
                                         ? DecorationImage(
-                                            image: NetworkImage(profile.coverImage!),
+                                            image: SessionManager.getImageProvider(profile.coverImage!),
                                             fit: BoxFit.cover,
                                           )
                                         : null,
@@ -263,7 +302,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                               child: GestureDetector(
                                                 onTap: () {
                                                   if (profile.avatar != null && profile.avatar!.isNotEmpty) {
-                                                    _showZoomedAvatar(context, profile.avatar!, profile.username);
+                                                    _showZoomedAvatar(context, SessionManager.bustAvatarUrl(profile.avatar!), profile.username);
                                                   }
                                                 },
                                                 child: Container(
@@ -275,7 +314,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                   child: CircleAvatar(
                                                     radius: avatarRadius,
                                                     backgroundImage: profile.avatar != null && profile.avatar!.isNotEmpty
-                                                        ? NetworkImage(profile.avatar!)
+                                                        ? SessionManager.getImageProvider(profile.avatar!)
                                                         : null,
                                                     child: profile.avatar == null || profile.avatar!.isEmpty
                                                         ? const Icon(Icons.person, size: 56, color: Colors.grey)
@@ -319,6 +358,67 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               Text(
                                 'Trạng thái: ${_valueOf(profile.status)}',
                                 style: const TextStyle(color: Colors.grey),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildStatItem('Đơn đã bán', profile.listing ?? 0),
+                                    _buildStatItem(
+                                      'Người theo dõi',
+                                      profile.followers ?? 0,
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => BlocProvider(
+                                              create: (_) => FollowBloc(
+                                                followRepository: context.read<FollowRepository>(),
+                                              ),
+                                              child: FollowersScreen(
+                                                userId: profile.id,
+                                              ),
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (mounted) {
+                                            _loadProfile();
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    _buildStatItem(
+                                      'Đang theo dõi',
+                                      profile.following ?? 0,
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => BlocProvider(
+                                              create: (_) => FollowBloc(
+                                                followRepository: context.read<FollowRepository>(),
+                                              ),
+                                              child: FollowingScreen(
+                                                userId: profile.id,
+                                              ),
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (mounted) {
+                                            _loadProfile();
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

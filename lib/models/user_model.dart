@@ -15,6 +15,8 @@ class UserModel {
   final String? address;
   final String? city;
   final int? listing;
+  final int? followers;
+  final int? following;
   final bool? followed;
   final bool? isBlocked;
   final dynamic defaultAddress;
@@ -36,6 +38,8 @@ class UserModel {
     this.address,
     this.city,
     this.listing,
+    this.followers,
+    this.following,
     this.followed,
     this.isBlocked,
     this.defaultAddress,
@@ -57,6 +61,8 @@ class UserModel {
     String? address,
     String? city,
     int? listing,
+    int? followers,
+    int? following,
     bool? followed,
     bool? isBlocked,
     dynamic defaultAddress,
@@ -78,6 +84,8 @@ class UserModel {
       address: address ?? this.address,
       city: city ?? this.city,
       listing: listing ?? this.listing,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
       followed: followed ?? this.followed,
       isBlocked: isBlocked ?? this.isBlocked,
       defaultAddress: defaultAddress ?? this.defaultAddress,
@@ -104,6 +112,8 @@ class UserModel {
       address: json['address']?.toString(),
       city: json['city']?.toString(),
       listing: int.tryParse(json['listing']?.toString() ?? ''),
+      followers: int.tryParse(json['followers']?.toString() ?? ''),
+      following: int.tryParse(json['following']?.toString() ?? ''),
       followed: _parseBool(json['followed']),
       isBlocked: _parseBool(json['is_blocked']),
       defaultAddress: json['default_address'],

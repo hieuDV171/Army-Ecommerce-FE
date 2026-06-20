@@ -27,11 +27,12 @@ class CheckoutAddressSelected extends CheckoutEvent {
 
 class CheckoutSubmitted extends CheckoutEvent {
   final List<CartItem> items;
+  final int orderSource;
 
-  CheckoutSubmitted({required this.items});
+  CheckoutSubmitted({required this.items, this.orderSource = 0});
 
   @override
-  List<Object?> get props => [items];
+  List<Object?> get props => [items, orderSource];
 }
 
 class CheckoutShipFeeRequested extends CheckoutEvent {

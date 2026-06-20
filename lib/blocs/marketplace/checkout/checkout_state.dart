@@ -11,6 +11,7 @@ class CheckoutState extends Equatable {
   final num shippingFee;
   final int? leatime;
   final int? productId;
+  final bool isProductNotExisted;
 
   const CheckoutState({
     this.addresses = const [],
@@ -22,6 +23,7 @@ class CheckoutState extends Equatable {
     this.shippingFee = 0,
     this.leatime,
     this.productId,
+    this.isProductNotExisted = false,
   });
 
   CheckoutState copyWith({
@@ -34,6 +36,7 @@ class CheckoutState extends Equatable {
     num? shippingFee,
     int? leatime,
     int? productId,
+    bool? isProductNotExisted,
     bool clearMessages = false,
   }) {
     return CheckoutState(
@@ -46,6 +49,7 @@ class CheckoutState extends Equatable {
       shippingFee: shippingFee ?? this.shippingFee,
       leatime: leatime ?? this.leatime,
       productId: productId ?? this.productId,
+      isProductNotExisted: isProductNotExisted ?? this.isProductNotExisted,
     );
   }
 
@@ -60,5 +64,6 @@ class CheckoutState extends Equatable {
     shippingFee,
     leatime,
     productId,
+    isProductNotExisted,
   ];
 }

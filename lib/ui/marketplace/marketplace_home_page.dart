@@ -7,6 +7,7 @@ import 'package:army_ecommerce/blocs/marketplace/home/home_state.dart';
 import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/models/category_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
 import 'package:army_ecommerce/ui/notification/notification_screen.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
@@ -159,13 +160,16 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                       crossAxisCount: 2,
                       mainAxisSpacing: AppSpacing.md,
                       crossAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 0.60,
+                      childAspectRatio: 0.51,
                     ),
                     itemBuilder: (context, index) {
                       final product = state.products[index];
                       return ProductCard(
                         product: productCardDataFromModel(product),
-                        onTap: () => _openProduct(context, product.id),
+                        onTap: () => _openProduct(context, product),
+                        onLikeTap: () {
+                          context.read<HomeBloc>().add(HomeProductLikeToggled(product.id));
+                        },
                       );
                     },
                   ),
@@ -184,10 +188,10 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
     );
   }
 
-  void _openProduct(BuildContext context, String productId) {
+  void _openProduct(BuildContext context, ProductModel product) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: productId)),
+      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock)),
     );
   }
 }

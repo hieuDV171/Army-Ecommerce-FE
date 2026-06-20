@@ -12,6 +12,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeRequested>(_onRequested);
     on<HomeRefreshed>(_onRefreshed);
     on<HomeLoadMoreRequested>(_onLoadMoreRequested);
+    on<HomeProductLikeToggled>(_onProductLikeToggled);
   }
 
   Future<void> _onRequested(HomeRequested event, Emitter<HomeState> emit) async {
@@ -92,5 +93,30 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       map[product.id] = product;
     }
     return map.values.toList();
+  }
+
+  Future<void> _onProductLikeToggled(
+    HomeProductLikeToggled event,
+    Emitter<HomeState> emit,
+  ) async {
+    final originalProducts = List<ProductModel>.from(state.products);
+    final updatedProducts = state.products.map((product) {
+      if (product.id == event.productId) {
+        final newIsLiked = !product.isLiked;
+        final newLikeCount = newIsLiked
+            ? product.likeCount + 1
+            : (product.likeCount - 1).clamp(0, 999999).toInt();
+        return product.copyWith(isLiked: newIsLiked, likeCount: newLikeCount);
+      }
+      return product;
+    }).toList();
+
+    emit(state.copyWith(products: updatedProducts));
+
+    try {
+      await marketplaceRepository.likeProduct(event.productId);
+    } catch (error) {
+      emit(state.copyWith(products: originalProducts, errorMessage: error.toString()));
+    }
   }
 }

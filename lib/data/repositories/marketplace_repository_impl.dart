@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:army_ecommerce/core/services/cart_manager.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
+import '../../core/network/api_exception.dart';
 import 'package:army_ecommerce/models/address_model.dart';
 import 'package:army_ecommerce/models/brand_model.dart';
 import 'package:army_ecommerce/models/category_model.dart';
@@ -272,7 +273,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int count = 20,
   }) async {
     final response = await remoteDataSource.post(
-      ApiPaths.savedSearches,
+      ApiPaths.getListSavedSearch,
       data: {'index': index, 'count': count},
     );
     return parseListFromData(response.data, MarketplaceItem.fromJson);
@@ -284,6 +285,24 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       ApiPaths.saveSearch,
       data: {'keyword': keyword},
     );
+  }
+
+  @override
+  Future<void> delSavedSearch({String? searchId, String? keyword}) async {
+    final body = <String, dynamic>{};
+    if (searchId != null) {
+      body['search_id'] = int.tryParse(searchId);
+    }
+    if (keyword != null) {
+      body['keyword'] = keyword;
+    }
+    final response = await remoteDataSource.post(
+      ApiPaths.delSavedSearch,
+      data: body,
+    );
+    if (response.code != '1000') {
+      throw ApiException(code: response.code, message: response.message);
+    }
   }
 
   @override
@@ -464,7 +483,7 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
       data: data,
     );
     if (response.code != '1000') {
-      throw Exception(response.message);
+      throw ApiException(code: response.code, message: response.message);
     }
   }
 

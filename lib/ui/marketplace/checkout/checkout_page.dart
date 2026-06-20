@@ -17,8 +17,13 @@ import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class CheckoutPage extends StatelessWidget {
   final List<CartItem> items;
+  final int orderSource;
 
-  const CheckoutPage({super.key, required this.items});
+  const CheckoutPage({
+    super.key,
+    required this.items,
+    this.orderSource = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,33 +32,66 @@ class CheckoutPage extends StatelessWidget {
       create: (context) => CheckoutBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
       )..add(CheckoutRequested(productId: firstItemId)),
-      child: _CheckoutView(items: items),
+      child: _CheckoutView(items: items, orderSource: orderSource),
     );
   }
 }
 
 class _CheckoutView extends StatefulWidget {
   final List<CartItem> items;
+  final int orderSource;
 
-  const _CheckoutView({required this.items});
+  const _CheckoutView({
+    required this.items,
+    required this.orderSource,
+  });
 
   @override
   State<_CheckoutView> createState() => _CheckoutViewState();
 }
 
 class _CheckoutViewState extends State<_CheckoutView> {
+  void _showProductNotExistedDialog(BuildContext context) {
+    final firstItemTitle = widget.items.isNotEmpty ? widget.items.first.title : '';
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Thông báo'),
+          content: Text('Sản phẩm "$firstItemTitle" không còn tồn tại.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.pop(context);
+              },
+              child: const Text('Quay lại'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final subtotal = widget.items.fold<num>(0, (sum, item) => sum + item.price * item.quantity);
 
     return BlocConsumer<CheckoutBloc, CheckoutState>(
       listener: (context, state) {
+        if (state.isProductNotExisted) {
+          _showProductNotExistedDialog(context);
+          return;
+        }
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
           AppSnackBar.show(context, message: message);
         }
         if (state.successMessage != null) {
-          CartManager().clearCart();
+          if (widget.orderSource == 0) {
+            CartManager().clearCart();
+          }
           Navigator.pop(context);
         }
       },
@@ -73,6 +111,7 @@ class _CheckoutViewState extends State<_CheckoutView> {
                     context.read<CheckoutBloc>().add(
                           CheckoutSubmitted(
                             items: widget.items,
+                            orderSource: widget.orderSource,
                           ),
                         );
                   },

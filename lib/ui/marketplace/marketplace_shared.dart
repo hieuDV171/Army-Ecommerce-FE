@@ -13,10 +13,16 @@ ProductCardData productCardDataFromModel(ProductModel product) {
     id: product.id,
     title: product.title,
     price: product.price,
+    priceNew: product.priceNew,
+    priceDiscount: product.priceDiscount,
+    bestOffers: product.bestOffers,
     imageUrl: (primaryImage != null && primaryImage.isNotEmpty) ? primaryImage : null,
     rating: product.rating ?? sellerScore,
     soldCount: product.soldCount ?? sellerListing,
     sellerLocation: product.sellerLocation ?? product.shipsFrom,
     isLiked: product.isLiked,
+    likeCount: product.likeCount,
+    commentCount: product.commentCount,
+    isStock: product.isStock,
   );
 }

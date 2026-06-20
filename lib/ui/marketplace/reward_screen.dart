@@ -99,6 +99,22 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
     super.dispose();
   }
 
+  Future<bool> _checkFileSize(File file, bool isImage) async {
+    final sizeInBytes = await file.length();
+    final limit = isImage ? 10 * 1024 * 1024 : 30 * 1024 * 1024;
+    final limitStr = isImage ? '10MB' : '30MB';
+    if (sizeInBytes > limit) {
+      if (mounted) {
+        AppSnackBar.showError(
+          context,
+          message: 'Dung lượng ${isImage ? "hình ảnh" : "video"} vượt quá giới hạn cho phép (tối đa $limitStr)',
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final picked = await widget.picker.pickImage(
       source: source,
@@ -107,6 +123,8 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
       imageQuality: 85,
     );
     if (picked != null && mounted) {
+      final valid = await _checkFileSize(File(picked.path), true);
+      if (!valid) return;
       setState(() {
         _mediaFile = picked;
         _isImage = true;
@@ -120,6 +138,8 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
       maxDuration: const Duration(minutes: 5),
     );
     if (picked != null && mounted) {
+      final valid = await _checkFileSize(File(picked.path), false);
+      if (!valid) return;
       setState(() {
         _mediaFile = picked;
         _isImage = false;

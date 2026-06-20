@@ -1,8 +1,42 @@
+import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/logger.dart';
 
 class SessionManager {
+  static String _avatarCacheBustKey = DateTime.now().millisecondsSinceEpoch.toString();
+
+  static String get avatarCacheBustKey => _avatarCacheBustKey;
+
+  static void updateAvatarCacheBustKey() {
+    _avatarCacheBustKey = DateTime.now().millisecondsSinceEpoch.toString();
+  }
+
+  static String bustAvatarUrl(String url) {
+    if (url.isEmpty) return url;
+    if (url.startsWith('file://') || !url.startsWith('http')) {
+      return url;
+    }
+    if (url.contains('?')) {
+      return '$url&v=$_avatarCacheBustKey';
+    }
+    return '$url?v=$_avatarCacheBustKey';
+  }
+
+  static ImageProvider getImageProvider(String url) {
+    if (url.startsWith('file://') || !url.startsWith('http')) {
+      try {
+        final cleanPath = url.startsWith('file://') ? Uri.parse(url).path : url;
+        return FileImage(File(cleanPath));
+      } catch (e) {
+        logger.e('SessionManager: Error parsing local file URI: $e');
+        return FileImage(File(url));
+      }
+    }
+    return NetworkImage(bustAvatarUrl(url));
+  }
+
   static const String _keyToken = "auth_token";
   static const String _keyUsername = "username";
   static const String _keyPhoneNumber = "phone_number";

@@ -28,6 +28,8 @@ import '../../util/widgets/error_state.dart';
 import '../../util/widgets/product_card.dart';
 import '../../util/widgets/section_header.dart';
 import '../../util/widgets/login_prompt.dart';
+import 'package:army_ecommerce/ui/follow/followers_screen.dart';
+import 'package:army_ecommerce/ui/follow/following_screen.dart';
 import '../marketplace_shared.dart';
 import '../product_form_page.dart';
 import '../../util/theme/special_app_theme.dart';
@@ -105,6 +107,35 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _toggleLikeProduct(ProductModel product) async {
+    final originalIsLiked = product.isLiked;
+    final originalLikeCount = product.likeCount;
+
+    setState(() {
+      final index = _products.indexWhere((p) => p.id == product.id);
+      if (index != -1) {
+        final newIsLiked = !originalIsLiked;
+        final newLikeCount = newIsLiked
+            ? originalLikeCount + 1
+            : (originalLikeCount - 1).clamp(0, 999999).toInt();
+        _products[index] = _products[index].copyWith(isLiked: newIsLiked, likeCount: newLikeCount);
+      }
+    });
+
+    try {
+      await _repository.likeProduct(product.id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        final index = _products.indexWhere((p) => p.id == product.id);
+        if (index != -1) {
+          _products[index] = _products[index].copyWith(isLiked: originalIsLiked, likeCount: originalLikeCount);
+        }
+      });
+      AppSnackBar.showError(context, message: e.toString());
     }
   }
 
@@ -188,7 +219,7 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
                                 crossAxisCount: 2,
                                 mainAxisSpacing: AppSpacing.md,
                                 crossAxisSpacing: AppSpacing.md,
-                                childAspectRatio: 0.60,
+                                childAspectRatio: 0.51,
                               ),
                               itemBuilder: (context, index) {
                                 if (index >= _products.length) {
@@ -200,9 +231,10 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => ProductDetailPage(productId: product.id),
+                                      builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
                                     ),
                                   ).then((_) => _loadProducts()),
+                                  onLikeTap: () => _toggleLikeProduct(product),
                                 );
                               },
                             ),
@@ -240,6 +272,8 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   bool _isLoading = true;
   String? _error;
   UserModel? _user;
+  int _followersCount = 0;
+  int _followingCount = 0;
 
   String get _sellerUserId {
     final loadedUserId = _user?.id;
@@ -299,8 +333,8 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
               InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
+                child: Image(
+                  image: SessionManager.getImageProvider(imageUrl),
                   fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
@@ -385,6 +419,8 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
             _hasReachedEnd = productsResponse.length < 20;
             _isFollowed = userResponse.data!.followed ?? false;
             _isBlocked = userResponse.data!.isBlocked ?? false;
+            _followersCount = userResponse.data!.followers ?? 0;
+            _followingCount = userResponse.data!.following ?? 0;
             _isLoading = false;
             _isLoadingProducts = false;
           });
@@ -430,6 +466,36 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     }
   }
 
+  Future<void> _toggleLikeProduct(ProductModel product) async {
+    final originalIsLiked = product.isLiked;
+    final originalLikeCount = product.likeCount;
+
+    setState(() {
+      final index = _products.indexWhere((p) => p.id == product.id);
+      if (index != -1) {
+        final newIsLiked = !originalIsLiked;
+        final newLikeCount = newIsLiked
+            ? originalLikeCount + 1
+            : (originalLikeCount - 1).clamp(0, 999999).toInt();
+        _products[index] = _products[index].copyWith(isLiked: newIsLiked, likeCount: newLikeCount);
+      }
+    });
+
+    try {
+      final repo = context.read<MarketplaceRepository>();
+      await repo.likeProduct(product.id);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        final index = _products.indexWhere((p) => p.id == product.id);
+        if (index != -1) {
+          _products[index] = _products[index].copyWith(isLiked: originalIsLiked, likeCount: originalLikeCount);
+        }
+      });
+      AppSnackBar.showError(context, message: e.toString());
+    }
+  }
+
   void _toggleFollow() {
     if (_isBlocked) {
       AppSnackBar.showError(context, message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.');
@@ -441,7 +507,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       if (_isFollowed) {
         _showUnfollowDialog();
       } else {
-        setState(() => _isFollowed = true);
+        setState(() {
+          _isFollowed = true;
+          _followersCount++;
+        });
         _followBloc.add(FollowUserRequested(
           followeeId: _sellerUserId,
           username: widget.sellerName,
@@ -472,7 +541,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       ),
     );
     if (confirmed == true) {
-      setState(() => _isFollowed = false);
+      setState(() {
+        _isFollowed = false;
+        _followersCount = (_followersCount - 1).clamp(0, 999999);
+      });
       _followBloc.add(FollowUserRequested(
         followeeId: _sellerUserId,
         username: widget.sellerName,
@@ -617,12 +689,24 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                 current is FollowActionSuccess || current is FollowFailure,
             listener: (context, state) {
               if (state is FollowActionSuccess) {
-                setState(() => _isFollowed = state.isFollowed);
+                setState(() {
+                  _isFollowed = state.isFollowed;
+                  // sync counters if the state returns it, or keep our optimistic values
+                });
                 final msg = state.isFollowed
                     ? 'Theo dõi ${state.username} thành công'
                     : 'Đã hủy theo dõi ${state.username}';
                 AppSnackBar.show(context, message: msg, backgroundColor: context.specialTheme.primaryColor);
               } else if (state is FollowFailure) {
+                // Revert optimistic counts
+                setState(() {
+                  _isFollowed = !_isFollowed;
+                  if (_isFollowed) {
+                    _followersCount++;
+                  } else {
+                    _followersCount = (_followersCount - 1).clamp(0, 999999);
+                  }
+                });
                 AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
               }
             },
@@ -665,7 +749,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                                 }
                               },
                               child: displayAvatar != null && displayAvatar.isNotEmpty
-                                  ? CircleAvatar(radius: 36, backgroundImage: NetworkImage(displayAvatar))
+                                  ? CircleAvatar(radius: 36, backgroundImage: SessionManager.getImageProvider(displayAvatar))
                                   : const CircleAvatar(radius: 36, child: Icon(Icons.storefront)),
                             ),
                             const SizedBox(width: AppSpacing.md),
@@ -676,11 +760,71 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                                   Text(displayName, style: AppTextStyles.screenTitle),
                                   const SizedBox(height: AppSpacing.xs),
                                   if (displayScore != null && displayScore.isNotEmpty) Text('Điểm: $displayScore'),
-                                  if (displayListing != null && displayListing.isNotEmpty) Text('Listing: $displayListing'),
                                 ],
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildStatItem('Đơn đã bán', int.tryParse(displayListing ?? '0') ?? 0),
+                              _buildStatItem(
+                                'Người theo dõi',
+                                _followersCount,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BlocProvider(
+                                        create: (_) => FollowBloc(
+                                          followRepository: context.read<FollowRepository>(),
+                                        ),
+                                        child: FollowersScreen(
+                                          userId: _sellerUserId,
+                                        ),
+                                      ),
+                                    ),
+                                  ).then((_) {
+                                    if (mounted) {
+                                      _loadUser();
+                                    }
+                                  });
+                                },
+                              ),
+                              _buildStatItem(
+                                'Đang theo dõi',
+                                _followingCount,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BlocProvider(
+                                        create: (_) => FollowBloc(
+                                          followRepository: context.read<FollowRepository>(),
+                                        ),
+                                        child: FollowingScreen(
+                                          userId: _sellerUserId,
+                                        ),
+                                      ),
+                                    ),
+                                  ).then((_) {
+                                    if (mounted) {
+                                      _loadUser();
+                                    }
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         if (isMe) ...[
@@ -802,7 +946,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                               crossAxisCount: 2,
                               mainAxisSpacing: AppSpacing.md,
                               crossAxisSpacing: AppSpacing.md,
-                              childAspectRatio: 0.60,
+                              childAspectRatio: 0.51,
                             ),
                             itemBuilder: (context, index) {
                               final product = _products[index];
@@ -811,9 +955,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => ProductDetailPage(productId: product.id),
+                                    builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
                                   ),
                                 ),
+                                onLikeTap: () => _toggleLikeProduct(product),
                               );
                             },
                           ),
@@ -828,6 +973,38 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildStatItem(String label, int value, {VoidCallback? onTap}) {
+    final item = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value.toString(),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+    if (onTap != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: item,
+      );
+    }
+    return item;
   }
 }
 

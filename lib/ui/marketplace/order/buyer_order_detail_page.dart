@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repositories/marketplace_repository.dart';
 import '../../../core/services/session_manager.dart';
+import '../../../blocs/auth/auth_bloc.dart';
+import '../../util/widgets/app_bottom_sheet.dart';
 import '../../util/constants/app_colors.dart';
 import '../../util/constants/app_radius.dart';
 import '../../util/constants/app_spacing.dart';
@@ -402,6 +404,12 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
               ],
               if (order.status == 'delivered') ...[
                 AppButton(
+                  label: 'Viết đánh giá',
+                  icon: Icons.rate_review_outlined,
+                  onPressed: () => _openWriteRateSheet(order),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppButton(
                   label: 'Yêu cầu hoàn tiền / hoàn hàng',
                   icon: Icons.restart_alt,
                   onPressed: () => _openRefundDialog(order),
@@ -440,10 +448,21 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
-          child: AppButton(
-            label: 'Yêu cầu hoàn tiền / hoàn hàng',
-            icon: Icons.restart_alt,
-            onPressed: () => _openRefundDialog(order),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppButton(
+                label: 'Viết đánh giá',
+                icon: Icons.rate_review_outlined,
+                onPressed: () => _openWriteRateSheet(order),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AppButton(
+                label: 'Yêu cầu hoàn tiền / hoàn hàng',
+                icon: Icons.restart_alt,
+                onPressed: () => _openRefundDialog(order),
+              ),
+            ],
           ),
         ),
       );
@@ -482,6 +501,85 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     await _submit(
       () => context.read<MarketplaceRepository>().confirmReceived(order.id),
       successMessage: 'Đã xác nhận đã nhận hàng',
+    );
+    if (mounted) {
+      _openWriteRateSheet(order);
+    }
+  }
+
+  void _openWriteRateSheet(OrderModel order) {
+    final levelNotifier = ValueNotifier<int>(5);
+    final controller = TextEditingController();
+    
+    final authState = context.read<AuthBloc>().state;
+    final userId = authState.currentUser?.id ?? '';
+    
+    AppBottomSheet.show<void>(
+      context: context,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Viết đánh giá',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ValueListenableBuilder<int>(
+            valueListenable: levelNotifier,
+            builder: (context, level, _) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(5, (i) {
+                final star = i + 1;
+                return IconButton(
+                  icon: Icon(
+                    level >= star
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    color: AppColors.warning,
+                  ),
+                  onPressed: () => levelNotifier.value = star,
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(controller: controller, label: 'Nội dung đánh giá'),
+          const SizedBox(height: AppSpacing.md),
+          AppButton(
+            label: 'Gửi đánh giá',
+            onPressed: () async {
+              if (userId.isEmpty) {
+                AppSnackBar.show(
+                  context,
+                  message: 'Bạn cần đăng nhập để đánh giá',
+                );
+                return;
+              }
+              final level = levelNotifier.value;
+              final content = controller.text.trim();
+              Navigator.pop(context);
+              
+              setState(() => _isSubmitting = true);
+              try {
+                await context.read<MarketplaceRepository>().setRates(
+                  userId: order.sellerId ?? '',
+                  level: level,
+                  content: content,
+                  productId: order.items.isNotEmpty ? order.items.first.productId : null,
+                  purchaseId: order.id,
+                );
+                if (!mounted) return;
+                AppSnackBar.showSuccess(context, message: 'Đã gửi đánh giá thành công');
+              } catch (e) {
+                if (!mounted) return;
+                AppSnackBar.showError(context, message: 'Lỗi gửi đánh giá: $e');
+              } finally {
+                if (mounted) setState(() => _isSubmitting = false);
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 

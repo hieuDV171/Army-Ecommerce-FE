@@ -58,16 +58,25 @@ class _FollowingScreenState extends State<FollowingScreen> {
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.specialTheme.useGradient
+            ? Colors.transparent
+            : context.specialTheme.primaryDarkColor,
+        flexibleSpace: context.specialTheme.useGradient
+            ? Container(
+                decoration: BoxDecoration(
+                  gradient: context.specialTheme.primaryGradient,
+                ),
+              )
+            : null,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Đang theo dõi',
           style: TextStyle(
-            color: Colors.black87,
+            color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -298,9 +307,17 @@ class _UserListItemState extends State<_UserListItem> {
               height: 32,
               constraints: const BoxConstraints(minWidth: 96),
               decoration: BoxDecoration(
-                color: _isFollowed ? _shopeeOrange(context) : Colors.white,
-                borderRadius: BorderRadius.circular(2),
-                border: Border.all(color: _shopeeOrange(context), width: 1),
+                gradient: (_isFollowed && context.specialTheme.useGradient)
+                    ? context.specialTheme.primaryGradient
+                    : null,
+                color: _isFollowed
+                    ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: context.specialTheme.primaryDarkColor,
+                  width: 1,
+                ),
               ),
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -309,7 +326,9 @@ class _UserListItemState extends State<_UserListItem> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: _isFollowed ? Colors.white : _shopeeOrange(context),
+                  color: _isFollowed
+                      ? Colors.white
+                      : context.specialTheme.primaryDarkColor,
                 ),
               ),
             ),
