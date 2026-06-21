@@ -91,8 +91,8 @@ class UserFollowListResponse {
     List<UserFollowModel>? dataList;
     if (rawData is List) {
       dataList = rawData
-          .whereType<Map<String, dynamic>>()
-          .map((item) => UserFollowModel.fromJson(item))
+          .whereType<Map>()
+          .map((item) => UserFollowModel.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     }
     return UserFollowListResponse(
@@ -120,8 +120,8 @@ class FollowActionResponse {
     return FollowActionResponse(
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
-      data: (json['data'] != null && json['data'] is Map<String, dynamic>)
-          ? FollowActionResult.fromJson(json['data'])
+      data: (json['data'] != null && json['data'] is Map)
+          ? FollowActionResult.fromJson(Map<String, dynamic>.from(json['data'] as Map))
           : null,
     );
   }

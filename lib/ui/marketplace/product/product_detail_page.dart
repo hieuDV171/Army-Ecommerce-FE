@@ -875,8 +875,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => BlocProvider.value(
-                                        value: chatBloc,
+                                      builder: (_) => BlocProvider(
+                                        create: (context) => ChatBloc(
+                                          marketplaceRepository: context.read<MarketplaceRepository>(),
+                                        ),
                                         child: ChatScreen(
                                           partnerId: sellerId,
                                           partnerUsername: sellerName,

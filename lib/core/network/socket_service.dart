@@ -3,10 +3,10 @@ import 'package:army_ecommerce/core/config/app_config.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 
-class ChatSocketService {
-  static final ChatSocketService _instance = ChatSocketService._internal();
-  factory ChatSocketService() => _instance;
-  ChatSocketService._internal();
+class SocketService {
+  static final SocketService _instance = SocketService._internal();
+  factory SocketService() => _instance;
+  SocketService._internal();
 
   socket_io.Socket? _socket;
 
@@ -22,7 +22,7 @@ class ChatSocketService {
 
   void connect(String token) {
     if (_socket != null && _socket!.connected) {
-      logger.d('ChatSocketService: Already connected');
+      logger.d('SocketService: Already connected');
       return;
     }
 
@@ -37,7 +37,7 @@ class ChatSocketService {
       socketUrl = socketUrl.substring(0, socketUrl.length - 4);
     }
 
-    logger.i('ChatSocketService: Connecting to $socketUrl...');
+    logger.i('SocketService: Connecting to $socketUrl...');
 
     try {
       _socket = socket_io.io(
@@ -52,24 +52,24 @@ class ChatSocketService {
       );
 
       _socket!.onConnect((_) {
-        logger.i('ChatSocketService: Connected to WebSocket server');
+        logger.i('SocketService: Connected to WebSocket server');
       });
 
       _socket!.onDisconnect((_) {
-        logger.w('ChatSocketService: Disconnected from WebSocket server');
+        logger.w('SocketService: Disconnected from WebSocket server');
       });
 
       _socket!.onConnectError((err) {
-        logger.e('ChatSocketService: Connection error: $err');
+        logger.e('SocketService: Connection error: $err');
       });
 
       _socket!.onError((err) {
-        logger.e('ChatSocketService: Error: $err');
+        logger.e('SocketService: Error: $err');
       });
 
       // Listen to new message event broadcasted by Backend
       _socket!.on('new_message', (data) {
-        logger.d('ChatSocketService: Received new_message event: $data');
+        logger.d('SocketService: Received new_message event: $data');
         if (data is Map<String, dynamic>) {
           _messageController.add(data);
         } else if (data is Map) {
@@ -79,7 +79,7 @@ class ChatSocketService {
 
       // Listen to new notification event broadcasted by Backend
       _socket!.on('new_notification', (data) {
-        logger.d('ChatSocketService: Received new_notification event: $data');
+        logger.d('SocketService: Received new_notification event: $data');
         if (data is Map<String, dynamic>) {
           _notificationController.add(data);
         } else if (data is Map) {
@@ -87,7 +87,7 @@ class ChatSocketService {
         }
       });
     } catch (e) {
-      logger.e('ChatSocketService: Failed to connect: $e');
+      logger.e('SocketService: Failed to connect: $e');
     }
   }
 
@@ -96,7 +96,7 @@ class ChatSocketService {
       _socket!.disconnect();
       _socket!.destroy();
       _socket = null;
-      logger.i('ChatSocketService: Socket connection closed');
+      logger.i('SocketService: Socket connection closed');
     }
   }
 

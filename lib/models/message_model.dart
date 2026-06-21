@@ -45,7 +45,9 @@ class MessageModel {
           ? DateTime.fromMillisecondsSinceEpoch(createdTs * 1000)
           : DateTime.now(),
       sender: MessageSender.fromJson(
-        json['sender'] as Map<String, dynamic>? ?? {},
+        json['sender'] is Map
+            ? Map<String, dynamic>.from(json['sender'] as Map)
+            : {},
       ),
     );
   }
@@ -63,8 +65,8 @@ class ConversationData {
     final rawMessages = json['messages'];
     final messages = rawMessages is List
         ? rawMessages
-            .whereType<Map<String, dynamic>>()
-            .map((item) => MessageModel.fromJson(item))
+            .whereType<Map>()
+            .map((item) => MessageModel.fromJson(Map<String, dynamic>.from(item)))
             .toList()
         : <MessageModel>[];
     return ConversationData(
@@ -91,8 +93,8 @@ class MessageListResponse {
     return MessageListResponse(
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
-      data: (json['data'] != null && json['data'] is Map<String, dynamic>)
-          ? ConversationData.fromJson(json['data'] as Map<String, dynamic>)
+      data: (json['data'] != null && json['data'] is Map)
+          ? ConversationData.fromJson(Map<String, dynamic>.from(json['data'] as Map))
           : null,
     );
   }

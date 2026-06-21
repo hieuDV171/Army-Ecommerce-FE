@@ -30,11 +30,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     // Subscribe to new messages from Socket.IO stream
     _messageSubscription = marketplaceRepository.newMessagesStream.listen((message) {
+      logger.d('ChatBloc WebSocket Stream: Received message: "${message.message}" from senderId=${message.sender.id} (activePartnerId=$_activePartnerId)');
       if (_activePartnerId != null && message.sender.id.toString() == _activePartnerId) {
+        logger.d('ChatBloc: Sender matches active chat. Appending message to list.');
         add(NewMessageReceived(message: message));
         add(MarkMessageReadRequested(partnerId: _activePartnerId!));
       } else if (_activePartnerId == null) {
+        logger.d('ChatBloc: No active chat partner. Refreshing conversation list.');
         add(LoadConversationsRequested(isSilent: true));
+      } else {
+        logger.d('ChatBloc: Ignored message because sender ID does not match active partner.');
       }
     });
   }

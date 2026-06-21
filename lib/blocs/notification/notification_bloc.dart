@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/blocs/notification/notification_state.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
-import 'package:army_ecommerce/core/network/chat_socket_service.dart';
+import 'package:army_ecommerce/core/network/socket_service.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:army_ecommerce/repositories/notification_repository.dart';
@@ -22,7 +22,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<MarkNotificationReadRequested>(_onMarkNotificationReadRequested);
     on<RealTimeNotificationReceived>(_onRealTimeNotificationReceived);
 
-    _notificationSubscription = ChatSocketService().newNotificationsStream.listen((data) {
+    _notificationSubscription = SocketService().newNotificationsStream.listen((data) {
       try {
         final notification = NotificationModel.fromJson(data);
         add(RealTimeNotificationReceived(notification: notification));

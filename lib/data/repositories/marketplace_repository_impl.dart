@@ -16,13 +16,13 @@ import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/models/wallet_model.dart';
 
 import '../../core/constants/api_paths.dart';
-import '../../core/network/chat_socket_service.dart';
+import '../../core/network/socket_service.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../sources/remote/marketplace_remote_data_source.dart';
 
 class MarketplaceRepositoryImpl implements MarketplaceRepository {
   final MarketplaceRemoteDataSource remoteDataSource;
-  final ChatSocketService _socketService = ChatSocketService();
+  final SocketService _socketService = SocketService();
 
   MarketplaceRepositoryImpl({required this.remoteDataSource});
 

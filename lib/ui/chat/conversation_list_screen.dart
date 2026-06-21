@@ -2,6 +2,7 @@ import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/models/conversation_model.dart';
+import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'package:army_ecommerce/ui/chat/chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,8 +55,10 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<ChatBloc>(),
+        builder: (_) => BlocProvider(
+          create: (context) => ChatBloc(
+            marketplaceRepository: context.read<MarketplaceRepository>(),
+          ),
           child: ChatScreen(
             partnerId: conversation.partner.id.toString(),
             partnerUsername: conversation.partner.username,

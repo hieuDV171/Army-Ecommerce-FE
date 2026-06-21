@@ -66,11 +66,13 @@ class ConversationModel {
     return ConversationModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
       partner: ConversationPartner.fromJson(
-        json['partner'] as Map<String, dynamic>? ?? {},
+        json['partner'] is Map
+            ? Map<String, dynamic>.from(json['partner'] as Map)
+            : {},
       ),
       lastMessage: (json['last_message'] != null && json['last_message'] is Map)
           ? ConversationLastMessage.fromJson(
-              json['last_message'] as Map<String, dynamic>,
+              Map<String, dynamic>.from(json['last_message'] as Map),
             )
           : null,
       numNewMessage: (json['num_new_message'] as num?)?.toInt() ?? 0,
@@ -122,8 +124,8 @@ class ConversationListResponse {
     List<ConversationModel>? dataList;
     if (rawData is List) {
       dataList = rawData
-          .whereType<Map<String, dynamic>>()
-          .map((item) => ConversationModel.fromJson(item))
+          .whereType<Map>()
+          .map((item) => ConversationModel.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     }
     return ConversationListResponse(
@@ -152,8 +154,8 @@ class SendMessageResponse {
     return SendMessageResponse(
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
-      data: (json['data'] != null && json['data'] is Map<String, dynamic>)
-          ? SendMessageResult.fromJson(json['data'])
+      data: (json['data'] != null && json['data'] is Map)
+          ? SendMessageResult.fromJson(Map<String, dynamic>.from(json['data'] as Map))
           : null,
     );
   }

@@ -80,8 +80,8 @@ class NotificationListResponse {
     List<NotificationModel>? dataList;
     if (rawData is List) {
       dataList = rawData
-          .whereType<Map<String, dynamic>>()
-          .map((item) => NotificationModel.fromJson(item))
+          .whereType<Map>()
+          .map((item) => NotificationModel.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     }
     return NotificationListResponse(
