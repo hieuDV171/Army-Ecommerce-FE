@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/blocs/notification/notification_state.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
+import 'package:army_ecommerce/core/network/chat_socket_service.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:army_ecommerce/repositories/notification_repository.dart';
@@ -10,6 +12,7 @@ const int _pageSize = 20;
 
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   final NotificationRepository notificationRepository;
+  StreamSubscription? _notificationSubscription;
 
   int _index = 0;
 
@@ -17,6 +20,48 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<LoadNotificationsRequested>(_onLoadNotificationsRequested);
     on<LoadMoreNotificationsRequested>(_onLoadMoreNotificationsRequested);
     on<MarkNotificationReadRequested>(_onMarkNotificationReadRequested);
+    on<RealTimeNotificationReceived>(_onRealTimeNotificationReceived);
+
+    _notificationSubscription = ChatSocketService().newNotificationsStream.listen((data) {
+      try {
+        final notification = NotificationModel.fromJson(data);
+        add(RealTimeNotificationReceived(notification: notification));
+      } catch (e) {
+        logger.e('NotificationBloc: error parsing real-time notification: $e');
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _notificationSubscription?.cancel();
+    return super.close();
+  }
+
+  void _onRealTimeNotificationReceived(
+    RealTimeNotificationReceived event,
+    Emitter<NotificationState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is NotificationsLoaded) {
+      if (currentState.notifications.any((n) => n.notificationId == event.notification.notificationId)) {
+        return;
+      }
+      final updatedList = [event.notification, ...currentState.notifications];
+      emit(NotificationsLoaded(
+        notifications: updatedList,
+        hasMore: currentState.hasMore,
+        unreadCount: _countUnread(updatedList),
+      ));
+    } else if (currentState is NotificationLoadingMore) {
+      if (currentState.currentList.any((n) => n.notificationId == event.notification.notificationId)) {
+        return;
+      }
+      final updatedList = [event.notification, ...currentState.currentList];
+      emit(NotificationLoadingMore(
+        currentList: updatedList,
+      ));
+    }
   }
 
   // Tính số thông báo chưa đọc từ danh sách
@@ -30,7 +75,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     Emitter<NotificationState> emit,
   ) async {
     emit(NotificationLoading());
-    _index = 1;
+    _index = 0;
 
     try {
       final response = await notificationRepository.getNotification(
@@ -103,26 +148,40 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     }
   }
 
-  // Xử lý đánh dấu một thông báo đã đọc
+  // Xử lý đánh dấu đã đọc một thông báo
   Future<void> _onMarkNotificationReadRequested(
     MarkNotificationReadRequested event,
     Emitter<NotificationState> emit,
   ) async {
+    final currentState = state;
+    List<NotificationModel>? currentList;
+    bool? hasMore;
+
+    if (currentState is NotificationsLoaded) {
+      currentList = currentState.notifications;
+      hasMore = currentState.hasMore;
+    }
+
+    // Gọi API đánh dấu đã đọc (không await để UI không bị chặn)
     try {
-      final response = await notificationRepository.setReadNotification(
+      await notificationRepository.setReadNotification(
         notificationId: event.notificationId,
       );
-
-      final responseCode = ResponseCode.fromCode(response.code);
-
-      if (responseCode == ResponseCode.ok) {
-        emit(NotificationMarkedRead(notificationId: event.notificationId));
-      } else {
-        logger.w('NotificationBloc: setReadNotification failed code=${response.code}');
-        emit(NotificationFailure(error: response.message, code: response.code));
-      }
     } catch (e) {
-      emit(NotificationFailure(error: e.toString(), code: ResponseCode.exception.code));
+      logger.e('NotificationBloc: setReadNotification error: $e');
+    }
+
+    // Cập nhật state ngay lập tức (optimistic update)
+    if (currentList != null) {
+      final updatedList = currentList
+          .map((n) => n.notificationId == event.notificationId ? n.copyWith(isRead: true) : n)
+          .toList();
+      emit(NotificationsLoaded(
+        notifications: updatedList,
+        hasMore: hasMore ?? false,
+        unreadCount: _countUnread(updatedList),
+      ));
     }
   }
+
 }

@@ -4,6 +4,10 @@ import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 
 class ChatSocketService {
+  static final ChatSocketService _instance = ChatSocketService._internal();
+  factory ChatSocketService() => _instance;
+  ChatSocketService._internal();
+
   socket_io.Socket? _socket;
 
   // StreamControllers to publish socket events to listeners

@@ -1,3 +1,4 @@
+import 'package:army_ecommerce/models/notification_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class NotificationEvent extends Equatable {
@@ -19,4 +20,14 @@ class MarkNotificationReadRequested extends NotificationEvent {
 
   @override
   List<Object?> get props => [notificationId];
+}
+
+// Sự kiện nhận thông báo thời gian thực từ Socket
+class RealTimeNotificationReceived extends NotificationEvent {
+  final NotificationModel notification;
+
+  RealTimeNotificationReceived({required this.notification});
+
+  @override
+  List<Object?> get props => [notification];
 }

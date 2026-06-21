@@ -25,24 +25,18 @@ class ErrorState extends StatelessWidget {
         m.contains('handshake') ||
         m.contains('network');
   }
-
   static String cleanMessage(String msg) {
     String clean = msg.trim();
+    
+    final RegExp prefixPattern = RegExp(r'^([a-zA-Z]*Exception|lỗi):\s*', caseSensitive: false);
     
     bool cleaned = true;
     while (cleaned) {
       cleaned = false;
-      final lower = clean.toLowerCase();
-      final prefixes = [
-        'exception:',
-        'lỗi:',
-      ];
-      for (final prefix in prefixes) {
-        if (lower.contains(prefix)) {
-          clean = clean.substring(prefix.length).trim();
-          cleaned = true;
-          break;
-        }
+      final match = prefixPattern.firstMatch(clean);
+      if (match != null) {
+        clean = clean.substring(match.end).trim();
+        cleaned = true;
       }
     }
     

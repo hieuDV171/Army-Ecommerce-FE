@@ -75,7 +75,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
             builder: (_) => BuyerOrderDetailPage(orderId: objectId),
           ),
         );
-      } else if (type == 'product' || type == 'like' || type == 'comment') {
+      } else if (type == 'product' ||
+          type == 'like' ||
+          type == 'comment' ||
+          type == 'like_product' ||
+          type == 'comment_product') {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -390,10 +394,12 @@ class _NotificationIcon extends StatelessWidget {
       case 'order':
         return (Icons.local_shipping_outlined, AppColors.info);
       case 'like':
+      case 'like_product':
         return (Icons.favorite_outline, _shopeeOrange(context));
       case 'follow':
         return (Icons.person_add_outlined, AppColors.success);
       case 'comment':
+      case 'comment_product':
         return (Icons.chat_bubble_outline, AppColors.purple);
       case 'promotion':
         return (Icons.local_offer_outlined, _shopeeOrange(context));

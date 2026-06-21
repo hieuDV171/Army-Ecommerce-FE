@@ -4,12 +4,9 @@ import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/blocs/marketplace/home/home_bloc.dart';
 import 'package:army_ecommerce/blocs/marketplace/home/home_event.dart';
 import 'package:army_ecommerce/blocs/marketplace/home/home_state.dart';
-import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
-import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/models/category_model.dart';
 import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
-import 'package:army_ecommerce/ui/notification/notification_screen.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -221,26 +218,7 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Thông báo',
-                onPressed: () {
-                  final notifBloc = context.read<NotificationBloc>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: notifBloc,
-                        child: NotificationScreen(token: token),
-                      ),
-                    ),
-                  ).then((_) {
-                    if (context.mounted && token.isNotEmpty) {
-                      notifBloc.add(LoadNotificationsRequested());
-                    }
-                  });
-                },
-                icon: const Icon(Icons.notifications_none, color: Colors.white),
-              ),
+
               // Icon chat với badge số tin nhắn chưa đọc
               BlocBuilder<ChatBloc, ChatState>(
                 builder: (ctx, chatState) {
