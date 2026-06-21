@@ -1,7 +1,9 @@
+import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/follow/follow_bloc.dart';
 import 'package:army_ecommerce/blocs/follow/follow_event.dart';
 import 'package:army_ecommerce/blocs/follow/follow_state.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
+import 'package:army_ecommerce/ui/marketplace/product/seller_listings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../util/constants/app_colors.dart';
@@ -150,6 +152,11 @@ class _FollowersScreenState extends State<FollowersScreen> {
                           ),
                         );
                   },
+                  onRefresh: () {
+                    context.read<FollowBloc>().add(
+                          LoadFollowersRequested(userId: widget.userId),
+                        );
+                  },
                 );
               },
             ),
@@ -190,10 +197,12 @@ class _FollowersScreenState extends State<FollowersScreen> {
 class _UserFollowItem extends StatefulWidget {
   final UserFollowModel user;
   final void Function(UserFollowModel user, String action) onFollowToggle;
+  final VoidCallback onRefresh;
 
   const _UserFollowItem({
     required this.user,
     required this.onFollowToggle,
+    required this.onRefresh,
     super.key,
   });
 
@@ -268,79 +277,118 @@ class _UserFollowItemState extends State<_UserFollowItem> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.currentUser?.id.toString() ?? '';
+    final isMe = widget.user.id.toString() == currentUserId;
+
+    final onTapAction = isMe
+        ? null
+        : () {
+            if (_isFollowed) {
+              _showUnfollowDialog();
+            } else {
+              setState(() => _isFollowed = true);
+              widget.onFollowToggle(widget.user, 'follow');
+            }
+          };
+
+    final decoration = isMe
+        ? BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.grey[300]!),
+          )
+        : BoxDecoration(
+            gradient: (_isFollowed && context.specialTheme.useGradient)
+                ? context.specialTheme.primaryGradient
+                : null,
+            color: _isFollowed
+                ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: context.specialTheme.primaryDarkColor,
+              width: 1,
+            ),
+          );
+
+    final textStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+      color: isMe
+          ? Colors.grey[500]
+          : (_isFollowed ? Colors.white : context.specialTheme.primaryDarkColor),
+    );
+
     return Container(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 1),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          // Avatar tròn
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.grey[200],
-            backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
-                ? NetworkImage(widget.user.avatar!)
-                : null,
-            child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
-                ? Icon(Icons.person, size: 28, color: Colors.grey[500])
-                : null,
-          ),
-          const SizedBox(width: 12),
-
-          // Username — chiếm phần còn lại
+          // Avatar tròn & Username clickable area
           Expanded(
-            child: Text(
-              widget.user.username,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SellerInfoPage(
+                      userId: widget.user.id.toString(),
+                      sellerName: widget.user.username,
+                      avatarUrl: widget.user.avatar,
+                    ),
+                  ),
+                ).then((_) {
+                  if (context.mounted) {
+                    widget.onRefresh();
+                  }
+                });
+              },
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.grey[200],
+                    backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
+                        ? NetworkImage(widget.user.avatar!)
+                        : null,
+                    child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
+                        ? Icon(Icons.person, size: 28, color: Colors.grey[500])
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      widget.user.username,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
 
           // Nút theo dõi / đang theo dõi
           GestureDetector(
-            onTap: () {
-              if (_isFollowed) {
-                // Đang theo dõi → hiện dialog xác nhận trước khi hủy
-                _showUnfollowDialog();
-              } else {
-                // Chưa theo dõi → cập nhật nút ngay rồi gọi API follow
-                setState(() => _isFollowed = true);
-                widget.onFollowToggle(widget.user, 'follow');
-              }
-            },
+            onTap: onTapAction,
             child: Container(
               height: 32,
               constraints: const BoxConstraints(minWidth: 96),
-              decoration: BoxDecoration(
-                gradient: (_isFollowed && context.specialTheme.useGradient)
-                    ? context.specialTheme.primaryGradient
-                    : null,
-                color: _isFollowed
-                    ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: context.specialTheme.primaryDarkColor,
-                  width: 1,
-                ),
-              ),
+              decoration: decoration,
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: _isFollowed
-                      ? Colors.white
-                      : context.specialTheme.primaryDarkColor,
-                ),
+                isMe ? 'Theo dõi' : (_isFollowed ? 'Đang theo dõi' : 'Theo dõi'),
+                style: textStyle,
               ),
             ),
           ),

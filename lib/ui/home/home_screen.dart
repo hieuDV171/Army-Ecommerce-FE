@@ -133,6 +133,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userId != oldWidget.userId || widget.token != oldWidget.token || widget.username != oldWidget.username) {
+      setState(() {
+        _currentUsername = widget.username;
+        if (widget.token.isEmpty) {
+          _avatarUrl = null;
+          _coverImageUrl = null;
+        } else {
+          SessionManager.getAvatar().then((avatar) {
+            if (mounted) setState(() => _avatarUrl = avatar);
+          });
+          SessionManager.getCoverImage().then((cover) {
+            if (mounted) setState(() => _coverImageUrl = cover);
+          });
+        }
+      });
+    }
+  }
+
   void _onForegroundMessageReceived() {
     if (mounted && widget.token.isNotEmpty) {
       _notificationBloc.add(LoadNotificationsRequested());
@@ -251,6 +272,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 _currentUsername = state.user.username;
                 _avatarUrl = state.user.avatar;
                 _coverImageUrl = state.user.coverImage;
+              });
+            } else if ((state is Unauthenticated || state is AuthLogoutSuccess) && mounted) {
+              setState(() {
+                _currentUsername = "Khách";
+                _avatarUrl = null;
+                _coverImageUrl = null;
               });
             }
           },

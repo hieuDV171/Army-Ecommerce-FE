@@ -90,12 +90,6 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
         }
 
         if (state.errorMessage != null && state.products.isEmpty) {
-          if (ErrorState.isNetworkError(state.errorMessage)) {
-            return const SingleChildScrollView(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: ShimmerProductGrid(),
-            );
-          }
           return ErrorState(
             message: state.errorMessage!,
             onRetry: () => context.read<HomeBloc>().add(HomeRequested()),

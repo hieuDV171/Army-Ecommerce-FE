@@ -75,7 +75,7 @@ class ApiException implements Exception {
       if (statusCode == 500) {
         return ApiException(
           code: ResponseCode.exception.code,
-          message: 'Máy chủ gặp sự cố hệ thống (500). Vui lòng thử lại sau.',
+          message: 'Máy chủ gặp sự cố hệ thống. Vui lòng thử lại sau.',
           statusCode: statusCode,
         );
       }

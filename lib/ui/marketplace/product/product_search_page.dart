@@ -50,6 +50,7 @@ class _SearchView extends StatefulWidget {
 class _SearchViewState extends State<_SearchView> {
   final TextEditingController _keywordController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _searchFocusNode = FocusNode();
   String _sortBy = 'default';
   bool _shouldAutofocus = true;
 
@@ -58,9 +59,16 @@ class _SearchViewState extends State<_SearchView> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _keywordController.addListener(_onKeywordChanged);
+    _searchFocusNode.addListener(_onFocusChanged);
   }
 
   void _onKeywordChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _onFocusChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -111,6 +119,8 @@ class _SearchViewState extends State<_SearchView> {
   void dispose() {
     _keywordController.removeListener(_onKeywordChanged);
     _keywordController.dispose();
+    _searchFocusNode.removeListener(_onFocusChanged);
+    _searchFocusNode.dispose();
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -150,72 +160,80 @@ class _SearchViewState extends State<_SearchView> {
           behavior: HitTestBehavior.translucent,
           child: Scaffold(
             appBar: AppBar(title: const Text('Tìm kiếm')),
-            body: Column(
+            body: Stack(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: AppTextField(
-                          controller: _keywordController,
-                          label: 'Từ khóa',
-                          autofocus: autofocus,
-                          textInputAction: TextInputAction.search,
-                          onSubmitted: (value) {
-                            final kw = value.trim();
-                            context.read<ProductSearchBloc>().add(
-                                  ProductSearchRequested(
-                                    keyword: kw,
-                                    categoryId: state.categoryId,
-                                  ),
-                                );
-                          },
-                        ),
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: AppTextField(
+                              controller: _keywordController,
+                              focusNode: _searchFocusNode,
+                              label: 'Từ khóa',
+                              autofocus: autofocus,
+                              textInputAction: TextInputAction.search,
+                              onSubmitted: (value) {
+                                final kw = value.trim();
+                                _searchFocusNode.unfocus();
+                                context.read<ProductSearchBloc>().add(
+                                      ProductSearchRequested(
+                                        keyword: kw,
+                                        categoryId: state.categoryId,
+                                      ),
+                                    );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          IconButton.filled(
+                            tooltip: 'Tìm kiếm',
+                            onPressed: () {
+                              final kw = _keywordController.text.trim();
+                              _searchFocusNode.unfocus();
+                              context.read<ProductSearchBloc>().add(
+                                    ProductSearchRequested(
+                                      keyword: kw,
+                                      categoryId: state.categoryId,
+                                    ),
+                                  );
+                            },
+                            icon: const Icon(Icons.search),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          IconButton(
+                            tooltip: 'Lọc kết quả',
+                            onPressed: () => _openFilterSheet(context, state),
+                            icon: const Icon(Icons.tune),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      IconButton.filled(
-                        tooltip: 'Tìm kiếm',
-                        onPressed: () {
-                          final kw = _keywordController.text.trim();
+                    ),
+                    // Hiển thị danh sách thương hiệu nếu có categoryId
+                    if (state.categoryId != null)
+                      _BrandsList(
+                        brands: state.brands,
+                        isLoading: state.isBrandsLoading,
+                        selectedBrandId: state.brandId,
+                        onBrandSelected: (brandId) {
                           context.read<ProductSearchBloc>().add(
-                                ProductSearchRequested(
-                                  keyword: kw,
+                                ProductSearchFiltered(
+                                  keyword: state.keyword,
                                   categoryId: state.categoryId,
+                                  brandId: brandId,
+                                  priceMin: state.priceMin,
+                                  priceMax: state.priceMax,
                                 ),
                               );
                         },
-                        icon: const Icon(Icons.search),
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      IconButton(
-                        tooltip: 'Lọc kết quả',
-                        onPressed: () => _openFilterSheet(context, state),
-                        icon: const Icon(Icons.tune),
-                      ),
-                    ],
-                  ),
+                    _buildSortRow(),
+                    Expanded(child: _buildResult(context, state)),
+                  ],
                 ),
-                // Hiển thị danh sách thương hiệu nếu có categoryId
-                if (state.categoryId != null)
-                  _BrandsList(
-                    brands: state.brands,
-                    isLoading: state.isBrandsLoading,
-                    selectedBrandId: state.brandId,
-                    onBrandSelected: (brandId) {
-                      context.read<ProductSearchBloc>().add(
-                            ProductSearchFiltered(
-                              keyword: state.keyword,
-                              categoryId: state.categoryId,
-                              brandId: brandId,
-                              priceMin: state.priceMin,
-                              priceMax: state.priceMax,
-                            ),
-                          );
-                    },
-                  ),
-                _buildSortRow(),
-                Expanded(child: _buildResult(context, state)),
+                _buildDropdownOverlay(context, state),
               ],
             ),
           ),
@@ -232,64 +250,9 @@ class _SearchViewState extends State<_SearchView> {
         state.priceMax == null;
 
     if (showHistory) {
-      if (state.isSavedSearchesLoading) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      if (state.savedSearches.isEmpty) {
-        return const EmptyState(
-          title: 'Tìm kiếm sản phẩm',
-          message: 'Vui lòng nhập từ khóa hoặc chọn bộ lọc để tìm kiếm.',
-        );
-      }
-      return ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.history, color: AppColors.textSecondary, size: 18),
-              SizedBox(width: AppSpacing.xs),
-              Text(
-                'Tìm kiếm gần đây',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.xs,
-            children: state.savedSearches.map((item) {
-              return InputChip(
-                label: Text(item.title),
-                onPressed: () {
-                  _keywordController.text = item.title;
-                  context.read<ProductSearchBloc>().add(
-                        ProductSearchRequested(
-                          keyword: item.title,
-                          categoryId: state.categoryId,
-                        ),
-                      );
-                },
-                onDeleted: () {
-                  context.read<ProductSearchBloc>().add(
-                        ProductSearchDelSavedSearchRequested(
-                          searchId: item.id,
-                        ),
-                      );
-                },
-                deleteIconColor: Colors.red,
-                backgroundColor: AppColors.border.withValues(alpha: 0.3),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+      return const EmptyState(
+        title: 'Tìm kiếm sản phẩm',
+        message: 'Vui lòng nhập từ khóa hoặc chọn bộ lọc để tìm kiếm.',
       );
     }
 
@@ -300,12 +263,6 @@ class _SearchViewState extends State<_SearchView> {
       );
     }
     if (state.errorMessage != null && state.products.isEmpty) {
-      if (ErrorState.isNetworkError(state.errorMessage)) {
-        return const Padding(
-          padding: EdgeInsets.all(AppSpacing.lg),
-          child: ShimmerProductGrid(),
-        );
-      }
       final hasCondition = state.keyword.trim().isNotEmpty ||
           (state.categoryId != null && state.categoryId!.isNotEmpty && state.categoryId != '0') ||
           (state.brandId != null && state.brandId!.isNotEmpty) ||
@@ -403,6 +360,77 @@ class _SearchViewState extends State<_SearchView> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDropdownOverlay(BuildContext context, ProductSearchState state) {
+    final query = _keywordController.text.trim().toLowerCase();
+    
+    final suggestions = state.savedSearches.where((item) {
+      if (query.isEmpty) return true;
+      return item.title.toLowerCase().contains(query);
+    }).toList();
+
+    if (!_searchFocusNode.hasFocus || suggestions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      top: 72.0,
+      left: 16.0,
+      right: 16.0,
+      child: Material(
+        elevation: 8.0,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: Theme.of(context).cardColor,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
+          ),
+          constraints: const BoxConstraints(maxHeight: 250.0),
+          child: ListView.separated(
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            itemCount: suggestions.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = suggestions[index];
+              return ListTile(
+                dense: true,
+                leading: const Icon(Icons.history, size: 18, color: AppColors.textSecondary),
+                title: Text(
+                  item.title,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.clear, size: 16, color: Colors.red),
+                  onPressed: () {
+                    context.read<ProductSearchBloc>().add(
+                          ProductSearchDelSavedSearchRequested(
+                            searchId: item.id,
+                          ),
+                        );
+                  },
+                ),
+                onTap: () {
+                  _keywordController.text = item.title;
+                  _keywordController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: item.title.length),
+                  );
+                  _searchFocusNode.unfocus();
+                  context.read<ProductSearchBloc>().add(
+                        ProductSearchRequested(
+                          keyword: item.title,
+                          categoryId: state.categoryId,
+                        ),
+                      );
+                },
+              );
+            },
+          ),
+        ),
       ),
     );
   }

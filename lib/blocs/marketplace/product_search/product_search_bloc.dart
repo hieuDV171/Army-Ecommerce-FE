@@ -1,4 +1,5 @@
 import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/models/model_helpers.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repositories/marketplace_repository.dart';
 import 'product_search_event.dart';
@@ -29,9 +30,11 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         event.priceMin != null ||
         event.priceMax != null;
 
+    List<MarketplaceItem> savedSearches = state.savedSearches;
     if (event.keyword.trim().isNotEmpty) {
       try {
         await marketplaceRepository.saveSearch(event.keyword.trim());
+        savedSearches = await marketplaceRepository.getSavedSearches();
       } catch (_) {}
     }
 
@@ -45,6 +48,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         useListProductsApi: !hasCondition,
         lastId: () => null,
         products: const [],
+        savedSearches: savedSearches,
         index: 0,
         isInitialLoading: true,
         hasReachedEnd: false,
@@ -66,9 +70,11 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchFiltered event,
     Emitter<ProductSearchState> emit,
   ) async {
+    List<MarketplaceItem> savedSearches = state.savedSearches;
     if (event.keyword.trim().isNotEmpty) {
       try {
         await marketplaceRepository.saveSearch(event.keyword.trim());
+        savedSearches = await marketplaceRepository.getSavedSearches();
       } catch (_) {}
     }
 
@@ -88,6 +94,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         useListProductsApi: !hasCondition,
         lastId: () => null,
         products: const [],
+        savedSearches: savedSearches,
         index: 0,
         isInitialLoading: true,
         hasReachedEnd: false,

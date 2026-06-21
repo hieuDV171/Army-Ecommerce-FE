@@ -8,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
+import 'package:army_ecommerce/blocs/chat/chat_event.dart';
+import 'package:army_ecommerce/ui/chat/chat_screen.dart';
 
 import 'package:army_ecommerce/core/services/cart_manager.dart';
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
@@ -452,6 +454,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
       return const EmptyState(title: 'Không tìm thấy sản phẩm');
     }
 
+    final authState = context.read<AuthBloc>().state;
+    final currentUserId = authState.currentUser?.id ?? '';
+    final sellerId = product.seller?.id ?? '';
+    final isMe = sellerId.isNotEmpty && sellerId == currentUserId;
+
     final images = _collectDisplayImages(product);
     final sellerName =
         product.seller?.name ?? product.sellerName ?? 'Người bán';
@@ -773,25 +780,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           _MetaRow(label: 'Thương hiệu', value: product.brand!.name),
                         if (product.category != null)
                           _MetaRow(label: 'Danh mục', value: product.category!.name),
-                        if ((product.condition ?? '').isNotEmpty)
-                          _MetaRow(label: 'Tình trạng', value: product.condition!),
                         if ((product.shipsFrom ?? '').isNotEmpty)
                           _MetaRow(label: 'Gửi từ', value: product.shipsFrom!),
-                        if ((product.weight ?? '').isNotEmpty)
-                          _MetaRow(label: 'Khối lượng', value: product.weight!),
-                        if (product.dimension.isNotEmpty)
-                          _MetaRow(
-                            label: 'Kích thước',
-                            value: product.dimension.join(' x '),
-                          ),
-                        if ((product.state ?? '').isNotEmpty)
-                          _MetaRow(label: 'Trạng thái', value: product.state!),
-                        if ((product.isBlocked ?? '').isNotEmpty)
-                          _MetaRow(label: 'Bị chặn', value: product.isBlocked!),
-                        if ((product.banned ?? '').isNotEmpty)
-                          _MetaRow(label: 'Bị cấm', value: product.banned!),
-                        if ((product.shareUrl ?? '').isNotEmpty)
-                          _MetaRow(label: 'Link chia sẻ', value: product.shareUrl!),
                       ],
                     ),
                   ),
@@ -815,14 +805,73 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       product.shipsFrom ??
                       'Chưa có vị trí',
                 ),
-                trailing: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    if ((sellerScore ?? '').isNotEmpty)
-                      Text('Điểm: $sellerScore'),
-                    if ((sellerListing ?? '').isNotEmpty)
-                      Text('Listing: $sellerListing'),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if ((sellerScore ?? '').isNotEmpty)
+                          Text('Điểm: $sellerScore'),
+                        if ((sellerListing ?? '').isNotEmpty)
+                          Text('Listing: $sellerListing'),
+                      ],
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isMe
+                            ? Colors.grey[200]
+                            : (context.specialTheme.useGradient
+                                ? null
+                                : context.specialTheme.primaryColor),
+                        gradient: isMe
+                            ? null
+                            : (context.specialTheme.useGradient
+                                ? context.specialTheme.primaryGradient
+                                : null),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                        color: isMe ? Colors.grey[400] : Colors.white,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        onPressed: isMe
+                            ? null
+                            : () {
+                                final token = authState.currentUser?.token ?? '';
+                                if (checkLogin(context, token: token)) {
+                                  final chatBloc = context.read<ChatBloc>();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider.value(
+                                        value: chatBloc,
+                                        child: ChatScreen(
+                                          partnerId: sellerId,
+                                          partnerUsername: sellerName,
+                                          partnerAvatar: product.seller?.avatar,
+                                          currentUserId: currentUserId,
+                                          productId: product.id,
+                                          productTitle: product.title,
+                                          productPrice: product.price,
+                                          productImageUrl: product.imageUrls.isNotEmpty
+                                              ? product.imageUrls.first
+                                              : null,
+                                        ),
+                                      ),
+                                    ),
+                                  ).then((_) {
+                                    if (context.mounted && token.isNotEmpty) {
+                                      chatBloc.add(LoadConversationsRequested());
+                                    }
+                                  });
+                                }
+                              },
+                      ),
+                    ),
                   ],
                 ),
                 onTap: () {
@@ -892,7 +941,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const Divider(height: 32),
               SizedBox(
                 key: _commentSectionKey,
-                child: _RatingsSection(productId: product.id),
+                child: _RatingsSection(
+                  productId: product.id,
+                  sellerId: product.seller?.id,
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
               SectionHeader(
@@ -1439,8 +1491,9 @@ class _MetaRow extends StatelessWidget {
 
 class _RatingsSection extends StatefulWidget {
   final String productId;
+  final String? sellerId;
 
-  const _RatingsSection({required this.productId});
+  const _RatingsSection({required this.productId, this.sellerId});
 
   @override
   State<_RatingsSection> createState() => _RatingsSectionState();
@@ -1471,6 +1524,7 @@ class _RatingsSectionState extends State<_RatingsSection> {
     final repo = context.read<MarketplaceRepository>();
     try {
       final rates = await repo.getRates(
+        userId: widget.sellerId,
         productId: widget.productId,
         level: _selectedStarFilter == 0 ? null : _selectedStarFilter,
         index: 0,

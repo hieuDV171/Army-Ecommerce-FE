@@ -34,11 +34,11 @@ class MessageModel {
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     // created là Unix timestamp dạng số nguyên
-    final createdRaw = json['created'];
+    final createdRaw = json['created'] ?? json['created_at'];
     final createdTs = createdRaw is num ? createdRaw.toInt() : int.tryParse(createdRaw?.toString() ?? '') ?? 0;
 
     return MessageModel(
-      message: json['message']?.toString() ?? '',
+      message: json['message']?.toString() ?? json['content']?.toString() ?? '',
       unread: json['unread'] == true,
       type: json['type']?.toString() ?? 'text',
       created: createdTs > 0

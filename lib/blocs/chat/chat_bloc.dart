@@ -32,6 +32,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _messageSubscription = marketplaceRepository.newMessagesStream.listen((message) {
       if (_activePartnerId != null && message.sender.id.toString() == _activePartnerId) {
         add(NewMessageReceived(message: message));
+        add(MarkMessageReadRequested(partnerId: _activePartnerId!));
+      } else if (_activePartnerId == null) {
+        add(LoadConversationsRequested(isSilent: true));
       }
     });
   }
@@ -71,7 +74,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     _activePartnerId = null;
-    emit(ChatLoading());
+    if (!event.isSilent) {
+      emit(ChatLoading());
+    }
     _conversationsIndex = 0;
 
     try {

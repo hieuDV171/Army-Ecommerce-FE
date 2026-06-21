@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:army_ecommerce/core/network/api_exception.dart';
 
 import '../../../core/api/dio_client.dart';
 import '../../../core/constants/api_paths.dart';
@@ -22,8 +23,13 @@ class MarketplaceRemoteDataSource {
       );
       return ApiResponse<dynamic>.fromDynamic(response.data, (json) => json);
     } on DioException catch (error) {
-      throw Exception(
-        error.error?.toString() ?? error.message ?? 'Lỗi kết nối mạng',
+      if (error.error is ApiException) {
+        throw error.error as ApiException;
+      }
+      throw ApiException.fromResponse(
+        data: error.response?.data,
+        statusCode: error.response?.statusCode,
+        fallbackMessage: error.message,
       );
     }
   }
@@ -39,8 +45,13 @@ class MarketplaceRemoteDataSource {
       );
       return ApiResponse<dynamic>.fromDynamic(response.data, (json) => json);
     } on DioException catch (error) {
-      throw Exception(
-        error.error?.toString() ?? error.message ?? 'Lỗi kết nối mạng',
+      if (error.error is ApiException) {
+        throw error.error as ApiException;
+      }
+      throw ApiException.fromResponse(
+        data: error.response?.data,
+        statusCode: error.response?.statusCode,
+        fallbackMessage: error.message,
       );
     }
   }
@@ -56,8 +67,13 @@ class MarketplaceRemoteDataSource {
       );
       return ApiResponse<dynamic>.fromDynamic(response.data, (json) => json);
     } on DioException catch (error) {
-      throw Exception(
-        error.error?.toString() ?? error.message ?? 'Lỗi kết nối mạng',
+      if (error.error is ApiException) {
+        throw error.error as ApiException;
+      }
+      throw ApiException.fromResponse(
+        data: error.response?.data,
+        statusCode: error.response?.statusCode,
+        fallbackMessage: error.message,
       );
     }
   }
@@ -67,8 +83,13 @@ class MarketplaceRemoteDataSource {
       final response = await _dioClient.dio.delete(path);
       return ApiResponse<dynamic>.fromDynamic(response.data, (json) => json);
     } on DioException catch (error) {
-      throw Exception(
-        error.error?.toString() ?? error.message ?? 'Lỗi kết nối mạng',
+      if (error.error is ApiException) {
+        throw error.error as ApiException;
+      }
+      throw ApiException.fromResponse(
+        data: error.response?.data,
+        statusCode: error.response?.statusCode,
+        fallbackMessage: error.message,
       );
     }
   }

@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
+import 'package:army_ecommerce/blocs/auth/auth_event.dart';
+import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import '../constants/app_colors.dart';
 
 class NetworkStatusWrapper extends StatefulWidget {
@@ -47,6 +51,8 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper> {
                 setState(() => _showOnlineSuccess = false);
               }
             });
+          } else {
+            _handleAutoLogout();
           }
         });
       }
@@ -56,9 +62,33 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper> {
           _isOnline = false;
           _showOnlineSuccess = false;
         });
+        _handleAutoLogout();
       }
     }
   }
+
+  void _handleAutoLogout() {
+    try {
+      final authBloc = BlocProvider.of<AuthBloc>(context);
+      final authState = authBloc.state;
+      if (authState is AuthSuccess) {
+        final token = authState.user.token;
+        authBloc.add(LogoutButtonPressed(token: token));
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã tự động đăng xuất do mất kết nối mạng.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error auto-logging out: $e');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {

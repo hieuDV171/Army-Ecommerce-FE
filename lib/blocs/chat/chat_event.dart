@@ -36,7 +36,13 @@ class SendMessageRequested extends ChatEvent {
 }
 
 // Sự kiện tải danh sách hội thoại (trang đầu)
-class LoadConversationsRequested extends ChatEvent {}
+class LoadConversationsRequested extends ChatEvent {
+  final bool isSilent;
+  LoadConversationsRequested({this.isSilent = false});
+
+  @override
+  List<Object?> get props => [isSilent];
+}
 
 // Sự kiện tải thêm danh sách hội thoại (infinite scroll)
 class LoadMoreConversationsRequested extends ChatEvent {}

@@ -588,7 +588,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       ),
     );
     if (confirmed == true) {
-      setState(() => _isBlocked = true);
+      setState(() {
+        _isBlocked = true;
+        if (_isFollowed) {
+          _isFollowed = false;
+          _followersCount = (_followersCount - 1).clamp(0, 999999);
+        }
+      });
       _blockBloc.add(BlockUserRequested(
         userId: _sellerUserId,
         username: widget.sellerName,
@@ -676,6 +682,16 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     final isMe = _sellerUserId == currentUserId && currentUserId.isNotEmpty;
     final isGuest = !authState.isAuthenticated;
 
+    final hasSellerInfo = _user != null && (
+      (_user!.email ?? '').trim().isNotEmpty ||
+      (_user!.phoneNumber ?? '').trim().isNotEmpty ||
+      (_user!.address ?? '').trim().isNotEmpty ||
+      (_user!.city ?? '').trim().isNotEmpty ||
+      (_user!.status ?? '').trim().isNotEmpty ||
+      (_user!.firstName ?? '').trim().isNotEmpty ||
+      (_user!.lastName ?? '').trim().isNotEmpty
+    );
+
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _followBloc),
@@ -716,12 +732,24 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                 current is BlockActionSuccess || current is BlockFailure,
             listener: (context, state) {
               if (state is BlockActionSuccess) {
-                setState(() => _isBlocked = state.isBlocked);
+                setState(() {
+                  _isBlocked = state.isBlocked;
+                  if (state.isBlocked) {
+                    if (_isFollowed) {
+                      _isFollowed = false;
+                      _followersCount = (_followersCount - 1).clamp(0, 999999);
+                    }
+                  }
+                });
                 final msg = state.isBlocked
                     ? 'Đã chặn ${state.username}'
                     : 'Đã bỏ chặn ${state.username}';
                 AppSnackBar.show(context, message: msg);
               } else if (state is BlockFailure) {
+                setState(() {
+                  _isBlocked = !_isBlocked;
+                });
+                _loadUser();
                 AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
               }
             },
@@ -916,7 +944,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                         const SizedBox(height: AppSpacing.lg),
                         const SectionHeader(title: 'Thông tin người bán'),
                         const SizedBox(height: AppSpacing.sm),
-                        if (_user != null) ...[
+                        if (hasSellerInfo) ...[
                           if ((_user!.email ?? '').isNotEmpty) _MetaRow(label: 'Email', value: _user!.email!),
                           if ((_user!.phoneNumber ?? '').isNotEmpty) _MetaRow(label: 'Số điện thoại', value: _user!.phoneNumber!),
                           if ((_user!.address ?? '').isNotEmpty) _MetaRow(label: 'Địa chỉ', value: _user!.address!),
@@ -925,7 +953,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                           if ((_user!.firstName ?? '').isNotEmpty || (_user!.lastName ?? '').isNotEmpty)
                             _MetaRow(label: 'Tên', value: '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'.trim()),
                         ] else
-                          const Text('Thông tin chi tiết người bán chưa có.'),
+                          const Text(
+                            'Người này lười lắm, không để lại thông tin gì.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                         const Divider(height: 32),
                         const SectionHeader(title: 'Sản phẩm đang bán'),
                         const SizedBox(height: AppSpacing.sm),

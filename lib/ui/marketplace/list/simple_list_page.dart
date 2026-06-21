@@ -100,7 +100,7 @@ class _SimpleListPageState extends State<SimpleListPage> {
   }
 
   Widget _buildBody(BuildContext context, SimpleListState state) {
-    if (state.isInitialLoading || (state.errorMessage != null && ErrorState.isNetworkError(state.errorMessage))) {
+    if (state.isInitialLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.errorMessage != null && state.items.isEmpty) {
@@ -198,7 +198,7 @@ class _SimpleListBodyState extends State<SimpleListBody> {
         }
       },
       builder: (context, state) {
-        if (state.isInitialLoading || (state.errorMessage != null && ErrorState.isNetworkError(state.errorMessage))) {
+        if (state.isInitialLoading) {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.errorMessage != null && state.items.isEmpty) {

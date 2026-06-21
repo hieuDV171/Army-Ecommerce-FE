@@ -1,7 +1,11 @@
+import 'dart:convert';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
 import 'package:army_ecommerce/models/message_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
+import 'package:army_ecommerce/repositories/marketplace_repository.dart';
+import 'package:army_ecommerce/ui/marketplace/product/product_detail_page.dart';
 import 'package:army_ecommerce/ui/marketplace/product/seller_listings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -48,10 +52,13 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _resolvedConversationId;
   bool _isSending = false;
 
+  String? _productIdToSend;
+
   @override
   void initState() {
     super.initState();
     _resolvedConversationId = widget.conversationId;
+    _productIdToSend = widget.productId;
 
     // Tải tin nhắn khi mở màn hình
     context.read<ChatBloc>().add(LoadMessagesRequested(
@@ -96,8 +103,9 @@ class _ChatScreenState extends State<ChatScreen> {
     context.read<ChatBloc>().add(SendMessageRequested(
           toId: widget.partnerId,
           message: text,
-          productId: widget.productId ?? '0',
+          productId: _productIdToSend ?? '0',
         ));
+    _productIdToSend = null;
   }
 
   // Cuộn về cuối danh sách (tin mới nhất)
@@ -524,7 +532,7 @@ class _MessageBubble extends StatelessWidget {
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
-                  _buildMessageText(message.message, isMine, context),
+                  _buildBubbleContent(context),
                   const SizedBox(height: 3),
                   Text(
                     _formatTime(message.created),
@@ -545,7 +553,32 @@ class _MessageBubble extends StatelessWidget {
     );
   }
 
-  // Định dạng giờ:phút
+  Widget _buildBubbleContent(BuildContext context) {
+    if (message.type == 'product_id') {
+      try {
+        final decoded = jsonDecode(message.message);
+        if (decoded is Map) {
+          final productId = decoded['product_id']?.toString() ?? '';
+          final textMsg = decoded['message']?.toString() ?? '';
+          return Column(
+            crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              _ProductMessageBubble(productId: productId, isMine: isMine),
+              if (textMsg.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _buildMessageText(textMsg, isMine, context),
+              ]
+            ],
+          );
+        }
+      } catch (_) {
+        // Fallback cho tin nhắn định dạng cũ (chỉ chứa productId)
+        return _ProductMessageBubble(productId: message.message, isMine: isMine);
+      }
+    }
+    return _buildMessageText(message.message, isMine, context);
+  }
+
   // Định dạng giờ:phút
   String _formatTime(DateTime time) {
     final h = time.hour.toString().padLeft(2, '0');
@@ -621,6 +654,170 @@ class _MessageBubble extends StatelessWidget {
     return RichText(
       text: TextSpan(children: spans),
     );
+  }
+}
+
+class _ProductMessageBubble extends StatefulWidget {
+  final String productId;
+  final bool isMine;
+
+  const _ProductMessageBubble({required this.productId, required this.isMine});
+
+  @override
+  State<_ProductMessageBubble> createState() => _ProductMessageBubbleState();
+}
+
+class _ProductMessageBubbleState extends State<_ProductMessageBubble> {
+  ProductModel? _product;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProduct();
+  }
+
+  @override
+  void didUpdateWidget(_ProductMessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.productId != widget.productId) {
+      _loadProduct();
+    }
+  }
+
+  void _loadProduct() {
+    if (widget.productId.isEmpty || widget.productId == '0') {
+      setState(() => _isLoading = false);
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _product = null;
+    });
+    context.read<MarketplaceRepository>().getProductDetail(widget.productId).then((product) {
+      if (mounted) {
+        setState(() {
+          _product = product;
+          _isLoading = false;
+        });
+      }
+    }).catchError((e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        width: 200,
+        height: 64,
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+        ),
+      );
+    }
+
+    final product = _product;
+    if (product == null) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'Sản phẩm #${widget.productId}\n(Không tìm thấy chi tiết)',
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
+          ),
+        );
+      },
+      child: Container(
+        width: 210,
+        decoration: BoxDecoration(
+          color: widget.isMine ? Colors.white.withValues(alpha: 0.15) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: product.imageUrls.isNotEmpty
+                  ? Image.network(
+                      product.imageUrls.first,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(),
+                    )
+                  : _buildFallbackIcon(),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: widget.isMine ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatPrice(product.price),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: widget.isMine ? Colors.white.withValues(alpha: 0.9) : Colors.red[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackIcon() {
+    return Container(
+      width: 48,
+      height: 48,
+      color: Colors.grey[300],
+      child: const Icon(Icons.inventory_2_outlined, size: 20, color: Colors.grey),
+    );
+  }
+
+  String _formatPrice(num price) {
+    final formatted = price.toInt().toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+    return '₫$formatted';
   }
 }
 

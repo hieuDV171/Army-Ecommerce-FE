@@ -9,7 +9,7 @@ class ApiPaths {
   static const createCodeResetPassword = '/auth/create_code_reset_password';
   static const checkCodeResetPassword = '/auth/check_code_reset_password';
   static const resetPassword = '/auth/reset_password';
-  static const setDevToken = '/auth/set_dev_token';
+  static const setDevToken = '/dev_tokens/set_devtoken';
   static const getUserInfo = '/users/get_user_info';
   static const setUserInfo = '/users/set_user_info';
   static const uploadFile = '/upload/file';
