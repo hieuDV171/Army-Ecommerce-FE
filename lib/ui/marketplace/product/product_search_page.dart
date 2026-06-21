@@ -25,8 +25,13 @@ import '../../util/theme/special_app_theme.dart';
 
 class SearchPage extends StatelessWidget {
   final String? categoryId;
+  final bool autofocus;
 
-  const SearchPage({super.key, this.categoryId});
+  const SearchPage({
+    super.key,
+    this.categoryId,
+    this.autofocus = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +40,14 @@ class SearchPage extends StatelessWidget {
         marketplaceRepository: context.read<MarketplaceRepository>(),
       )..add(ProductSearchRequested(categoryId: categoryId))
        ..add(ProductSearchSavedSearchesRequested()),
-      child: const _SearchView(),
+      child: _SearchView(autofocus: autofocus),
     );
   }
 }
 
 class _SearchView extends StatefulWidget {
-  const _SearchView();
+  final bool autofocus;
+  const _SearchView({required this.autofocus});
 
   @override
   State<_SearchView> createState() => _SearchViewState();
@@ -52,11 +58,12 @@ class _SearchViewState extends State<_SearchView> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _searchFocusNode = FocusNode();
   String _sortBy = 'default';
-  bool _shouldAutofocus = true;
+  late bool _shouldAutofocus;
 
   @override
   void initState() {
     super.initState();
+    _shouldAutofocus = widget.autofocus;
     _scrollController.addListener(_onScroll);
     _keywordController.addListener(_onKeywordChanged);
     _searchFocusNode.addListener(_onFocusChanged);

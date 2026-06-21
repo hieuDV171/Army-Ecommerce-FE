@@ -306,7 +306,9 @@ class _HomeHeader extends StatelessWidget {
           SearchPill(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const SearchPage()),
+              MaterialPageRoute(
+                builder: (_) => const SearchPage(autofocus: true),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
