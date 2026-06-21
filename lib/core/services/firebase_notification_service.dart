@@ -48,17 +48,16 @@ class FirebaseNotificationService {
     try {
       logger.i('Preparing Firebase messaging (assumes Firebase already initialized)');
 
-      // Xin quyền notification trên iOS
-      if (Platform.isIOS) {
-        await _firebaseMessaging.requestPermission(
-          alert: true,
-          announcement: false,
-          badge: true,
-          criticalAlert: false,
-          provisional: false,
-          sound: true,
-        );
-      }
+      // Xin quyền notification trên cả iOS và Android (đặc biệt Android 13+ yêu cầu xin quyền động)
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      logger.i('Notification permission status: ${settings.authorizationStatus}');
     } catch (e) {
       logger.e('Error preparing Firebase messaging: $e');
     }

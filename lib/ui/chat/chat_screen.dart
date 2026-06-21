@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_event.dart';
 import 'package:army_ecommerce/blocs/chat/chat_state.dart';
@@ -11,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../util/constants/app_colors.dart';
 import '../util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
@@ -376,7 +380,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.only(
-        left: 12,
+        left: 8,
         right: 8,
         top: 8,
         bottom: MediaQuery.of(context).padding.bottom + 8,
@@ -384,6 +388,17 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Nút đính kèm
+          IconButton(
+            icon: Icon(
+              Icons.add_circle_outline_rounded,
+              color: context.specialTheme.primaryColor,
+              size: 26,
+            ),
+            onPressed: _isSending ? null : () => _showAttachmentBottomSheet(context),
+          ),
+          const SizedBox(width: 4),
+
           // TextField
           Expanded(
             child: Container(
@@ -435,6 +450,143 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _pickAndSendMedia(ImageSource source, bool isVideo) async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      XFile? file;
+      if (isVideo) {
+        file = await picker.pickVideo(source: source);
+      } else {
+        file = await picker.pickImage(source: source, imageQuality: 80);
+      }
+
+      if (file == null) return;
+      if (!mounted) return;
+
+      setState(() => _isSending = true);
+
+      // 1. Upload file lên server
+      final repo = context.read<MarketplaceRepository>();
+      final fileUrl = await repo.uploadFile(File(file.path));
+
+      if (fileUrl == null || fileUrl.isEmpty) {
+        throw Exception('Không nhận được URL sau khi upload file');
+      }
+
+      // 2. Gửi tin nhắn chứa URL file
+      if (mounted) {
+        context.read<ChatBloc>().add(SendMessageRequested(
+              toId: widget.partnerId,
+              message: fileUrl,
+              typeMessage: isVideo ? 'video' : 'image',
+              productId: widget.productId ?? '0',
+            ));
+      }
+    } catch (e) {
+      setState(() => _isSending = false);
+      if (mounted) {
+        AppSnackBar.showError(context, message: 'Gửi phương tiện thất bại: $e');
+      }
+    }
+  }
+
+  Future<void> _pickAndSendFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.pickFiles();
+      if (result == null || result.files.single.path == null) return;
+      if (!mounted) return;
+
+      setState(() => _isSending = true);
+
+      final file = File(result.files.single.path!);
+      
+      // Upload lên server
+      final repo = context.read<MarketplaceRepository>();
+      final fileUrl = await repo.uploadFile(file);
+      
+      if (fileUrl == null || fileUrl.isEmpty) {
+        throw Exception('Không nhận được URL sau khi upload file');
+      }
+      
+      // Gửi tin nhắn chứa link file với type là 'file'
+      if (mounted) {
+        context.read<ChatBloc>().add(SendMessageRequested(
+          toId: widget.partnerId,
+          message: fileUrl,
+          typeMessage: 'file',
+          productId: widget.productId ?? '0',
+        ));
+      }
+    } catch (e) {
+      setState(() => _isSending = false);
+      if (mounted) {
+        AppSnackBar.showError(context, message: 'Gửi tài liệu thất bại: $e');
+      }
+    }
+  }
+
+
+  void _showAttachmentBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Icon(Icons.camera_alt_rounded, color: context.specialTheme.primaryColor),
+                title: const Text('Chụp ảnh mới', style: TextStyle(fontWeight: FontWeight.w500)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSendMedia(ImageSource.camera, false);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library_rounded, color: context.specialTheme.primaryColor),
+                title: const Text('Chọn ảnh từ thư viện', style: TextStyle(fontWeight: FontWeight.w500)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSendMedia(ImageSource.gallery, false);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.video_library_rounded, color: context.specialTheme.primaryColor),
+                title: const Text('Chọn video từ thư viện', style: TextStyle(fontWeight: FontWeight.w500)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSendMedia(ImageSource.gallery, true);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.file_present_rounded, color: context.specialTheme.primaryColor),
+                title: const Text('Đính kèm tài liệu/tệp tin', style: TextStyle(fontWeight: FontWeight.w500)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndSendFile();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -576,7 +728,226 @@ class _MessageBubble extends StatelessWidget {
         return _ProductMessageBubble(productId: message.message, isMine: isMine);
       }
     }
+    if (message.type == 'image') {
+      return _buildImageMessage(message.message, context);
+    }
+    if (message.type == 'video') {
+      return _buildVideoMessage(message.message, context);
+    }
+    if (message.type == 'file') {
+      return _buildFileMessage(message.message, context);
+    }
     return _buildMessageText(message.message, isMine, context);
+  }
+
+  Widget _buildImageMessage(String url, BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(10),
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                InteractiveViewer(
+                  maxScale: 4.0,
+                  child: Center(
+                    child: CachedNetworkImage(
+                      imageUrl: url,
+                      fit: BoxFit.contain,
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.broken_image,
+                        color: Colors.white,
+                        size: 50,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          maxWidthDiskCache: 600,
+          maxHeightDiskCache: 600,
+          width: 200,
+          height: 200,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => Container(
+            width: 200,
+            height: 200,
+            color: isMine ? Colors.white24 : Colors.grey[200],
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+            ),
+          ),
+          errorWidget: (context, url, error) => Container(
+            width: 200,
+            height: 200,
+            color: isMine ? Colors.white24 : Colors.grey[300],
+            child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoMessage(String url, BuildContext context) {
+    final fileName = url.split('/').last;
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.tryParse(url);
+        if (uri != null) {
+          try {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } catch (e) {
+            debugPrint('Error launching video url: $e');
+          }
+        }
+      },
+      child: Container(
+        width: 200,
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.black87,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(Icons.video_library_rounded, size: 60, color: Colors.white.withValues(alpha: 0.15)),
+            const Icon(
+              Icons.play_circle_fill_rounded,
+              color: Colors.white,
+              size: 50,
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              right: 8,
+              child: Row(
+                children: [
+                  const Icon(Icons.link, color: Colors.white70, size: 14),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      fileName,
+                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileMessage(String url, BuildContext context) {
+    final fileName = url.split('/').last;
+    final fileExtension = fileName.contains('.') ? fileName.split('.').last.toUpperCase() : 'FILE';
+
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.tryParse(url);
+        if (uri != null) {
+          try {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } catch (e) {
+            debugPrint('Error launching file url: $e');
+          }
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isMine ? Colors.white24 : Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isMine ? Colors.white30 : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isMine ? Colors.white30 : Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.insert_drive_file_rounded,
+                color: isMine ? Colors.white : Colors.blue,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 130),
+                  child: Text(
+                    fileName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isMine ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  fileExtension,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: isMine ? Colors.white70 : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.download_for_offline_rounded,
+              color: isMine ? Colors.white70 : Colors.grey[500],
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Định dạng giờ:phút

@@ -38,7 +38,7 @@ class ErrorState extends StatelessWidget {
         'lỗi:',
       ];
       for (final prefix in prefixes) {
-        if (lower.startsWith(prefix)) {
+        if (lower.contains(prefix)) {
           clean = clean.substring(prefix.length).trim();
           cleaned = true;
           break;
