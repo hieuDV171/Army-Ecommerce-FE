@@ -92,16 +92,59 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   int _currentImageIndex = 0;
   bool _hasScrolledToComments = false;
 
-  String _formatVariantText(ProductSizeModel size) {
+  String _formatSimpleVariantName(ProductSizeModel size) {
     final parts = <String>[];
     parts.add(size.name.isEmpty ? size.id : size.name);
     if (size.color != null && size.color!.isNotEmpty) {
       parts.add(size.color!);
     }
-    if (size.stock != null) {
-      parts.add('Còn ${size.stock}');
-    }
     return parts.join(' - ');
+  }
+
+  Widget _buildVariantMap(ProductSizeModel size) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildVariantRow('Kích cỡ', size.name.isEmpty ? size.id : size.name),
+          _buildVariantRow('Màu', size.color ?? 'Mặc định'),
+          _buildVariantRow('Tồn kho', size.stock != null ? '${size.stock} sản phẩm' : 'Hết hàng'),
+          _buildVariantRow('Khối lượng', size.weight != null ? '${size.weight}kg' : 'Chưa rõ'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVariantRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -695,45 +738,30 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 const SizedBox(height: AppSpacing.md),
                 const SectionHeader(title: 'Phân loại / Kích thước'),
                 const SizedBox(height: AppSpacing.sm),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  runSpacing: AppSpacing.xs,
-                  children: product.sizes
-                      .map(
-                        (size) => Material(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            splashColor: context.specialTheme.primaryColor.withValues(alpha: 0.2),
-                            highlightColor: context.specialTheme.primaryColor.withValues(alpha: 0.08),
-                            onTap: () {
-                              final authState = context.read<AuthBloc>().state;
-                              final token = authState.currentUser?.token ?? '';
-                              if (checkLogin(context, token: token)) {
-                                _showVariantSelectionSheet(
-                                  context,
-                                  product,
-                                  isBuyNow: false,
-                                  preselectedSize: size,
-                                );
-                              }
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              child: Text(
-                                _formatVariantText(size),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: product.sizes.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                  itemBuilder: (context, index) {
+                    final size = product.sizes[index];
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      onTap: () {
+                        final authState = context.read<AuthBloc>().state;
+                        final token = authState.currentUser?.token ?? '';
+                        if (checkLogin(context, token: token)) {
+                          _showVariantSelectionSheet(
+                            context,
+                            product,
+                            isBuyNow: false,
+                            preselectedSize: size,
+                          );
+                        }
+                      },
+                      child: _buildVariantMap(size),
+                    );
+                  },
                 ),
               ],
               const Divider(height: 32),
@@ -1112,7 +1140,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     final isSelected = selectedSize?.id == size.id;
                     return ChoiceChip(
                       label: Text(
-                        _formatVariantText(size),
+                        _formatSimpleVariantName(size),
                         style: TextStyle(
                           color: isSelected
                               ? context.specialTheme.primaryDarkColor
@@ -1132,6 +1160,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   }).toList(),
                 ),
                 const SizedBox(height: AppSpacing.md),
+                if (selectedSize != null) ...[
+                  _buildVariantMap(selectedSize!),
+                  const SizedBox(height: AppSpacing.md),
+                ],
               ],
 
               // Quantity Section
