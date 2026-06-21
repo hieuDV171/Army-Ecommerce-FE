@@ -23,16 +23,18 @@ class SendMessageRequested extends ChatEvent {
   final String typeMessage;
   // product_id bắt buộc theo spec, truyền '0' nếu không chat từ trang sản phẩm
   final String productId;
+  final String? senderId;
 
   SendMessageRequested({
     required this.toId,
     required this.message,
     this.typeMessage = 'text',
     this.productId = '0',
+    this.senderId,
   });
 
   @override
-  List<Object?> get props => [toId, message, typeMessage, productId];
+  List<Object?> get props => [toId, message, typeMessage, productId, senderId];
 }
 
 // Sự kiện tải danh sách hội thoại (trang đầu)

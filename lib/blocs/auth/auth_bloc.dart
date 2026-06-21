@@ -28,7 +28,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (responseCode == ResponseCode.ok && response.data != null) {
 
           // LƯU VÀO MÁY CỤC BỘ TRƯỚC (lưu token, username, phoneNumber nếu có)
-          await SessionManager.saveSession(response.data!.token, response.data!.username, event.phoneNumber); // :)))
+          await SessionManager.saveSession(
+            response.data!.token,
+            response.data!.username,
+            event.phoneNumber,
+            userId: response.data!.id.toString(),
+          );
 
           // Lưu avatar và coverImage từ API response
           if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
@@ -115,7 +120,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
           if (loginCode == ResponseCode.ok && loginResponse.data != null) {
             final realUser = loginResponse.data!;
-            await SessionManager.saveSession(realUser.token, realUser.username, event.phoneNumber);
+            await SessionManager.saveSession(
+              realUser.token,
+              realUser.username,
+              event.phoneNumber,
+              userId: realUser.id.toString(),
+            );
 
             // Lưu avatar và coverImage từ API response
             if (realUser.avatar != null && realUser.avatar!.isNotEmpty) {
@@ -199,6 +209,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               coverImage: coverToUse,
             );
            // Token hợp lệ -> Chuyển thẳng vào trang Home
+           await SessionManager.setUserId(response.data!.id.toString());
            emit(AuthSuccess(user: user));
         } else {
           logger.w('AutoLogin: token invalid or response not OK -> clearing session. response.code=${response.code}');
@@ -272,6 +283,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             response.data!.token,
             response.data!.username,
             event.phoneNumber,
+            userId: response.data!.id.toString(),
           );
 
           // Lưu avatar và coverImage từ API response

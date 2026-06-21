@@ -43,15 +43,17 @@ class SessionManager {
   static const String _keyAvatar = "avatar";
   static const String _keyLastDevToken = "last_dev_token";
   static const String _keyCoverImage = "cover_image";
+  static const String _keyUserId = "user_id";
 
   // Lưu thông tin khi đăng nhập thành công
   // token is required; username and phoneNumber are optional and will only be stored when not null
-  static Future<void> saveSession(String token, String? username, String? phoneNumber) async {
+  static Future<void> saveSession(String token, String? username, String? phoneNumber, {String? userId}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyToken, token);
     if (username != null) await prefs.setString(_keyUsername, username);
     if (phoneNumber != null) await prefs.setString(_keyPhoneNumber, phoneNumber);
-    logger.i('SessionManager: saved token and username="${username ?? ''}" phone="${phoneNumber ?? ''}"');
+    if (userId != null) await prefs.setString(_keyUserId, userId);
+    logger.i('SessionManager: saved token, username="${username ?? ''}", phone="${phoneNumber ?? ''}", userId="${userId ?? ''}"');
   }
 
   static Future<void> setUsername(String username) async {
@@ -161,6 +163,19 @@ class SessionManager {
     final edited = prefs.getBool('order_edited_$orderId') ?? false;
     logger.d('SessionManager: isOrderEdited -> $orderId : $edited');
     return edited;
+  }
+
+  static Future<void> setUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyUserId, userId);
+    logger.d('SessionManager: setUserId -> "$userId"');
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString(_keyUserId);
+    logger.d('SessionManager: getUserId -> "$userId"');
+    return userId;
   }
 
   // Xóa sạch khi đăng xuất

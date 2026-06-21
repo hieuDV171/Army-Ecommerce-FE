@@ -49,6 +49,37 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     SendMessageRequested event,
     Emitter<ChatState> emit,
   ) async {
+    final currentState = state;
+    List<MessageModel> originalMessages = [];
+    bool hasMore = false;
+    bool canSendMessage = true;
+    MessageModel? optimisticMessage;
+
+    if (currentState is MessagesLoaded) {
+      originalMessages = currentState.messages;
+      hasMore = currentState.hasMore;
+      canSendMessage = currentState.canSendMessage;
+
+      if (event.senderId != null) {
+        optimisticMessage = MessageModel(
+          message: event.message,
+          unread: false,
+          type: event.typeMessage,
+          created: DateTime.now(),
+          sender: MessageSender(
+            id: int.tryParse(event.senderId!) ?? 0,
+            username: '',
+          ),
+        );
+
+        emit(MessagesLoaded(
+          messages: [optimisticMessage, ...originalMessages],
+          hasMore: hasMore,
+          canSendMessage: canSendMessage,
+        ));
+      }
+    }
+
     try {
       final response = await marketplaceRepository.sendMessage(
         toId: event.toId,
@@ -64,12 +95,48 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           conversationId: response.data!.conversationId,
           messageId: response.data!.messageId,
         ));
+
+        // Re-emit MessagesLoaded to maintain chat list state
+        final sentMessage = optimisticMessage ?? MessageModel(
+          message: event.message,
+          unread: false,
+          type: event.typeMessage,
+          created: DateTime.now(),
+          sender: MessageSender(
+            id: int.tryParse(event.senderId ?? '0') ?? 0,
+            username: '',
+          ),
+        );
+
+        final finalMessages = optimisticMessage != null
+            ? [sentMessage, ...originalMessages]
+            : [sentMessage, ...originalMessages];
+
+        emit(MessagesLoaded(
+          messages: finalMessages,
+          hasMore: hasMore,
+          canSendMessage: canSendMessage,
+        ));
       } else {
         logger.w('ChatBloc: sendMessage failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
+        
+        // Restore original message list (remove optimistic message)
+        emit(MessagesLoaded(
+          messages: originalMessages,
+          hasMore: hasMore,
+          canSendMessage: canSendMessage,
+        ));
       }
     } catch (e) {
       emit(ChatFailure(error: e.toString(), code: ResponseCode.exception.code));
+      
+      // Restore original message list (remove optimistic message)
+      emit(MessagesLoaded(
+        messages: originalMessages,
+        hasMore: hasMore,
+        canSendMessage: canSendMessage,
+      ));
     }
   }
 

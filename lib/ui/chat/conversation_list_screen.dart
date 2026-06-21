@@ -71,7 +71,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     ).then((_) {
       // Làm mới danh sách khi quay lại để cập nhật tin nhắn cuối và unread count
       if (!mounted) return;
-      context.read<ChatBloc>().add(LoadConversationsRequested());
+      context.read<ChatBloc>().add(LoadConversationsRequested(isSilent: true));
     });
   }
 

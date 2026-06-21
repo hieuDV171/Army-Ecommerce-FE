@@ -18,8 +18,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../util/constants/app_colors.dart';
 import '../util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
+import 'package:army_ecommerce/core/services/firebase_notification_service.dart';
 
 class ChatScreen extends StatefulWidget {
+  static String? activeConversationId;
+
   final String partnerId;
   final String partnerUsername;
   final String? partnerAvatar;
@@ -63,6 +66,9 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _resolvedConversationId = widget.conversationId;
     _productIdToSend = widget.productId;
+    if (_resolvedConversationId != null) {
+      ChatScreen.activeConversationId = _resolvedConversationId;
+    }
 
     // Tải tin nhắn khi mở màn hình
     context.read<ChatBloc>().add(LoadMessagesRequested(
@@ -83,6 +89,11 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _inputController.dispose();
     _scrollController.dispose();
+    if (ChatScreen.activeConversationId == _resolvedConversationId) {
+      ChatScreen.activeConversationId = null;
+    }
+    // Refresh HomeScreen unread chat badges
+    FirebaseNotificationService.refreshBadges();
     super.dispose();
   }
 
@@ -108,6 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
           toId: widget.partnerId,
           message: text,
           productId: _productIdToSend ?? '0',
+          senderId: widget.currentUserId,
         ));
     _productIdToSend = null;
   }
@@ -140,12 +152,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (state is MessageSent) {
                   // Lưu conversationId mới (trường hợp conversation vừa được tạo)
                   _resolvedConversationId = state.conversationId;
+                  if (_resolvedConversationId != null) {
+                    ChatScreen.activeConversationId = _resolvedConversationId;
+                  }
                   setState(() => _isSending = false);
-                  // Tải lại tin nhắn để hiển thị tin vừa gửi
-                  context.read<ChatBloc>().add(LoadMessagesRequested(
-                        partnerId: widget.partnerId,
-                        conversationId: _resolvedConversationId,
-                      ));
+                  // Đã cập nhật Optimistic UI trực tiếp trong bloc, không cần gọi LoadMessagesRequested
                   _scrollToBottom();
                 } else if (state is ChatFailure) {
                   setState(() => _isSending = false);
@@ -483,6 +494,7 @@ class _ChatScreenState extends State<ChatScreen> {
               message: fileUrl,
               typeMessage: isVideo ? 'video' : 'image',
               productId: widget.productId ?? '0',
+              senderId: widget.currentUserId,
             ));
       }
     } catch (e) {
@@ -518,6 +530,7 @@ class _ChatScreenState extends State<ChatScreen> {
           message: fileUrl,
           typeMessage: 'file',
           productId: widget.productId ?? '0',
+          senderId: widget.currentUserId,
         ));
       }
     } catch (e) {

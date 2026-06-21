@@ -5,8 +5,17 @@ import 'package:army_ecommerce/firebase_options.dart';
 import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/repositories/auth_repository.dart';
+import 'package:army_ecommerce/repositories/marketplace_repository.dart';
+import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
+import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
+import 'package:army_ecommerce/ui/chat/chat_screen.dart';
+import 'package:army_ecommerce/blocs/chat/chat_event.dart';
+import 'package:army_ecommerce/ui/chat/conversation_list_screen.dart';
+import 'package:army_ecommerce/core/navigation/navigator_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
-import 'dart:ui';
 
 /// Service để quản lý Firebase Cloud Messaging (FCM) cho push notification
 // Background handler must be a top-level function and reachable from the
@@ -23,7 +32,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 
   logger.i('Background message received: ${message.notification?.title}');
-  // TODO: handle background message (update local DB, show notification, ...)
 }
 
 
@@ -39,6 +47,16 @@ class FirebaseNotificationService {
 
   static void removeMessageReceivedListener(VoidCallback listener) {
     _onMessageReceivedListeners.remove(listener);
+  }
+
+  static void refreshBadges() {
+    for (final listener in _onMessageReceivedListeners) {
+      try {
+        listener();
+      } catch (e) {
+        logger.e('Error refreshing badges: $e');
+      }
+    }
   }
 
   /// Prepare FCM usage (do NOT call Firebase.initializeApp() here). Firebase
@@ -103,11 +121,12 @@ class FirebaseNotificationService {
         return;
       }
 
-      final lastSentToken = await SessionManager.getLastDevToken();
-      if (lastSentToken == token) {
-        logger.i('Device token unchanged, skipping registration');
-        return;
-      }
+      // Bỏ qua kiểm tra trùng token để luôn cập nhật mối liên kết mới nhất lên Server
+      // final lastSentToken = await SessionManager.getLastDevToken();
+      // if (lastSentToken == token) {
+      //   logger.i('Device token unchanged, skipping registration');
+      //   return;
+      // }
 
       await _registerDeviceToken(
         authRepository: authRepository,
@@ -166,15 +185,164 @@ class FirebaseNotificationService {
         .getInitialMessage()
         .then((RemoteMessage? message) {
       if (message != null) {
-        logger.i('App opened from notification: ${message.data}');
-        // Chuyển hướng tới màn hình liên quan
+        logger.i('App opened from notification (cold start): ${message.data}');
+        
+        // Kiểm tra xem AuthSuccess đã được emit hay chưa
+        BuildContext? context = NavigatorService.navigatorKey.currentContext;
+        bool isAuthSuccess = false;
+        if (context != null && context.mounted) {
+          try {
+            final authBloc = context.read<AuthBloc>();
+            if (authBloc.state is AuthSuccess) {
+              isAuthSuccess = true;
+            }
+          } catch (_) {}
+        }
+
+        if (isAuthSuccess) {
+          logger.i('AuthSuccess already active. Redirecting immediately.');
+          _handleNotificationTap(message);
+        } else {
+          logger.i('AuthSuccess not active yet. Queuing notification.');
+          _pendingNotification = message;
+        }
       }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      logger.i('Notification tapped: ${message.data}');
-      // Chuyển hướng tới màn hình liên quan
+      logger.i('Notification tapped (hot start): ${message.data}');
+      _handleNotificationTap(message);
     });
+  }
+
+  static RemoteMessage? _pendingNotification;
+
+  static void checkPendingNotification() {
+    if (_pendingNotification != null) {
+      final message = _pendingNotification!;
+      _pendingNotification = null;
+      logger.i('Processing pending notification: ${message.data}');
+      _handleNotificationTap(message);
+    }
+  }
+
+  static void _handleNotificationTap(RemoteMessage message) async {
+    PageRouteBuilder? dialogRoute;
+    try {
+      final data = message.data;
+      final type = data['type']?.toString();
+      final conversationId = data['conversation_id']?.toString();
+
+      if (type == 'new_message' && conversationId != null) {
+        // Kiểm tra xem ứng dụng đang ở sẵn màn hình hội thoại này không
+        if (ChatScreen.activeConversationId == conversationId) {
+          logger.i('User is already viewing this conversation ($conversationId). Ignoring notification redirect.');
+          return;
+        }
+
+        BuildContext? context;
+
+        // Chờ tối đa 2 giây cho Navigator và context sẵn sàng
+        for (int i = 0; i < 10; i++) {
+          context = NavigatorService.navigatorKey.currentContext;
+          if (context != null && NavigatorService.navigatorKey.currentState != null && context.mounted) {
+            break;
+          }
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+
+        if (context == null || !context.mounted || NavigatorService.navigatorKey.currentState == null) {
+          logger.w('Navigator context not ready, queuing notification');
+          _pendingNotification = message;
+          return;
+        }
+
+        // Lấy token và userId từ SessionManager để xác minh đăng nhập
+        final token = await SessionManager.getToken();
+        final currentUserId = await SessionManager.getUserId();
+
+        if (token == null || token.isEmpty || currentUserId == null || currentUserId.isEmpty) {
+          logger.w('User not logged in locally, ignoring notification tap');
+          return;
+        }
+
+        // Hiện loading dialog bằng PageRouteBuilder để tránh lỗi context lookup trên root navigator
+        dialogRoute = PageRouteBuilder(
+          opaque: false,
+          barrierDismissible: false,
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          },
+        );
+        NavigatorService.navigatorKey.currentState?.push(dialogRoute);
+
+        if (!context.mounted) return;
+        final marketplaceRepo = context.read<MarketplaceRepository>();
+        final response = await marketplaceRepo.getConversations(index: 0, count: 50);
+
+        // Đóng loading dialog an toàn bằng removeRoute
+        if (dialogRoute.isActive) {
+          NavigatorService.navigatorKey.currentState?.removeRoute(dialogRoute);
+          dialogRoute = null;
+        }
+
+        final conversations = response.data ?? [];
+        final targetConv = conversations.firstWhere(
+          (c) => c.id.toString() == conversationId,
+          orElse: () => throw Exception('Không tìm thấy cuộc trò chuyện trong danh sách: $conversationId'),
+        );
+
+        // Đảm bảo ngăn xếp bắt đầu từ Home (root), sau đó đến danh sách cuộc hội thoại, và cuối cùng là phòng chat
+        NavigatorService.navigatorKey.currentState?.popUntil((route) => route.isFirst);
+
+        final listChatBloc = ChatBloc(
+          marketplaceRepository: marketplaceRepo,
+        );
+
+        NavigatorService.navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (_) => listChatBloc,
+              child: ConversationListScreen(
+                currentUserId: currentUserId,
+              ),
+            ),
+          ),
+        );
+
+        NavigatorService.navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => BlocProvider(
+              create: (context) => ChatBloc(
+                marketplaceRepository: marketplaceRepo,
+              ),
+              child: ChatScreen(
+                partnerId: targetConv.partner.id.toString(),
+                partnerUsername: targetConv.partner.username,
+                partnerAvatar: targetConv.partner.avatar,
+                currentUserId: currentUserId,
+                conversationId: conversationId,
+              ),
+            ),
+          ),
+        ).then((_) {
+          // Làm mới danh sách cuộc hội thoại ở chế độ ẩn khi quay lại
+          listChatBloc.add(LoadConversationsRequested(isSilent: true));
+        });
+      }
+    } catch (e) {
+      logger.e('Error handling notification tap: $e');
+      if (dialogRoute != null && dialogRoute.isActive) {
+        try {
+          NavigatorService.navigatorKey.currentState?.removeRoute(dialogRoute);
+        } catch (_) {}
+      }
+    }
   }
 }
 

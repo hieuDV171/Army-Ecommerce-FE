@@ -157,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _onForegroundMessageReceived() {
     if (mounted && widget.token.isNotEmpty) {
       _notificationBloc.add(LoadNotificationsRequested());
-      _chatBloc.add(LoadConversationsRequested());
+      _chatBloc.add(LoadConversationsRequested(isSilent: true));
     }
   }
 

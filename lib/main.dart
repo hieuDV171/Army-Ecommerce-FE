@@ -1,6 +1,7 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/core/navigation/navigator_service.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/core/config/app_config.dart';
 import 'package:army_ecommerce/data/repositories/block_repository_impl.dart';
@@ -196,6 +197,7 @@ class _MyAppState extends State<MyApp> {
         child: BlocBuilder<ThemeCubit, ThemeState>(
           builder: (context, themeState) {
             return MaterialApp(
+              navigatorKey: NavigatorService.navigatorKey,
               title: 'Army E-commerce',
               theme: AppTheme.getTheme(
                 themeState.themeMode,
@@ -230,6 +232,12 @@ class _MyAppState extends State<MyApp> {
                 } catch (e) {
                   logger.e('Failed to init Socket.IO in main listener: $e');
                 }
+
+                // Kiểm tra và xử lý thông báo đang chờ điều hướng sau khi UI dựng xong
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  FirebaseNotificationService.checkPendingNotification();
+                });
+
                 CartManager().syncCart();
               }
 

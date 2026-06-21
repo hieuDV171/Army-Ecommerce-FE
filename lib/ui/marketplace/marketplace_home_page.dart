@@ -239,7 +239,7 @@ class _HomeHeader extends StatelessWidget {
                         ).then((_) {
                           // Làm mới badge khi quay lại từ màn hình chat
                           if (ctx.mounted && token.isNotEmpty) {
-                            chatBloc.add(LoadConversationsRequested());
+                            chatBloc.add(LoadConversationsRequested(isSilent: true));
                           }
                         });
                       }
