@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repositories/marketplace_repository.dart';
 import '../../../core/services/session_manager.dart';
 import '../../../blocs/auth/auth_bloc.dart';
-import '../../util/widgets/app_bottom_sheet.dart';
 import '../../util/constants/app_colors.dart';
 import '../../util/constants/app_radius.dart';
 import '../../util/constants/app_spacing.dart';
@@ -19,6 +18,7 @@ import '../../util/widgets/section_header.dart';
 import '../../util/widgets/status_chip.dart';
 import 'widgets/order_card.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 
 class BuyerOrderDetailPage extends StatefulWidget {
   final String orderId;
@@ -406,7 +406,14 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
                 AppButton(
                   label: 'Viết đánh giá',
                   icon: Icons.rate_review_outlined,
-                  onPressed: () => _openWriteRateSheet(order),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WriteReviewScreen(order: order),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 AppButton(
@@ -454,7 +461,14 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
               AppButton(
                 label: 'Viết đánh giá',
                 icon: Icons.rate_review_outlined,
-                onPressed: () => _openWriteRateSheet(order),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WriteReviewScreen(order: order),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.sm),
               AppButton(
@@ -503,84 +517,13 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
       successMessage: 'Đã xác nhận đã nhận hàng',
     );
     if (mounted) {
-      _openWriteRateSheet(order);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WriteReviewScreen(order: order),
+        ),
+      );
     }
-  }
-
-  void _openWriteRateSheet(OrderModel order) {
-    final levelNotifier = ValueNotifier<int>(5);
-    final controller = TextEditingController();
-    
-    final authState = context.read<AuthBloc>().state;
-    final userId = authState.currentUser?.id ?? '';
-    
-    AppBottomSheet.show<void>(
-      context: context,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Viết đánh giá',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          ValueListenableBuilder<int>(
-            valueListenable: levelNotifier,
-            builder: (context, level, _) => Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(5, (i) {
-                final star = i + 1;
-                return IconButton(
-                  icon: Icon(
-                    level >= star
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: AppColors.warning,
-                  ),
-                  onPressed: () => levelNotifier.value = star,
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(controller: controller, label: 'Nội dung đánh giá'),
-          const SizedBox(height: AppSpacing.md),
-          AppButton(
-            label: 'Gửi đánh giá',
-            onPressed: () async {
-              if (userId.isEmpty) {
-                AppSnackBar.show(
-                  context,
-                  message: 'Bạn cần đăng nhập để đánh giá',
-                );
-                return;
-              }
-              final level = levelNotifier.value;
-              final content = controller.text.trim();
-              Navigator.pop(context);
-              
-              setState(() => _isSubmitting = true);
-              try {
-                await context.read<MarketplaceRepository>().setRates(
-                  userId: order.sellerId ?? '',
-                  level: level,
-                  content: content,
-                  productId: order.items.isNotEmpty ? order.items.first.productId : null,
-                  purchaseId: order.id,
-                );
-                if (!mounted) return;
-                AppSnackBar.showSuccess(context, message: 'Đã gửi đánh giá thành công');
-              } catch (e) {
-                if (!mounted) return;
-                AppSnackBar.showError(context, message: 'Lỗi gửi đánh giá: $e');
-              } finally {
-                if (mounted) setState(() => _isSubmitting = false);
-              }
-            },
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _openRefundDialog(OrderModel order) async {
@@ -1057,6 +1000,164 @@ class _EditOrderSheetState extends State<_EditOrderSheet> {
             TextButton(
               onPressed: () => Navigator.pop(context, null),
               child: const Text('Hủy'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WriteReviewScreen extends StatefulWidget {
+  final OrderModel order;
+
+  const WriteReviewScreen({super.key, required this.order});
+
+  @override
+  State<WriteReviewScreen> createState() => _WriteReviewScreenState();
+}
+
+class _WriteReviewScreenState extends State<WriteReviewScreen> {
+  final ValueNotifier<int> _levelNotifier = ValueNotifier<int>(5);
+  final TextEditingController _controller = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _levelNotifier.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final specialTheme = context.specialTheme;
+    final authState = context.read<AuthBloc>().state;
+    final userId = authState.currentUser?.id ?? '';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Đánh giá đơn hàng'),
+        backgroundColor: specialTheme.useGradient ? null : specialTheme.primaryDarkColor,
+        flexibleSpace: specialTheme.useGradient
+            ? Container(
+                decoration: BoxDecoration(
+                  gradient: specialTheme.primaryGradient,
+                ),
+              )
+            : null,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 64,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            const Text(
+              'Cảm ơn bạn đã nhận hàng.',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            const Text(
+              'Hãy viết đánh giá đến người bán nhé!',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            
+            const Text(
+              'Đánh giá chất lượng',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            ValueListenableBuilder<int>(
+              valueListenable: _levelNotifier,
+              builder: (context, level, _) => Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  final star = i + 1;
+                  return IconButton(
+                    iconSize: 40,
+                    icon: Icon(
+                      level >= star
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
+                      color: AppColors.warning,
+                    ),
+                    onPressed: () => _levelNotifier.value = star,
+                  );
+                }),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            
+            TextField(
+              controller: _controller,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Nội dung đánh giá',
+                hintText: 'Chia sẻ trải nghiệm của bạn về người bán này...',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            
+            AppButton(
+              label: 'Gửi đánh giá',
+              isLoading: _isSubmitting,
+              onPressed: () async {
+                if (userId.isEmpty) {
+                  AppSnackBar.show(
+                    context,
+                    message: 'Bạn cần đăng nhập để đánh giá',
+                  );
+                  return;
+                }
+                final level = _levelNotifier.value;
+                final content = _controller.text.trim();
+
+                setState(() => _isSubmitting = true);
+                try {
+                  await context.read<MarketplaceRepository>().setRates(
+                    userId: widget.order.sellerId ?? '',
+                    level: level,
+                    content: content,
+                    productId: widget.order.items.isNotEmpty 
+                        ? widget.order.items.first.productId 
+                        : null,
+                    purchaseId: widget.order.id,
+                  );
+                  if (!context.mounted) return;
+                  AppSnackBar.showSuccess(context, message: 'Đã gửi đánh giá thành công');
+                  Navigator.pop(context);
+                } catch (e) {
+                  if (!context.mounted) return;
+                  AppSnackBar.showError(context, message: 'Lỗi gửi đánh giá: $e');
+                } finally {
+                  if (mounted) setState(() => _isSubmitting = false);
+                }
+              },
             ),
           ],
         ),

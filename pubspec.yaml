@@ -113,5 +113,5 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/VX_logo.png"
+  image_path: "assets/images/logo.png"
   remove_alpha_ios: true
