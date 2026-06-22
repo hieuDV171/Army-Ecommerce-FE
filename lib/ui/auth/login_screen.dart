@@ -90,8 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     context.read<AuthBloc>().add(
-          LoginButtonPressed(phoneNumber: phone, password: password),
-        );
+      LoginButtonPressed(phoneNumber: phone, password: password),
+    );
   }
 
   void _showDevSettingsDialog() {
@@ -145,10 +145,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     // 1. Lưu SharedPreferences
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setString('custom_base_url', newUrl);
-                    
+
                     // 2. Cấu hình lại AppConfig
                     AppConfig.baseUrl = newUrl;
-                    
+
                     // 3. Cấu hình lại DioClient singleton
                     DioClient.instance?.updateBaseUrl(newUrl);
 
@@ -187,13 +187,14 @@ class _LoginScreenState extends State<LoginScreen> {
             // Không thực hiện Navigator.push/pushReplacement nữa.
             // main.dart lắng nghe AuthSuccess ở root và tự động điều hướng.
           } else if (state is AuthFailure) {
-            final isUserNotValidated = state.code == '9995' ||
+            final isUserNotValidated =
+                state.code == '9995' ||
                 state.error.contains('9995') ||
                 state.error.toLowerCase().contains('user is not validated') ||
                 state.error.contains('Tài khoản chưa đăng ký');
             if (isUserNotValidated) {
               setState(() {
-                _phoneError = 'Thông tin đăng nhập hoặc mật khẩu không đúng';
+                _phoneError = '';
                 _passwordError = 'Thông tin đăng nhập hoặc mật khẩu không đúng';
               });
             } else {
@@ -215,7 +216,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         onTap: () {
                           final now = DateTime.now();
                           if (_lastLogoTapTime == null ||
-                              now.difference(_lastLogoTapTime!) > const Duration(seconds: 2)) {
+                              now.difference(_lastLogoTapTime!) >
+                                  const Duration(seconds: 2)) {
                             _logoTapCount = 1;
                           } else {
                             _logoTapCount++;
@@ -232,11 +234,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           final iconWidget = Icon(
                             Icons.military_tech,
                             size: 76,
-                            color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                            color: specialTheme.useGradient
+                                ? Colors.white
+                                : specialTheme.primaryColor,
                           );
                           if (specialTheme.useGradient) {
                             return ShaderMask(
-                              shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
+                              shaderCallback: (bounds) => specialTheme
+                                  .primaryGradient!
+                                  .createShader(bounds),
                               child: iconWidget,
                             );
                           }
@@ -247,7 +253,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Army E-commerce',
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
                             ),
@@ -257,8 +264,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         'Đăng nhập để tiếp tục mua bán quân nhu',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 36),
                       AppTextField(
@@ -276,7 +283,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         suffixIcon: IconButton(
                           tooltip: _isObscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                           icon: Icon(
-                            _isObscure ? Icons.visibility_off : Icons.visibility,
+                            _isObscure
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
                           onPressed: () {
                             setState(() {
@@ -300,7 +309,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ForgotPasswordScreen(),
+                                  builder: (context) =>
+                                      const ForgotPasswordScreen(),
                                 ),
                               );
                             },
@@ -327,7 +337,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   left: 8,
                   child: IconButton(
                     tooltip: 'Đóng',
-                    icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
+                    icon: const Icon(
+                      Icons.close,
+                      color: AppColors.textPrimary,
+                      size: 24,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),

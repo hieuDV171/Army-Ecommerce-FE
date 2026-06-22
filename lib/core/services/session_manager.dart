@@ -93,7 +93,8 @@ class SessionManager {
   static Future<void> setAvatar(String avatar) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyAvatar, avatar);
-    logger.d('SessionManager: setAvatar -> [SAVED]');
+    updateAvatarCacheBustKey();
+    logger.d('SessionManager: setAvatar -> [SAVED] and updated cache bust key');
   }
 
   static Future<String?> getAvatar() async {
@@ -119,7 +120,8 @@ class SessionManager {
   static Future<void> setCoverImage(String coverImage) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyCoverImage, coverImage);
-    logger.d('SessionManager: setCoverImage -> [SAVED]');
+    updateAvatarCacheBustKey();
+    logger.d('SessionManager: setCoverImage -> [SAVED] and updated cache bust key');
   }
 
   static Future<String?> getCoverImage() async {

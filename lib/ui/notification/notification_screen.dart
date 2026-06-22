@@ -261,21 +261,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return RefreshIndicator(
+      color: _shopeeOrange(context),
+      onRefresh: _onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Icon(Icons.notifications_none_outlined, size: 72, color: Colors.grey[300]),
-          const SizedBox(height: 12),
-          Text(
-            'Chưa có thông báo nào',
-            style: TextStyle(fontSize: 15, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Các thông báo về đơn hàng, lượt thích và\nnhững hoạt động khác sẽ xuất hiện ở đây',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.notifications_none_outlined, size: 72, color: Colors.grey[300]),
+                const SizedBox(height: 12),
+                Text(
+                  'Chưa có thông báo nào',
+                  style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Các thông báo về đơn hàng, lượt thích và\nnhững hoạt động khác sẽ xuất hiện ở đây',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                ),
+              ],
+            ),
           ),
         ],
       ),

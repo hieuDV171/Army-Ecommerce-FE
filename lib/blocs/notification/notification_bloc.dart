@@ -74,7 +74,9 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     LoadNotificationsRequested event,
     Emitter<NotificationState> emit,
   ) async {
-    emit(NotificationLoading());
+    if (state is! NotificationsLoaded && state is! NotificationLoadingMore) {
+      emit(NotificationLoading());
+    }
     _index = 0;
 
     try {

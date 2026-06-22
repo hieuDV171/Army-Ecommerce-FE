@@ -385,8 +385,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           selectedFontSize: 11,
           unselectedFontSize: 11,
           onTap: (index) {
-            if (index == _selectedIndex) return;
+            if (index == _selectedIndex) {
+              if (index == 3 && widget.token.isNotEmpty) {
+                _notificationBloc.add(LoadNotificationsRequested());
+              }
+              return;
+            }
             setState(() => _selectedIndex = index);
+            if (index == 3 && widget.token.isNotEmpty) {
+              _notificationBloc.add(LoadNotificationsRequested());
+            }
           },
           items: [
             const BottomNavigationBarItem(
