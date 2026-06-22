@@ -409,22 +409,59 @@ class _OrderItemTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'SL: ${item.quantity}',
-                style: const TextStyle(color: AppColors.textSecondary),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Giá:',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  PriceText(
+                    price: item.price,
+                    suffix: 'xu/sản phẩm',
+                    fontSize: 13,
+                    fontWeight: FontWeight.normal,
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xs),
-              PriceText(price: item.price),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'x',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  Text(
+                    'SL: ${item.quantity} sản phẩm',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Divider(height: 1, thickness: 1, color: AppColors.border),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Thành tiền:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  PriceText(
+                    price: item.subtotal,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ],
+              ),
             ],
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Text(
-          item.subtotal.toString(),
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
           ),
         ),
       ],

@@ -7,12 +7,16 @@ class PriceText extends StatelessWidget {
   final num price;
   final String suffix;
   final Color? color;
+  final double? fontSize;
+  final FontWeight? fontWeight;
 
   const PriceText({
     super.key,
     required this.price,
     this.suffix = 'xu',
     this.color,
+    this.fontSize,
+    this.fontWeight,
   });
 
   @override
@@ -22,6 +26,8 @@ class PriceText extends StatelessWidget {
     
     final textStyle = AppTextStyles.productPrice.copyWith(
       color: color ?? (specialTheme.useGradient ? Colors.white : specialTheme.primaryColor),
+      fontSize: fontSize,
+      fontWeight: fontWeight,
     );
 
     final textWidget = Text(

@@ -824,6 +824,7 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
           initialChildSize: 0.75,
           minChildSize: 0.5,
           maxChildSize: 0.95,
+          expand: false,
           builder: (_, scrollController) {
             return Container(
               decoration: const BoxDecoration(
