@@ -38,6 +38,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "Sàn_Thương_Mại_Điện_Tử_Quân_Đội_${variant.name}_v${variant.versionName}.apk"
+        }
+    }
+
 }
 
 flutter {
