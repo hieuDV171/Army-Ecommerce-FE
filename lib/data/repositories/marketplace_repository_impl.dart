@@ -27,17 +27,17 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   MarketplaceRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<CategoryModel>> getCategories({int? parentId}) async {
+  Future<List<CategoryModel>> getCategories({int? parentId, int? index, int? count}) async {
     try {
-      final response = await remoteDataSource.getCategories(parentId: parentId);
-      // Cache response data for first level categories
-      if (parentId == null || parentId == 0) {
+      final response = await remoteDataSource.getCategories(parentId: parentId, index: index, count: count);
+      // Cache response data for first level categories (only if first load)
+      if ((parentId == null || parentId == 0) && (index == null || index == 0)) {
         SessionManager.saveCachedCategoriesJson(jsonEncode(response.data));
       }
       return parseListFromData(response.data, CategoryModel.fromJson);
     } catch (e) {
       // Offline fallback: load categories from cache
-      if (parentId == null || parentId == 0) {
+      if ((parentId == null || parentId == 0) && (index == null || index == 0)) {
         final cachedJson = await SessionManager.getCachedCategoriesJson();
         if (cachedJson != null) {
           final decoded = jsonDecode(cachedJson);

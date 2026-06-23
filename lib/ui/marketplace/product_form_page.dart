@@ -32,6 +32,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   bool _isLoading = false;
   bool _isInitializing = true;
   String? _initError;
+  bool _isBrandsLoading = false;
 
   // Form Fields
   final _titleController = TextEditingController();
@@ -83,18 +84,16 @@ class _ProductFormPageState extends State<ProductFormPage> {
     });
 
     try {
-      // Fetch categories, brands, and addresses (warehouses) concurrently
+      // Fetch categories and addresses (warehouses) concurrently
       final results = await Future.wait([
         _repository.getCategories(),
-        _repository.getBrands(),
         _repository.getAddresses(),
       ]);
 
       if (!mounted) return;
 
       _categories = results[0] as List<CategoryModel>;
-      _brands = results[1] as List<BrandModel>;
-      _warehouses = results[2] as List<AddressModel>;
+      _warehouses = results[1] as List<AddressModel>;
 
       // Populate details if edit mode
       if (_isEditMode) {
@@ -117,6 +116,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
           );
         }
 
+        // Fetch brands for selected Category
+        final String? categoryId = _selectedCategory?.id;
+        _brands = await _repository.getBrands(categoryId: categoryId);
+
         // Find Brand
         if (prod.brand != null) {
           _selectedBrand = _brands.firstWhere(
@@ -137,6 +140,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
         for (final size in prod.sizes) {
           _variants.add(size);
         }
+      } else {
+        // Load initial brands (all brands)
+        _brands = await _repository.getBrands();
       }
 
       setState(() {
@@ -150,6 +156,34 @@ class _ProductFormPageState extends State<ProductFormPage> {
         _isInitializing = false;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _onCategoryChanged(CategoryModel? category) async {
+    setState(() {
+      _selectedCategory = category;
+      _isBrandsLoading = true;
+    });
+
+    try {
+      final categoryId = category?.id;
+      final brands = await _repository.getBrands(categoryId: categoryId);
+      if (!mounted) return;
+
+      setState(() {
+        _brands = brands;
+        // Reset selected brand if it's not in the new brand list
+        if (_selectedBrand != null && !_brands.any((b) => b.id.toString() == _selectedBrand!.id.toString())) {
+          _selectedBrand = null;
+        }
+        _isBrandsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isBrandsLoading = false;
+      });
+      AppSnackBar.showError(context, message: 'Lỗi tải danh mục thương hiệu: $e');
     }
   }
 
@@ -513,19 +547,30 @@ class _ProductFormPageState extends State<ProductFormPage> {
                                     items: _categories
                                         .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
                                         .toList(),
-                                    onChanged: (val) => setState(() => _selectedCategory = val),
+                                    onChanged: _onCategoryChanged,
                                   ),
                                   const SizedBox(height: AppSpacing.md),
 
                                   // Brand Dropdown
-                                  DropdownButtonFormField<BrandModel>(
-                                    decoration: const InputDecoration(labelText: 'Thương hiệu'),
-                                    initialValue: _selectedBrand,
-                                    items: _brands
-                                        .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
-                                        .toList(),
-                                    onChanged: (val) => setState(() => _selectedBrand = val),
-                                  ),
+                                  _isBrandsLoading
+                                      ? const Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 12.0),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          ),
+                                        )
+                                      : DropdownButtonFormField<BrandModel>(
+                                          decoration: const InputDecoration(labelText: 'Thương hiệu'),
+                                          initialValue: _selectedBrand,
+                                          items: _brands
+                                              .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
+                                              .toList(),
+                                          onChanged: (val) => setState(() => _selectedBrand = val),
+                                        ),
                                   const SizedBox(height: AppSpacing.md),
 
                                   // Warehouse (Address) Dropdown

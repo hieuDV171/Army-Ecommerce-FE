@@ -12,13 +12,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeRequested>(_onRequested);
     on<HomeRefreshed>(_onRefreshed);
     on<HomeLoadMoreRequested>(_onLoadMoreRequested);
+    on<HomeLoadMoreCategoriesRequested>(_onLoadMoreCategoriesRequested);
     on<HomeProductLikeToggled>(_onProductLikeToggled);
   }
 
   Future<void> _onRequested(HomeRequested event, Emitter<HomeState> emit) async {
-    emit(state.copyWith(isInitialLoading: true, clearError: true, index: 0));
+    emit(state.copyWith(
+      isInitialLoading: true,
+      clearError: true,
+      index: 0,
+      categoriesIndex: 0,
+      hasReachedEndCategories: false,
+    ));
     try {
-      final categories = await marketplaceRepository.getCategories(parentId: 0);
+      final categories = await marketplaceRepository.getCategories(
+        parentId: 0,
+        index: 0,
+        count: state.categoriesCount,
+      );
       final result = await marketplaceRepository.getListProducts(index: 0, count: state.count);
       emit(
         state.copyWith(
@@ -28,6 +39,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           hasReachedEnd: result.products.length < state.count,
           lastId: result.lastId,
           index: result.products.length,
+          categoriesIndex: categories.length,
+          hasReachedEndCategories: categories.length < state.categoriesCount,
           clearError: true,
         ),
       );
@@ -37,9 +50,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onRefreshed(HomeRefreshed event, Emitter<HomeState> emit) async {
-    emit(state.copyWith(isRefreshing: true, clearError: true, index: 0));
+    emit(state.copyWith(
+      isRefreshing: true,
+      clearError: true,
+      index: 0,
+      categoriesIndex: 0,
+      hasReachedEndCategories: false,
+    ));
     try {
-      final categories = await marketplaceRepository.getCategories(parentId: 0);
+      final categories = await marketplaceRepository.getCategories(
+        parentId: 0,
+        index: 0,
+        count: state.categoriesCount,
+      );
       final result = await marketplaceRepository.getListProducts(index: 0, count: state.count);
       emit(
         state.copyWith(
@@ -49,11 +72,41 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           hasReachedEnd: result.products.length < state.count,
           lastId: result.lastId,
           index: result.products.length,
+          categoriesIndex: categories.length,
+          hasReachedEndCategories: categories.length < state.categoriesCount,
           clearError: true,
         ),
       );
     } catch (error) {
       emit(state.copyWith(isRefreshing: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onLoadMoreCategoriesRequested(
+    HomeLoadMoreCategoriesRequested event,
+    Emitter<HomeState> emit,
+  ) async {
+    if (state.isLoadingMoreCategories || state.hasReachedEndCategories || state.isInitialLoading) return;
+
+    emit(state.copyWith(isLoadingMoreCategories: true, clearError: true));
+    try {
+      final categories = await marketplaceRepository.getCategories(
+        parentId: 0,
+        index: state.categoriesIndex,
+        count: state.categoriesCount,
+      );
+      final merged = [...state.categories, ...categories];
+      emit(
+        state.copyWith(
+          categories: merged,
+          isLoadingMoreCategories: false,
+          hasReachedEndCategories: categories.length < state.categoriesCount,
+          categoriesIndex: merged.length,
+          clearError: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isLoadingMoreCategories: false, errorMessage: error.toString()));
     }
   }
 

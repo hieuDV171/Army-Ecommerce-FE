@@ -14,7 +14,7 @@ import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/models/wallet_model.dart';
 
 abstract class MarketplaceRepository {
-  Future<List<CategoryModel>> getCategories({int? parentId});
+  Future<List<CategoryModel>> getCategories({int? parentId, int? index, int? count});
 
   Future<List<BrandModel>> getBrands({String? categoryId, int index = 0, int count = 20});
 

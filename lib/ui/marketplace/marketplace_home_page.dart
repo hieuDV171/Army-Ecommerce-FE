@@ -325,14 +325,42 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _HomeCategories extends StatelessWidget {
+class _HomeCategories extends StatefulWidget {
   final List<CategoryModel> categories;
 
   const _HomeCategories({required this.categories});
 
   @override
+  State<_HomeCategories> createState() => _HomeCategoriesState();
+}
+
+class _HomeCategoriesState extends State<_HomeCategories> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent * 0.8;
+    if (_scrollController.position.pixels >= threshold) {
+      context.read<HomeBloc>().add(HomeLoadMoreCategoriesRequested());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (categories.isEmpty) return const SizedBox.shrink();
+    if (widget.categories.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -343,59 +371,72 @@ class _HomeCategories extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             height: 96,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
-              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                return InkWell(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SearchPage(categoryId: category.id),
-                    ),
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: SizedBox(
-                    width: 82,
-                    child: Column(
-                      children: [
-                        (() {
-                          final specialTheme = context.specialTheme;
-                          final iconWidget = Icon(
-                            Icons.category_outlined,
-                            color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
-                          );
-                          return Container(
-                            width: 54,
-                            height: 54,
-                            decoration: BoxDecoration(
-                              color: specialTheme.primaryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                            child: Center(
-                              child: specialTheme.useGradient
-                                  ? ShaderMask(
-                                      shaderCallback: (bounds) =>
-                                          specialTheme.primaryGradient!.createShader(bounds),
-                                      child: iconWidget,
-                                    )
-                                  : iconWidget,
-                            ),
-                          );
-                        }()),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          category.name,
-                          maxLines: 2,
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
+            child: BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, state) {
+                return ListView.separated(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: widget.categories.length + (state.isLoadingMoreCategories ? 1 : 0),
+                  separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+                  itemBuilder: (context, index) {
+                    if (index >= widget.categories.length) {
+                      return const SizedBox(
+                        width: 50,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                      ],
-                    ),
-                  ),
+                      );
+                    }
+                    final category = widget.categories[index];
+                    return InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SearchPage(categoryId: category.id),
+                        ),
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: SizedBox(
+                        width: 82,
+                        child: Column(
+                          children: [
+                            (() {
+                              final specialTheme = context.specialTheme;
+                              final iconWidget = Icon(
+                                Icons.category_outlined,
+                                color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                              );
+                              return Container(
+                                width: 54,
+                                height: 54,
+                                decoration: BoxDecoration(
+                                  color: specialTheme.primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                                ),
+                                child: Center(
+                                  child: specialTheme.useGradient
+                                      ? ShaderMask(
+                                          shaderCallback: (bounds) =>
+                                              specialTheme.primaryGradient!.createShader(bounds),
+                                          child: iconWidget,
+                                        )
+                                      : iconWidget,
+                                ),
+                              );
+                            }()),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              category.name,
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),

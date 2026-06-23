@@ -11,6 +11,8 @@ class HomeRefreshed extends HomeEvent {}
 
 class HomeLoadMoreRequested extends HomeEvent {}
 
+class HomeLoadMoreCategoriesRequested extends HomeEvent {}
+
 class HomeProductLikeToggled extends HomeEvent {
   final String productId;
 

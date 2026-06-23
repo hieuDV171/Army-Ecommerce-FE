@@ -94,9 +94,11 @@ class MarketplaceRemoteDataSource {
     }
   }
 
-  Future<ApiResponse<dynamic>> getCategories({int? parentId}) {
+  Future<ApiResponse<dynamic>> getCategories({int? parentId, int? index, int? count}) {
     final request = <String, dynamic>{};
     if (parentId != null) request['parent_id'] = parentId;
+    if (index != null) request['index'] = index;
+    if (count != null) request['count'] = count;
 
     return post(ApiPaths.categories, data: request);
   }
@@ -107,7 +109,9 @@ class MarketplaceRemoteDataSource {
     int count = 20,
   }) {
     final request = <String, dynamic>{'index': index, 'count': count};
-    if (categoryId != null) request['category_id'] = categoryId;
+    if (categoryId != null && categoryId.isNotEmpty) {
+      request['category_id'] = int.tryParse(categoryId) ?? categoryId;
+    }
 
     return post(ApiPaths.brands, data: request);
   }

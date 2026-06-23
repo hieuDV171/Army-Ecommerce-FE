@@ -13,6 +13,10 @@ class HomeState extends Equatable {
   final int index;
   final int count;
   final int? lastId;
+  final bool isLoadingMoreCategories;
+  final bool hasReachedEndCategories;
+  final int categoriesIndex;
+  final int categoriesCount;
 
   const HomeState({
     this.categories = const [],
@@ -25,6 +29,10 @@ class HomeState extends Equatable {
     this.index = 0,
     this.count = 20,
     this.lastId,
+    this.isLoadingMoreCategories = false,
+    this.hasReachedEndCategories = false,
+    this.categoriesIndex = 0,
+    this.categoriesCount = 10,
   });
 
   bool get isEmpty => !isInitialLoading && products.isEmpty;
@@ -41,6 +49,10 @@ class HomeState extends Equatable {
     int? index,
     int? count,
     int? lastId,
+    bool? isLoadingMoreCategories,
+    bool? hasReachedEndCategories,
+    int? categoriesIndex,
+    int? categoriesCount,
   }) {
     return HomeState(
       categories: categories ?? this.categories,
@@ -53,6 +65,10 @@ class HomeState extends Equatable {
       index: index ?? this.index,
       count: count ?? this.count,
       lastId: lastId ?? this.lastId,
+      isLoadingMoreCategories: isLoadingMoreCategories ?? this.isLoadingMoreCategories,
+      hasReachedEndCategories: hasReachedEndCategories ?? this.hasReachedEndCategories,
+      categoriesIndex: categoriesIndex ?? this.categoriesIndex,
+      categoriesCount: categoriesCount ?? this.categoriesCount,
     );
   }
 
@@ -68,5 +84,9 @@ class HomeState extends Equatable {
     index,
     count,
     lastId,
+    isLoadingMoreCategories,
+    hasReachedEndCategories,
+    categoriesIndex,
+    categoriesCount,
   ];
 }
