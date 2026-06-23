@@ -35,6 +35,8 @@ import '../../util/widgets/status_chip.dart';
 import '../checkout/checkout_page.dart';
 
 class ProductDetailPage extends StatelessWidget {
+  static String? activeProductId;
+
   final String productId;
   final bool? isStock;
   final bool scrollToComments;
@@ -152,12 +154,17 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     super.initState();
     _pageController = PageController();
     _scrollController = ScrollController();
+    // Track active product page to suppress redundant notification redirects
+    ProductDetailPage.activeProductId = widget.productId;
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _scrollController.dispose();
+    if (ProductDetailPage.activeProductId == widget.productId) {
+      ProductDetailPage.activeProductId = null;
+    }
     super.dispose();
   }
 

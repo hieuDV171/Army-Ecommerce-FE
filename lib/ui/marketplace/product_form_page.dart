@@ -40,6 +40,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
   final _descController = TextEditingController();
   final _videoUrlController = TextEditingController();
 
+  // Category load-more state
+  int _categoriesIndex = 0;
+  static const int _categoriesCount = 10;
+  bool _hasReachedEndCat = false;
+  bool _isLoadingMoreCat = false;
+
   // Dropdown Lists
   List<CategoryModel> _categories = [];
   List<BrandModel> _brands = [];
@@ -86,13 +92,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
     try {
       // Fetch categories and addresses (warehouses) concurrently
       final results = await Future.wait([
-        _repository.getCategories(),
+        _repository.getCategories(parentId: 0, index: 0, count: _categoriesCount),
         _repository.getAddresses(),
       ]);
 
       if (!mounted) return;
 
       _categories = results[0] as List<CategoryModel>;
+      _categoriesIndex = _categories.length;
+      _hasReachedEndCat = _categories.length < _categoriesCount;
       _warehouses = results[1] as List<AddressModel>;
 
       // Populate details if edit mode
@@ -110,6 +118,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
         // Find Category
         if (prod.category != null) {
+          final exists = _categories.any((c) => c.id.toString() == prod.category!.id.toString());
+          if (!exists) {
+            _categories.add(CategoryModel(
+              id: prod.category!.id.toString(),
+              name: prod.category!.name,
+            ));
+          }
           _selectedCategory = _categories.firstWhere(
             (c) => c.id.toString() == prod.category!.id.toString(),
             orElse: () => _categories.isNotEmpty ? _categories.first : const CategoryModel(id: '0', name: ''),
@@ -159,6 +174,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     }
   }
 
+
   Future<void> _onCategoryChanged(CategoryModel? category) async {
     setState(() {
       _selectedCategory = category;
@@ -184,6 +200,31 @@ class _ProductFormPageState extends State<ProductFormPage> {
         _isBrandsLoading = false;
       });
       AppSnackBar.showError(context, message: 'Lỗi tải danh mục thương hiệu: $e');
+    }
+  }
+
+  Future<void> _loadMoreCategories() async {
+    if (_isLoadingMoreCat || _hasReachedEndCat) return;
+    setState(() => _isLoadingMoreCat = true);
+    try {
+      final more = await _repository.getCategories(
+        parentId: 0,
+        index: _categoriesIndex,
+        count: _categoriesCount,
+      );
+      if (mounted) {
+        setState(() {
+          final existingIds = _categories.map((c) => c.id).toSet();
+          for (final c in more) {
+            if (!existingIds.contains(c.id)) _categories.add(c);
+          }
+          _categoriesIndex = _categories.length;
+          _hasReachedEndCat = more.length < _categoriesCount;
+          _isLoadingMoreCat = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMoreCat = false);
     }
   }
 
@@ -544,10 +585,47 @@ class _ProductFormPageState extends State<ProductFormPage> {
                                   DropdownButtonFormField<CategoryModel>(
                                     decoration: const InputDecoration(labelText: 'Danh mục'),
                                     initialValue: _selectedCategory,
-                                    items: _categories
-                                        .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
-                                        .toList(),
-                                    onChanged: _onCategoryChanged,
+                                    items: [
+                                      ..._categories.map(
+                                        (c) => DropdownMenuItem<CategoryModel>(
+                                          value: c,
+                                          child: Text(c.name),
+                                        ),
+                                      ),
+                                      if (!_hasReachedEndCat)
+                                        DropdownMenuItem<CategoryModel>(
+                                          value: null,
+                                          enabled: !_isLoadingMoreCat,
+                                          child: _isLoadingMoreCat
+                                              ? const Row(
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 16,
+                                                      height: 16,
+                                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Text('Đang tải...', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13)),
+                                                  ],
+                                                )
+                                              : const Row(
+                                                  children: [
+                                                    Icon(Icons.expand_more, size: 18, color: Colors.blue),
+                                                    SizedBox(width: 4),
+                                                    Text('Tải thêm danh mục', style: TextStyle(color: Colors.blue, fontStyle: FontStyle.italic, fontSize: 13)),
+                                                  ],
+                                                ),
+                                        ),
+                                    ],
+                                    onChanged: (val) {
+                                      // null value = sentinel "Tải thêm"
+                                      if (val == null) {
+                                        _loadMoreCategories();
+                                        return;
+                                      }
+                                      setState(() => _selectedCategory = val);
+                                      _onCategoryChanged(val);
+                                    },
                                   ),
                                   const SizedBox(height: AppSpacing.md),
 

@@ -144,8 +144,10 @@ class _SearchViewState extends State<_SearchView> {
 
   Future<void> _openFilterSheet(BuildContext context, ProductSearchState state) async {
     final searchBloc = context.read<ProductSearchBloc>();
+    final scrollController = ScrollController();
     await AppBottomSheet.show<void>(
       context: context,
+      scrollController: scrollController,
       child: BlocProvider.value(
         value: searchBloc,
         child: _ProductSearchFilterSheet(
@@ -154,6 +156,7 @@ class _SearchViewState extends State<_SearchView> {
         ),
       ),
     );
+    scrollController.dispose();
   }
 
   @override
@@ -457,8 +460,6 @@ class _ProductSearchFilterSheet extends StatefulWidget {
 }
 
 class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
-  late List<ProductBrandInfo> _availableBrands;
-  String? _selectedBrandId;
   final TextEditingController _minPriceController = TextEditingController();
   final TextEditingController _maxPriceController = TextEditingController();
 
@@ -466,28 +467,15 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   bool _isCategoriesLoading = false;
   String? _selectedCategoryId;
 
+  int _categoriesIndex = 0;
+  static const int _categoriesCount = 10;
+  bool _hasReachedEndCategories = false;
+  bool _isLoadingMoreCategories = false;
+
   @override
   void initState() {
     super.initState();
-    _selectedBrandId = widget.state.brandId;
     _selectedCategoryId = widget.state.categoryId;
-
-    // Collect brands from products
-    final Map<String, ProductBrandInfo> brandMap = {};
-    for (final product in widget.state.products) {
-      final brand = product.brand;
-      if (brand != null && brand.id.isNotEmpty) {
-        brandMap[brand.id] = brand;
-      }
-    }
-    // Also include currently selected brand if not already in the map
-    if (widget.state.brandId != null && !brandMap.containsKey(widget.state.brandId)) {
-      brandMap[widget.state.brandId!] = ProductBrandInfo(
-        id: widget.state.brandId!,
-        name: 'ID: ${widget.state.brandId}',
-      );
-    }
-    _availableBrands = brandMap.values.toList();
 
     _minPriceController.text = widget.state.priceMin != null ? widget.state.priceMin!.toInt().toString() : '';
     _maxPriceController.text = widget.state.priceMax != null ? widget.state.priceMax!.toInt().toString() : '';
@@ -499,13 +487,21 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     if (!mounted) return;
     setState(() {
       _isCategoriesLoading = true;
+      _categoriesIndex = 0;
+      _hasReachedEndCategories = false;
     });
     try {
       final repo = context.read<MarketplaceRepository>();
-      final categories = await repo.getCategories();
+      final categories = await repo.getCategories(
+        parentId: 0,
+        index: 0,
+        count: _categoriesCount,
+      );
       if (mounted) {
         setState(() {
           _categories = categories;
+          _categoriesIndex = categories.length;
+          _hasReachedEndCategories = categories.length < _categoriesCount;
           _isCategoriesLoading = false;
         });
       }
@@ -513,6 +509,37 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
       if (mounted) {
         setState(() {
           _isCategoriesLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreCategories() async {
+    if (_isLoadingMoreCategories || _hasReachedEndCategories || _isCategoriesLoading) return;
+
+    setState(() {
+      _isLoadingMoreCategories = true;
+    });
+
+    try {
+      final repo = context.read<MarketplaceRepository>();
+      final categories = await repo.getCategories(
+        parentId: 0,
+        index: _categoriesIndex,
+        count: _categoriesCount,
+      );
+      if (mounted) {
+        setState(() {
+          _categories.addAll(categories);
+          _categoriesIndex = _categories.length;
+          _hasReachedEndCategories = categories.length < _categoriesCount;
+          _isLoadingMoreCategories = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMoreCategories = false;
         });
       }
     }
@@ -580,7 +607,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
           ProductSearchFiltered(
             keyword: widget.currentKeyword,
             categoryId: _selectedCategoryId,
-            brandId: _selectedBrandId,
+            brandId: widget.state.brandId,
             priceMin: minPriceVal,
             priceMax: maxPriceVal,
           ),
@@ -653,203 +680,168 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final specialTheme = context.specialTheme;
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-        left: AppSpacing.lg,
-        right: AppSpacing.lg,
-        top: AppSpacing.lg,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Bộ lọc tìm kiếm',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Danh mục',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        if (_isCategoriesLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          )
+        else if (_categories.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Text(
+              'Không có danh mục nào',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          )
+        else ...[
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: _categories.map((category) {
+              final isSelected = _selectedCategoryId == category.id;
+              return ChoiceChip(
+                label: Text(category.name),
+                selected: isSelected,
+                selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
+                checkmarkColor: specialTheme.primaryColor,
+                labelStyle: TextStyle(
+                  color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                onSelected: (selected) {
+                  setState(() {
+                    _selectedCategoryId = selected ? category.id : null;
+                  });
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          if (!_hasReachedEndCategories)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+                icon: _isLoadingMoreCategories
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.expand_more, size: 16),
+                label: Text(
+                  _isLoadingMoreCategories ? 'Đang tải...' : 'Tải thêm',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onPressed: _isLoadingMoreCategories ? null : _loadMoreCategories,
+              ),
+            ),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Khoảng giá',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
           children: [
-            Text(
-              'Bộ lọc tìm kiếm',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Giá tối thiểu',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                   ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Danh mục',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: AppSpacing.xs),
+                  _buildPriceSpinnerField(
+                    controller: _minPriceController,
+                    onIncrement: _increaseMinPrice,
+                    onDecrement: _decreaseMinPrice,
                   ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            if (_isCategoriesLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            else if (_categories.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text(
-                  'Không có danh mục nào',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                ),
-              )
-            else
-              Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: _categories.map((category) {
-                  final isSelected = _selectedCategoryId == category.id;
-                  return ChoiceChip(
-                    label: Text(category.name),
-                    selected: isSelected,
-                    selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
-                    checkmarkColor: specialTheme.primaryColor,
-                    labelStyle: TextStyle(
-                      color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatPriceText(_minPriceController.text),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: specialTheme.primaryColor,
+                      fontWeight: FontWeight.w500,
                     ),
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategoryId = selected ? category.id : null;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Thương hiệu',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
                   ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            if (_availableBrands.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text(
-                  'Không có thương hiệu nào từ các sản phẩm tìm thấy',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                ),
-              )
-            else
-              Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: _availableBrands.map((brand) {
-                  final isSelected = _selectedBrandId == brand.id;
-                  final displayName = brand.name.isNotEmpty && brand.name != 'Thương hiệu'
-                      ? brand.name
-                      : 'ID: ${brand.id}';
-                  return ChoiceChip(
-                    label: Text(displayName),
-                    selected: isSelected,
-                    selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
-                    checkmarkColor: specialTheme.primaryColor,
-                    labelStyle: TextStyle(
-                      color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Giá tối đa',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _buildPriceSpinnerField(
+                    controller: _maxPriceController,
+                    onIncrement: _increaseMaxPrice,
+                    onDecrement: _decreaseMaxPrice,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatPriceText(_maxPriceController.text),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: specialTheme.primaryColor,
+                      fontWeight: FontWeight.w500,
                     ),
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedBrandId = selected ? brand.id : null;
-                      });
-                    },
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Khoảng giá',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Giá tối thiểu',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      _buildPriceSpinnerField(
-                        controller: _minPriceController,
-                        onIncrement: _increaseMinPrice,
-                        onDecrement: _decreaseMinPrice,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatPriceText(_minPriceController.text),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: specialTheme.primaryColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Giá tối đa',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      _buildPriceSpinnerField(
-                        controller: _maxPriceController,
-                        onIncrement: _increaseMaxPrice,
-                        onDecrement: _decreaseMaxPrice,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatPriceText(_maxPriceController.text),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: specialTheme.primaryColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _clearFilter,
-                    child: const Text('Xóa lọc'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppButton(
-                    label: 'Áp dụng',
-                    onPressed: _applyFilter,
-                    icon: Icons.filter_alt,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _clearFilter,
+                child: const Text('Xóa lọc'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: AppButton(
+                label: 'Áp dụng',
+                onPressed: _applyFilter,
+                icon: Icons.filter_alt,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
