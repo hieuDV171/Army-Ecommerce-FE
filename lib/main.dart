@@ -1,6 +1,7 @@
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
+import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/core/navigation/navigator_service.dart';
 import 'package:army_ecommerce/blocs/settings/push_setting_bloc.dart';
 import 'package:army_ecommerce/core/config/app_config.dart';
@@ -183,6 +184,11 @@ class _MyAppState extends State<MyApp> {
           BlocProvider(
             create: (context) => PushSettingBloc(
               settingRepository: RepositoryProvider.of<SettingRepository>(context),
+            ),
+          ),
+          BlocProvider<NotificationBloc>(
+            create: (context) => NotificationBloc(
+              notificationRepository: context.read<NotificationRepository>(),
             ),
           ),
           BlocProvider(

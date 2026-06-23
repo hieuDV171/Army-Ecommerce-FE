@@ -13,7 +13,6 @@ import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/blocs/notification/notification_state.dart';
 import 'package:army_ecommerce/repositories/block_repository.dart';
 import 'package:army_ecommerce/repositories/follow_repository.dart';
-import 'package:army_ecommerce/repositories/notification_repository.dart';
 import 'package:army_ecommerce/ui/auth/login_screen.dart';
 import 'package:army_ecommerce/ui/block/blocked_users_screen.dart';
 import 'package:army_ecommerce/ui/follow/followers_screen.dart';
@@ -74,7 +73,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final FollowBloc _followBloc;
   late final BlockBloc _blockBloc;
   late final ChatBloc _chatBloc;
-  late final NotificationBloc _notificationBloc;
 
   // GlobalKey để truy cập ScaffoldState nhằm đóng Drawer đúng cách
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -89,9 +87,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
     _chatBloc = ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>());
-    _notificationBloc = NotificationBloc(
-      notificationRepository: context.read<NotificationRepository>(),
-    );
 
     // Đăng ký lắng nghe foreground message để cập nhật badge số chưa đọc ngay lập tức
     FirebaseNotificationService.addMessageReceivedListener(_onForegroundMessageReceived);
@@ -122,7 +117,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _followBloc.close();
     _blockBloc.close();
     _chatBloc.close();
-    _notificationBloc.close();
     super.dispose();
   }
 
@@ -156,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _onForegroundMessageReceived() {
     if (mounted && widget.token.isNotEmpty) {
-      _notificationBloc.add(LoadNotificationsRequested());
+      context.read<NotificationBloc>().add(LoadNotificationsRequested());
       _chatBloc.add(LoadConversationsRequested(isSilent: true));
     }
   }
@@ -240,7 +234,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         BlocProvider.value(value: _followBloc),
         BlocProvider.value(value: _blockBloc),
         BlocProvider.value(value: _chatBloc),
-        BlocProvider.value(value: _notificationBloc),
       ],
       child: BlocProvider<HomeBloc>(
         // HomeBloc phục vụ MarketplaceHomeBody (giao diện mới của team)
@@ -306,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 _CartTabBody(token: widget.token),
                 // Tab 3: Thông báo
                 BlocProvider.value(
-                  value: _notificationBloc,
+                  value: context.read<NotificationBloc>(),
                   child: NotificationScreen(isTab: true, token: widget.token),
                 ),
                 // Tab 4: Trang cá nhân với links followers/following/blocked
@@ -387,13 +380,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           onTap: (index) {
             if (index == _selectedIndex) {
               if (index == 3 && widget.token.isNotEmpty) {
-                _notificationBloc.add(LoadNotificationsRequested());
+                context.read<NotificationBloc>().add(LoadNotificationsRequested());
               }
               return;
             }
             setState(() => _selectedIndex = index);
             if (index == 3 && widget.token.isNotEmpty) {
-              _notificationBloc.add(LoadNotificationsRequested());
+              context.read<NotificationBloc>().add(LoadNotificationsRequested());
             }
           },
           items: [

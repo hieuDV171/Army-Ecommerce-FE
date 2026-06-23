@@ -1,3 +1,5 @@
+import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
+import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -38,7 +40,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 class FirebaseNotificationService {
-  static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static final FirebaseMessaging _firebaseMessaging =
+      FirebaseMessaging.instance;
   static bool _tokenRefreshListenerRegistered = false;
 
   static final List<VoidCallback> _onMessageReceivedListeners = [];
@@ -348,6 +351,20 @@ class FirebaseNotificationService {
       final type = data['type']?.toString();
       final conversationId = data['conversation_id']?.toString();
       final objectId = data['object_id']?.toString();
+      final notificationId = data['notification_id']?.toString();
+
+      if (notificationId != null && notificationId.isNotEmpty) {
+        logger.i(
+          'Found notification_id: $notificationId. Calling set_read_notification API...',
+        );
+
+        final context = await _waitForContext();
+        if (context != null && context.mounted) {
+          context.read<NotificationBloc>().add(
+            MarkNotificationReadRequested(notificationId: notificationId),
+          );
+        }
+      }
 
       if (type == 'new_message' && conversationId != null) {
         // Kiểm tra xem ứng dụng đang ở sẵn màn hình hội thoại này không

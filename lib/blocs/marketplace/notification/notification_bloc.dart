@@ -57,7 +57,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
     try {
       await marketplaceRepository.markNotificationRead(event.notificationId);
-      emit(state.copyWith(isSubmitting: false, successMessage: 'Da danh dau da doc'));
+      emit(state.copyWith(isSubmitting: false, successMessage: 'Đã đọc'));
     } catch (error) {
       emit(
         state.copyWith(
