@@ -1,10 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
-import 'package:army_ecommerce/blocs/auth/auth_event.dart';
-import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import '../constants/app_colors.dart';
 
 class NetworkStatusWrapper extends StatefulWidget {
@@ -15,86 +11,114 @@ class NetworkStatusWrapper extends StatefulWidget {
   State<NetworkStatusWrapper> createState() => _NetworkStatusWrapperState();
 }
 
-class _NetworkStatusWrapperState extends State<NetworkStatusWrapper> {
+/// FIX 1: Bỏ auto-logout khi mất mạng — chỉ hiển thị banner cảnh báo.
+/// FIX 2: Thêm WidgetsBindingObserver để tạm dừng kiểm tra mạng khi app
+///         vào background, tránh false-positive khi resume.
+class _NetworkStatusWrapperState extends State<NetworkStatusWrapper>
+    with WidgetsBindingObserver {
   bool _isOnline = true;
   bool _showOnlineSuccess = false;
-  Timer? _timer;
+
+  /// Timer định kỳ kiểm tra mạng (chỉ chạy khi app ở foreground).
+  Timer? _periodicTimer;
+
+  /// Timer delay sau khi resume từ background trước khi bắt đầu check lại.
+  Timer? _resumeDelayTimer;
+
+  /// Trạng thái lifecycle của app.
+  AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
 
   @override
   void initState() {
     super.initState();
-    _startConnectionCheck();
+    WidgetsBinding.instance.addObserver(this);
+    _startPeriodicCheck();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _periodicTimer?.cancel();
+    _resumeDelayTimer?.cancel();
     super.dispose();
   }
 
-  void _startConnectionCheck() {
-    _checkStatus();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) => _checkStatus());
+  // ─── Lifecycle Observer ─────────────────────────────────────────────────────
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lifecycleState = state;
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      // App vào background: dừng timer định kỳ để tiết kiệm tài nguyên
+      // và tránh DNS timeout gây false-positive khi resume.
+      _stopPeriodicCheck();
+    } else if (state == AppLifecycleState.resumed) {
+      // App quay lại foreground: chờ 2 giây cho hệ điều hành khôi phục
+      // kết nối mạng trước khi bắt đầu check lại.
+      _resumeDelayTimer?.cancel();
+      _resumeDelayTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted && _lifecycleState == AppLifecycleState.resumed) {
+          _checkStatus();
+          _startPeriodicCheck();
+        }
+      });
+    }
+  }
+
+  // ─── Network Check ──────────────────────────────────────────────────────────
+
+  void _startPeriodicCheck() {
+    _periodicTimer?.cancel();
+    _periodicTimer =
+        Timer.periodic(const Duration(seconds: 5), (_) => _checkStatus());
+  }
+
+  void _stopPeriodicCheck() {
+    _periodicTimer?.cancel();
+    _periodicTimer = null;
   }
 
   Future<void> _checkStatus() async {
+    // Không check khi app đang ở background
+    if (_lifecycleState != AppLifecycleState.resumed) return;
+
+    bool online;
     try {
-      final result = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 3));
-      final online = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-      if (online != _isOnline) {
-        setState(() {
-          _isOnline = online;
-          if (online) {
-            _showOnlineSuccess = true;
-            Future.delayed(const Duration(seconds: 3), () {
-              if (mounted) {
-                setState(() => _showOnlineSuccess = false);
-              }
-            });
-          } else {
-            _handleAutoLogout();
-          }
-        });
-      }
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 3));
+      online = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
-      if (_isOnline) {
-        setState(() {
-          _isOnline = false;
-          _showOnlineSuccess = false;
+      online = false;
+    }
+
+    if (!mounted) return;
+
+    if (online == _isOnline) return; // Không thay đổi, không cần rebuild
+
+    setState(() {
+      _isOnline = online;
+      if (online) {
+        // Vừa khôi phục kết nối: hiện banner xanh 3 giây
+        _showOnlineSuccess = true;
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _showOnlineSuccess = false);
         });
-        _handleAutoLogout();
       }
-    }
+      // FIX 1: Không còn gọi _handleAutoLogout() nữa.
+      // Chỉ hiển thị banner đỏ, người dùng KHÔNG bị đăng xuất.
+    });
   }
 
-  void _handleAutoLogout() {
-    try {
-      final authBloc = BlocProvider.of<AuthBloc>(context);
-      final authState = authBloc.state;
-      if (authState is AuthSuccess) {
-        final token = authState.user.token;
-        authBloc.add(LogoutButtonPressed(token: token));
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã tự động đăng xuất do mất kết nối mạng.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error auto-logging out: $e');
-    }
-  }
-
+  // ─── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).padding.top;
     final double visibleTop = topPadding + 8;
-    final double hiddenTop = -150.0;
+    const double hiddenTop = -150.0;
 
     return Stack(
       children: [
@@ -109,9 +133,11 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper> {
             color: Colors.transparent,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color: !_isOnline ? AppColors.primaryDark : AppColors.successDark,
+                color:
+                    !_isOnline ? AppColors.primaryDark : AppColors.successDark,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
