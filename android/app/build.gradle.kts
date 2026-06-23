@@ -16,10 +16,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.m25team.army_ecommerce"
@@ -39,9 +35,15 @@ android {
         }
     }
 
-    applicationVariants.all { variant ->
-        variant.outputs.all {
-            outputFileName = "Sàn_Thương_Mại_Điện_Tử_Quân_Đội_${variant.name}_v${variant.versionName}.apk"
+    applicationVariants.all {
+        val variantName = name
+        val variantVersion = versionName
+        outputs.forEach { output ->
+            val castedOutput = output as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            
+            // Lời khuyên: Nên dùng tiếng Việt KHÔNG DẤU để đặt tên file. 
+            // Đặt tên có dấu (Sàn_Thương_Mại...) rất dễ gây lỗi hệ thống file khi tải lên Store hoặc máy chủ.
+            castedOutput.outputFileName = "Sàn_Thương_Mại_Điện_Tử_Quân_Đội_${variantName}_v${variantVersion}.apk"
         }
     }
 
@@ -49,4 +51,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
