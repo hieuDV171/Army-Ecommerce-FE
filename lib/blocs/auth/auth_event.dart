@@ -134,6 +134,9 @@ class SetUserInfoRequested extends AuthEvent {
   final String? password;
   final File? coverImageFile;
   final File? coverImageWebFile;
+  final bool removeAvatar;
+  final bool removeCoverImage;
+  final bool removeCoverImageWeb;
 
   SetUserInfoRequested({
     required this.currentUser,
@@ -147,6 +150,9 @@ class SetUserInfoRequested extends AuthEvent {
     this.password,
     this.coverImageFile,
     this.coverImageWebFile,
+    this.removeAvatar = false,
+    this.removeCoverImage = false,
+    this.removeCoverImageWeb = false,
   });
 
   @override
@@ -162,6 +168,9 @@ class SetUserInfoRequested extends AuthEvent {
         password,
         coverImageFile,
         coverImageWebFile,
+        removeAvatar,
+        removeCoverImage,
+        removeCoverImageWeb,
       ];
 }
 

@@ -8,6 +8,8 @@ import 'package:army_ecommerce/blocs/follow/follow_bloc.dart';
 import 'package:army_ecommerce/blocs/marketplace/home/home_bloc.dart';
 import 'package:army_ecommerce/blocs/marketplace/home/home_event.dart';
 import 'package:army_ecommerce/blocs/marketplace/home/home_state.dart';
+import 'package:army_ecommerce/blocs/marketplace/simple_list/simple_list_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/simple_list/simple_list_event.dart';
 import 'package:army_ecommerce/blocs/notification/notification_bloc.dart';
 import 'package:army_ecommerce/blocs/notification/notification_event.dart';
 import 'package:army_ecommerce/blocs/notification/notification_state.dart';
@@ -18,6 +20,7 @@ import 'package:army_ecommerce/ui/block/blocked_users_screen.dart';
 import 'package:army_ecommerce/ui/follow/followers_screen.dart';
 import 'package:army_ecommerce/ui/follow/following_screen.dart';
 import 'package:army_ecommerce/ui/notification/notification_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/avatar_with_frame.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,7 +33,7 @@ import '../../core/services/cart_manager.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../auth/change_password_screen.dart';
 import '../marketplace/marketplace_home_page.dart';
-import '../marketplace/list/news_page.dart';
+import '../marketplace/list/news_tab_body.dart';
 import '../marketplace/list/wallet_page.dart';
 import '../marketplace/order/buyer_orders_page.dart';
 import '../marketplace/order/seller_orders_page.dart';
@@ -64,15 +67,19 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  late final PageController _pageController;
+  
   String? _avatarUrl;
   String? _coverImageUrl;
+  String? _coverImageWeb;
   late String _currentUsername;
   // BLoC phụ trách API follow/block/chat/notification — tạo và dispose trong lifecycle
   late final FollowBloc _followBloc;
   late final BlockBloc _blockBloc;
   late final ChatBloc _chatBloc;
+  late final SimpleListBloc _newsBloc;
 
   // GlobalKey để truy cập ScaffoldState nhằm đóng Drawer đúng cách
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -83,10 +90,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _currentUsername = widget.username;
 
+    _pageController = PageController(initialPage: _selectedIndex);
+
     // Khởi tạo 4 BLoC từ Repository do thành viên đảm nhận
     _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
     _chatBloc = ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>());
+
+    final marketplaceRepository = context.read<MarketplaceRepository>();
+    _newsBloc = SimpleListBloc(
+      loader: (index, count) => marketplaceRepository.getNews(index: index, count: count),
+      marketplaceRepository: marketplaceRepository,
+    )..add(SimpleListRequested());
 
     // Đăng ký lắng nghe foreground message để cập nhật badge số chưa đọc ngay lập tức
     FirebaseNotificationService.addMessageReceivedListener(_onForegroundMessageReceived);
@@ -98,6 +113,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
       SessionManager.getCoverImage().then((cover) {
         if (mounted) setState(() => _coverImageUrl = cover);
+      });
+      SessionManager.getCoverImageWeb().then((coverWeb) {
+        if (mounted) setState(() => _coverImageWeb = coverWeb);
       });
     }
 
@@ -114,9 +132,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     FirebaseNotificationService.removeMessageReceivedListener(_onForegroundMessageReceived);
+    _pageController.dispose();
     _followBloc.close();
     _blockBloc.close();
     _chatBloc.close();
+    _newsBloc.close();
     super.dispose();
   }
 
@@ -143,6 +163,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           SessionManager.getCoverImage().then((cover) {
             if (mounted) setState(() => _coverImageUrl = cover);
           });
+          SessionManager.getCoverImageWeb().then((coverWeb) {
+            if (mounted) setState(() => _coverImageWeb = coverWeb);
+          });
         }
       });
     }
@@ -152,6 +175,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (mounted && widget.token.isNotEmpty) {
       context.read<NotificationBloc>().add(LoadNotificationsRequested());
       _chatBloc.add(LoadConversationsRequested(isSilent: true));
+    }
+  }
+
+  // Chuyển tab kèm direction cho slide animation
+  void _changeTab(int newIndex) {
+    if (newIndex == _selectedIndex) return;
+    setState(() {
+      _selectedIndex = newIndex;
+    });
+    _pageController.animateToPage(
+      newIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOutCubic,
+    );
+    if (newIndex == 3 && widget.token.isNotEmpty) {
+      context.read<NotificationBloc>().add(LoadNotificationsRequested());
     }
   }
 
@@ -234,6 +273,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         BlocProvider.value(value: _followBloc),
         BlocProvider.value(value: _blockBloc),
         BlocProvider.value(value: _chatBloc),
+        BlocProvider.value(value: _newsBloc),
       ],
       child: BlocProvider<HomeBloc>(
         // HomeBloc phục vụ MarketplaceHomeBody (giao diện mới của team)
@@ -247,67 +287,80 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 _currentUsername = state.updatedUser.username;
                 _avatarUrl = state.updatedUser.avatar;
                 _coverImageUrl = state.updatedUser.coverImage;
+                _coverImageWeb = state.updatedUser.coverImageWeb;
               });
             } else if (state is SetUserInfoSuccess && mounted) {
               setState(() {
                 _currentUsername = state.user.username;
                 _avatarUrl = state.user.avatar;
                 _coverImageUrl = state.user.coverImage;
+                _coverImageWeb = state.user.coverImageWeb;
               });
             } else if (state is GetUserInfoSuccess && mounted) {
               setState(() {
                 _currentUsername = state.user.username;
                 _avatarUrl = state.user.avatar;
                 _coverImageUrl = state.user.coverImage;
+                _coverImageWeb = state.user.coverImageWeb;
               });
             } else if (state is AuthSuccess && mounted) {
               setState(() {
                 _currentUsername = state.user.username;
                 _avatarUrl = state.user.avatar;
                 _coverImageUrl = state.user.coverImage;
+                _coverImageWeb = state.user.coverImageWeb;
               });
             } else if ((state is Unauthenticated || state is AuthLogoutSuccess) && mounted) {
               setState(() {
                 _currentUsername = "Khách";
                 _avatarUrl = null;
                 _coverImageUrl = null;
+                _coverImageWeb = null;
               });
             }
           },
           child: Scaffold(
             key: _scaffoldKey,
             backgroundColor: AppColors.greyBackground,
-            appBar: _selectedIndex == 3 ? null : _buildAppBar(),
+            appBar: _buildAppBar(),
             drawer: _HomeDrawer(
               displayName: _currentUsername,
               avatarUrl: _avatarUrl,
+              coverImageWeb: _coverImageWeb,
               token: widget.token,
             ),
-            body: IndexedStack(
-              index: _selectedIndex,
+            body: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() => _selectedIndex = index);
+                if (index == 3 && widget.token.isNotEmpty) {
+                  context.read<NotificationBloc>().add(LoadNotificationsRequested());
+                }
+              },
               children: [
-                // Tab 0: Trang chủ marketplace (giao diện mới của team)
+                // Tab 0: Trang chủ marketplace
                 MarketplaceHomeBody(
                   username: _currentUsername,
                   avatarUrl: _avatarUrl,
                   userId: widget.userId,
                   token: widget.token,
                 ),
-                // Tab 1: Danh mục (placeholder)
-                const _CategoryTabBody(),
-                // Tab 2: Giỏ hàng (placeholder)
+                // Tab 1: Tin tức
+                const NewsTabBody(),
+                // Tab 2: Giỏ hàng
                 _CartTabBody(token: widget.token),
                 // Tab 3: Thông báo
                 BlocProvider.value(
                   value: context.read<NotificationBloc>(),
                   child: NotificationScreen(isTab: true, token: widget.token),
                 ),
-                // Tab 4: Trang cá nhân với links followers/following/blocked
+                // Tab 4: Trang cá nhân
                 _ProfileTabBody(
                   userId: widget.userId,
                   username: _currentUsername,
                   avatarUrl: _avatarUrl,
                   coverImageUrl: _coverImageUrl,
+                  coverImageWeb: _coverImageWeb,
                   onFollowers: _openFollowers,
                   onFollowing: _openFollowing,
                   onEditProfile: _openUpdateProfile,
@@ -348,134 +401,143 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             )
           : null,
       iconTheme: const IconThemeData(color: Colors.white),
+      elevation: 0,
+      centerTitle: true,
       title: Text(
         _selectedIndex == 0
             ? 'Quân Nhu Tiền Tuyến'
             : _selectedIndex == 1
-                ? 'Danh mục'
+                ? 'Tin tức'
                 : _selectedIndex == 2
                     ? 'Giỏ hàng'
                     : _selectedIndex == 3
                         ? 'Thông báo'
                         : 'Trang cá nhân',
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
       ),
+      // Nút "Đọc tất cả" (dấu tích kép) chỉ hiện ở tab Thông báo khi đã đăng nhập
+      actions: _selectedIndex == 3
+          ? [
+              if (widget.token.isNotEmpty)
+                IconButton(
+                  onPressed: () {
+                    context.read<NotificationBloc>().add(MarkAllNotificationsReadRequested());
+                  },
+                  icon: const Icon(Icons.done_all, color: Colors.white),
+                  tooltip: 'Đọc tất cả',
+                ),
+            ]
+          : null,
     );
   }
 
   Widget _buildBottomNavBar() {
     return BlocBuilder<NotificationBloc, NotificationState>(
       builder: (context, notifState) {
-        final notifUnread = notifState is NotificationsLoaded
-            ? notifState.unreadCount
-            : 0;
+        final notifUnread = notifState is NotificationsLoaded ? notifState.unreadCount : 0;
+        final theme = context.specialTheme;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final itemWidth = screenWidth / 5;
 
-        return BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          selectedItemColor: context.specialTheme.primaryColor,
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          onTap: (index) {
-            if (index == _selectedIndex) {
-              if (index == 3 && widget.token.isNotEmpty) {
-                context.read<NotificationBloc>().add(LoadNotificationsRequested());
-              }
-              return;
-            }
-            setState(() => _selectedIndex = index);
-            if (index == 3 && widget.token.isNotEmpty) {
-              context.read<NotificationBloc>().add(LoadNotificationsRequested());
-            }
-          },
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Trang chủ',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_outlined),
-              activeIcon: Icon(Icons.grid_view),
-              label: 'Danh mục',
-            ),
-            BottomNavigationBarItem(
-              icon: ListenableBuilder(
-                listenable: CartManager(),
-                builder: (context, child) {
-                  final cartCount = CartManager().totalCount;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.shopping_cart_outlined),
-                      if (cartCount > 0)
-                        Positioned(
-                          right: -6,
-                          top: -4,
-                          child: _Badge(count: cartCount),
-                        ),
-                    ],
-                  );
-                },
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
               ),
-              activeIcon: ListenableBuilder(
-                listenable: CartManager(),
-                builder: (context, child) {
-                  final cartCount = CartManager().totalCount;
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(Icons.shopping_cart),
-                      if (cartCount > 0)
-                        Positioned(
-                          right: -6,
-                          top: -4,
-                          child: _Badge(count: cartCount),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              label: 'Giỏ hàng',
-            ),
-            // Thông báo với badge số chưa đọc (index 3)
-            BottomNavigationBarItem(
-              icon: Stack(
-                clipBehavior: Clip.none,
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 56,
+              child: Stack(
                 children: [
-                  const Icon(Icons.notifications_outlined),
-                  if (notifUnread > 0)
-                    Positioned(
-                      right: -6,
-                      top: -4,
-                      child: _Badge(count: notifUnread),
+                  // Sliding highlight indicator
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    left: _selectedIndex * itemWidth + (itemWidth * 0.1),
+                    bottom: 8,
+                    child: Container(
+                      width: itemWidth * 0.8,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                  ),
+                  // Tab items
+                  Row(
+                    children: [
+                      _buildNavItem(0, Icons.home_outlined, Icons.home, 'Trang chủ', itemWidth, 0),
+                      _buildNavItem(1, Icons.article_outlined, Icons.article, 'Tin tức', itemWidth, 0),
+                      ListenableBuilder(
+                        listenable: CartManager(),
+                        builder: (context, _) => _buildNavItem(
+                          2,
+                          Icons.shopping_cart_outlined,
+                          Icons.shopping_cart,
+                          'Giỏ hàng',
+                          itemWidth,
+                          CartManager().totalCount,
+                        ),
+                      ),
+                      _buildNavItem(3, Icons.notifications_outlined, Icons.notifications, 'Thông báo', itemWidth, notifUnread),
+                      _buildNavItem(4, Icons.person_outline, Icons.person, 'Tôi', itemWidth, 0),
+                    ],
+                  ),
                 ],
               ),
-              activeIcon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications),
-                  if (notifUnread > 0)
-                    Positioned(
-                      right: -6,
-                      top: -4,
-                      child: _Badge(count: notifUnread),
-                    ),
-                ],
-              ),
-              label: 'Thông báo',
             ),
-            // Tôi (index 4)
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Tôi',
-            ),
-          ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, double width, int badgeCount) {
+    final isSelected = _selectedIndex == index;
+    final theme = context.specialTheme;
+    final color = isSelected ? theme.primaryColor : Colors.grey[600];
+
+    return InkWell(
+      onTap: () => _changeTab(index),
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: SizedBox(
+        width: width,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(isSelected ? activeIcon : icon, color: color, size: 24),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: _Badge(count: badgeCount),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -511,11 +573,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 class _HomeDrawer extends StatelessWidget {
   final String displayName;
   final String? avatarUrl;
+  final String? coverImageWeb;
   final String token;
 
   const _HomeDrawer({
     required this.displayName,
     required this.avatarUrl,
+    this.coverImageWeb,
     required this.token,
   });
 
@@ -533,12 +597,13 @@ class _HomeDrawer extends StatelessWidget {
             ),
             accountName: Text(isGuest ? 'Đồng chí: Khách' : 'Đồng chí: $displayName'),
             accountEmail: const Text('Chợ quân nhu nội bộ'),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: !isGuest && avatarUrl != null && avatarUrl!.isNotEmpty
+            currentAccountPicture: AvatarWithFrame(
+              radius: 36,
+              avatarImage: !isGuest && avatarUrl != null && avatarUrl!.isNotEmpty
                   ? SessionManager.getImageProvider(avatarUrl!)
                   : null,
-              child: isGuest || avatarUrl == null || avatarUrl!.isEmpty
+              frameUrl: !isGuest ? coverImageWeb : null,
+              fallbackChild: isGuest || avatarUrl == null || avatarUrl!.isEmpty
                   ? Icon(Icons.person, size: 42, color: context.specialTheme.primaryDarkColor)
                   : null,
             ),
@@ -600,12 +665,7 @@ class _HomeDrawer extends StatelessWidget {
             },
           ),
 
-          _DrawerTile(
-            icon: Icons.article_outlined,
-            color: Colors.cyan,
-            title: 'Tin tức',
-            onTap: () => _push(context, const NewsPage()),
-          ),
+
           _DrawerTile(
             icon: Icons.palette_outlined,
             color: Colors.purple,
@@ -1081,6 +1141,7 @@ class _ProfileTabBody extends StatelessWidget {
   final String username;
   final String? avatarUrl;
   final String? coverImageUrl;
+  final String? coverImageWeb;
   final VoidCallback onFollowers;
   final VoidCallback onFollowing;
   final VoidCallback onEditProfile;
@@ -1094,6 +1155,7 @@ class _ProfileTabBody extends StatelessWidget {
     required this.username,
     this.avatarUrl,
     this.coverImageUrl,
+    this.coverImageWeb,
     required this.onFollowers,
     required this.onFollowing,
     required this.onEditProfile,
@@ -1191,19 +1253,15 @@ class _ProfileTabBody extends StatelessWidget {
                       _showZoomedAvatar(context, avatarUrl!, username);
                     }
                   },
-                  child: CircleAvatar(
+                  child: AvatarWithFrame(
                     radius: 46,
-                    backgroundColor: Colors.white,
-                    child: CircleAvatar(
-                      radius: 44,
-                      backgroundColor: Colors.white,
-                      backgroundImage: (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
-                          ? SessionManager.getImageProvider(avatarUrl!)
-                          : null,
-                      child: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
-                          ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)
-                          : null,
-                    ),
+                    avatarImage: (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
+                        ? SessionManager.getImageProvider(avatarUrl!)
+                        : null,
+                    frameUrl: !isGuest ? coverImageWeb : null,
+                    fallbackChild: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
+                        ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 12),

@@ -205,11 +205,8 @@ class AuthRemoteDataSource {
     try {
       final data = <String, dynamic>{
         'token': token,
+        'user_id': userId ?? 0,
       };
-
-      if (userId != null) {
-        data['user_id'] = userId;
-      }
 
       final response = await _dioClient.dio.post(
         ApiPaths.getUserInfo,
@@ -388,6 +385,9 @@ class AuthRemoteDataSource {
     String? password,
     File? coverImageFile,
     File? coverImageWebFile,
+    bool removeAvatar = false,
+    bool removeCoverImage = false,
+    bool removeCoverImageWeb = false,
   }) async {
     final token = await SessionManager.getToken();
 
@@ -403,13 +403,29 @@ class AuthRemoteDataSource {
       if (email != null && email.trim().isNotEmpty) payload['email'] = email.trim();
       if (username != null && username.trim().isNotEmpty) payload['username'] = username.trim();
       if (status != null && status.trim().isNotEmpty) payload['status'] = status.trim();
-      if (avatarUrl != null) payload['avatar'] = avatarUrl;
+      
+      if (removeAvatar) {
+        payload['avatar'] = "";
+      } else if (avatarUrl != null) {
+        payload['avatar'] = avatarUrl;
+      }
+
       if (firstName != null && firstName.trim().isNotEmpty) payload['firstname'] = firstName.trim();
       if (lastName != null && lastName.trim().isNotEmpty) payload['lastname'] = lastName.trim();
       if (address != null && address.trim().isNotEmpty) payload['address'] = address.trim();
       if (password != null && password.trim().isNotEmpty) payload['password'] = password;
-      if (coverImageUrl != null) payload['cover_image'] = coverImageUrl;
-      if (coverImageWebUrl != null) payload['cover_image_web'] = coverImageWebUrl;
+      
+      if (removeCoverImage) {
+        payload['cover_image'] = "";
+      } else if (coverImageUrl != null) {
+        payload['cover_image'] = coverImageUrl;
+      }
+
+      if (removeCoverImageWeb) {
+        payload['cover_image_web'] = "";
+      } else if (coverImageWebUrl != null) {
+        payload['cover_image_web'] = coverImageWebUrl;
+      }
 
       final response = await _dioClient.dio.post(
         ApiPaths.setUserInfo,
@@ -427,14 +443,14 @@ class AuthRemoteDataSource {
         final fallbackUser = currentUser.copyWith(
           token: token ?? currentUser.token,
           username: username ?? currentUser.username,
-          avatar: avatarUrl ?? currentUser.avatar,
+          avatar: removeAvatar ? "" : (avatarUrl ?? currentUser.avatar),
           email: email ?? currentUser.email,
           status: status ?? currentUser.status,
           firstName: firstName ?? currentUser.firstName,
           lastName: lastName ?? currentUser.lastName,
           address: address ?? currentUser.address,
-          coverImage: coverImageUrl ?? currentUser.coverImage,
-          coverImageWeb: coverImageWebUrl ?? currentUser.coverImageWeb,
+          coverImage: removeCoverImage ? "" : (coverImageUrl ?? currentUser.coverImage),
+          coverImageWeb: removeCoverImageWeb ? "" : (coverImageWebUrl ?? currentUser.coverImageWeb),
         );
 
         return ApiResponse<UserModel>(
@@ -447,15 +463,15 @@ class AuthRemoteDataSource {
       if (responseCode == ResponseCode.ok && parsedResponse.data != null) {
         final mergedUser = parsedResponse.data!.copyWith(
           token: token ?? parsedResponse.data!.token,
-          username: username?.trim().isNotEmpty == true ? username!.trim() : parsedResponse.data!.username,
-          avatar: avatarUrl ?? parsedResponse.data!.avatar,
-          email: email?.trim().isNotEmpty == true ? email!.trim() : parsedResponse.data!.email,
-          status: status?.trim().isNotEmpty == true ? status!.trim() : parsedResponse.data!.status,
-          firstName: firstName?.trim().isNotEmpty == true ? firstName!.trim() : parsedResponse.data!.firstName,
-          lastName: lastName?.trim().isNotEmpty == true ? lastName!.trim() : parsedResponse.data!.lastName,
-          address: address?.trim().isNotEmpty == true ? address!.trim() : parsedResponse.data!.address,
-          coverImage: coverImageUrl ?? parsedResponse.data!.coverImage,
-          coverImageWeb: coverImageWebUrl ?? parsedResponse.data!.coverImageWeb,
+          username: username?.trim().isNotEmpty == true ? username!.trim() : (parsedResponse.data!.username.isNotEmpty ? parsedResponse.data!.username : currentUser.username),
+          avatar: removeAvatar ? "" : (avatarUrl ?? (parsedResponse.data!.avatar ?? currentUser.avatar)),
+          email: email?.trim().isNotEmpty == true ? email!.trim() : (parsedResponse.data!.email ?? currentUser.email),
+          status: status?.trim().isNotEmpty == true ? status!.trim() : (parsedResponse.data!.status ?? currentUser.status),
+          firstName: firstName?.trim().isNotEmpty == true ? firstName!.trim() : (parsedResponse.data!.firstName ?? currentUser.firstName),
+          lastName: lastName?.trim().isNotEmpty == true ? lastName!.trim() : (parsedResponse.data!.lastName ?? currentUser.lastName),
+          address: address?.trim().isNotEmpty == true ? address!.trim() : (parsedResponse.data!.address ?? currentUser.address),
+          coverImage: removeCoverImage ? "" : (coverImageUrl ?? (parsedResponse.data!.coverImage ?? currentUser.coverImage)),
+          coverImageWeb: removeCoverImageWeb ? "" : (coverImageWebUrl ?? (parsedResponse.data!.coverImageWeb ?? currentUser.coverImageWeb)),
         );
 
         return ApiResponse<UserModel>(

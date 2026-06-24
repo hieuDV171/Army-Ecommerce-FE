@@ -31,3 +31,6 @@ class RealTimeNotificationReceived extends NotificationEvent {
   @override
   List<Object?> get props => [notification];
 }
+
+// Sự kiện đánh dấu tất cả thông báo đã đọc (bulk)
+class MarkAllNotificationsReadRequested extends NotificationEvent {}

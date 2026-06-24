@@ -1,6 +1,7 @@
 import 'package:army_ecommerce/blocs/marketplace/product_detail/product_detail_bloc.dart';
 import 'package:army_ecommerce/blocs/marketplace/product_detail/product_detail_event.dart';
 import 'package:army_ecommerce/blocs/marketplace/product_detail/product_detail_state.dart';
+import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ import 'seller_listings_page.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import '../../util/widgets/status_chip.dart';
 import '../checkout/checkout_page.dart';
+import '../../util/widgets/avatar_with_frame.dart';
 
 class ProductDetailPage extends StatelessWidget {
   static String? activeProductId;
@@ -116,8 +118,14 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
         children: [
           _buildVariantRow('Kích cỡ', size.name.isEmpty ? size.id : size.name),
           _buildVariantRow('Màu', size.color ?? 'Mặc định'),
-          _buildVariantRow('Tồn kho', size.stock != null ? '${size.stock} sản phẩm' : 'Hết hàng'),
-          _buildVariantRow('Khối lượng', size.weight != null ? '${size.weight}kg' : 'Chưa rõ'),
+          _buildVariantRow(
+            'Tồn kho',
+            size.stock != null ? '${size.stock} sản phẩm' : 'Hết hàng',
+          ),
+          _buildVariantRow(
+            'Khối lượng',
+            size.weight != null ? '${size.weight}kg' : 'Chưa rõ',
+          ),
         ],
       ),
     );
@@ -264,7 +272,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
         if (message != null) {
           AppSnackBar.show(context, message: message);
         }
-        if (state.product != null && widget.scrollToComments && !_hasScrolledToComments) {
+        if (state.product != null &&
+            widget.scrollToComments &&
+            !_hasScrolledToComments) {
           _hasScrolledToComments = true;
           final route = ModalRoute.of(context);
           if (route?.animation != null &&
@@ -275,6 +285,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 _scrollToComments();
               }
             }
+
             route.animation!.addStatusListener(onAnimationStatus);
           } else {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -686,7 +697,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   StatusChip(
                     label: product.isStock ? 'Còn hàng' : 'Hết hàng',
                     color: product.isStock ? Colors.green : Colors.red,
-                    icon: product.isStock ? Icons.check_circle_outline : Icons.remove_circle_outline,
+                    icon: product.isStock
+                        ? Icons.check_circle_outline
+                        : Icons.remove_circle_outline,
                   ),
                 ],
               ),
@@ -749,7 +762,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: product.sizes.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     final size = product.sizes[index];
                     return InkWell(
@@ -777,10 +791,17 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 child: InkWell(
                   onTap: () {},
                   borderRadius: BorderRadius.circular(8),
-                  splashColor: context.specialTheme.primaryColor.withValues(alpha: 0.15),
-                  highlightColor: context.specialTheme.primaryColor.withValues(alpha: 0.05),
+                  splashColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.15,
+                  ),
+                  highlightColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.05,
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -802,19 +823,32 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 child: InkWell(
                   onTap: () {},
                   borderRadius: BorderRadius.circular(8),
-                  splashColor: context.specialTheme.primaryColor.withValues(alpha: 0.15),
-                  highlightColor: context.specialTheme.primaryColor.withValues(alpha: 0.05),
+                  splashColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.15,
+                  ),
+                  highlightColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.05,
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SectionHeader(title: 'Thông tin sản phẩm'),
                         const SizedBox(height: AppSpacing.sm),
                         if (product.brand != null)
-                          _MetaRow(label: 'Thương hiệu', value: product.brand!.name),
+                          _MetaRow(
+                            label: 'Thương hiệu',
+                            value: product.brand!.name,
+                          ),
                         if (product.category != null)
-                          _MetaRow(label: 'Danh mục', value: product.category!.name),
+                          _MetaRow(
+                            label: 'Danh mục',
+                            value: product.category!.name,
+                          ),
                         if ((product.shipsFrom ?? '').isNotEmpty)
                           _MetaRow(label: 'Gửi từ', value: product.shipsFrom!),
                       ],
@@ -827,13 +861,16 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const SizedBox(height: AppSpacing.sm),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading:
-                    product.seller?.avatar != null &&
-                        product.seller!.avatar!.isNotEmpty
-                    ? CircleAvatar(
-                        backgroundImage: NetworkImage(product.seller!.avatar!),
-                      )
-                    : const CircleAvatar(child: Icon(Icons.storefront)),
+                leading: AvatarWithFrame(
+                  radius: 20,
+                  avatarImage:
+                      product.seller?.avatar != null &&
+                          product.seller!.avatar!.isNotEmpty
+                      ? SessionManager.getImageProvider(product.seller!.avatar!)
+                      : null,
+                  frameUrl: product.seller?.coverImageWeb,
+                  fallbackChild: const Icon(Icons.storefront),
+                ),
                 title: Text(sellerName),
                 subtitle: Text(
                   product.sellerLocation ??
@@ -860,23 +897,27 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                         color: isMe
                             ? Colors.grey[200]
                             : (context.specialTheme.useGradient
-                                ? null
-                                : context.specialTheme.primaryColor),
+                                  ? null
+                                  : context.specialTheme.primaryColor),
                         gradient: isMe
                             ? null
                             : (context.specialTheme.useGradient
-                                ? context.specialTheme.primaryGradient
-                                : null),
+                                  ? context.specialTheme.primaryGradient
+                                  : null),
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.chat_bubble_outline, size: 20),
                         color: isMe ? Colors.grey[400] : Colors.white,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
                         onPressed: isMe
                             ? null
                             : () {
-                                final token = authState.currentUser?.token ?? '';
+                                final token =
+                                    authState.currentUser?.token ?? '';
                                 if (checkLogin(context, token: token)) {
                                   final chatBloc = context.read<ChatBloc>();
                                   Navigator.push(
@@ -884,7 +925,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                                     MaterialPageRoute(
                                       builder: (_) => BlocProvider(
                                         create: (context) => ChatBloc(
-                                          marketplaceRepository: context.read<MarketplaceRepository>(),
+                                          marketplaceRepository: context
+                                              .read<MarketplaceRepository>(),
                                         ),
                                         child: ChatScreen(
                                           partnerId: sellerId,
@@ -894,7 +936,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                                           productId: product.id,
                                           productTitle: product.title,
                                           productPrice: product.price,
-                                          productImageUrl: product.imageUrls.isNotEmpty
+                                          productImageUrl:
+                                              product.imageUrls.isNotEmpty
                                               ? product.imageUrls.first
                                               : null,
                                         ),
@@ -902,7 +945,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                                     ),
                                   ).then((_) {
                                     if (context.mounted && token.isNotEmpty) {
-                                      chatBloc.add(LoadConversationsRequested());
+                                      chatBloc.add(
+                                        LoadConversationsRequested(),
+                                      );
                                     }
                                   });
                                 }
@@ -1020,22 +1065,28 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                         ),
                       );
                     },
-                    leading:
-                        comment.avatar != null && comment.avatar!.isNotEmpty
-                        ? CircleAvatar(
-                            backgroundImage: NetworkImage(comment.avatar!),
-                          )
-                        : const CircleAvatar(child: Icon(Icons.person_outline)),
+                    leading: AvatarWithFrame(
+                      radius: 20,
+                      avatarImage:
+                          (comment.avatar != null && comment.avatar!.isNotEmpty)
+                          ? SessionManager.getImageProvider(comment.avatar!)
+                          : null,
+                      frameUrl: comment.coverImageWeb,
+                    ),
                     title: Text(comment.authorName),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(comment.content),
-                        if (comment.createdAt != null && comment.createdAt!.isNotEmpty) ...[
+                        if (comment.createdAt != null &&
+                            comment.createdAt!.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             _formatDateTime(comment.createdAt),
-                            style: const TextStyle(fontSize: 10, color: Colors.grey),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ],
@@ -1154,11 +1205,14 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           color: isSelected
                               ? context.specialTheme.primaryDarkColor
                               : Colors.black87,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                       selected: isSelected,
-                      selectedColor: context.specialTheme.primaryColor.withValues(alpha: 0.2),
+                      selectedColor: context.specialTheme.primaryColor
+                          .withValues(alpha: 0.2),
                       onSelected: (selected) {
                         setState(() {
                           selectedSize = selected ? size : null;
@@ -1247,7 +1301,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   ),
                   AppButton(
                     label: isBuyNow ? 'Mua ngay' : 'Thêm vào giỏ hàng',
-                    icon: isBuyNow ? Icons.shopping_bag_outlined : Icons.add_shopping_cart,
+                    icon: isBuyNow
+                        ? Icons.shopping_bag_outlined
+                        : Icons.add_shopping_cart,
                     onPressed: () {
                       if (product.sizes.isNotEmpty && selectedSize == null) {
                         setState(() {
@@ -1347,7 +1403,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   void _showReportSheet(BuildContext context) {
     final detailController = TextEditingController();
     final customSubjectController = TextEditingController();
-    
+
     final presetReasons = [
       'Hàng giả, hàng nhái',
       'Hình ảnh phản cảm, bạo lực',
@@ -1355,7 +1411,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
       'Lừa đảo, thông tin sai sự thật',
       'Lý do khác',
     ];
-    
+
     String selectedReason = presetReasons.first;
 
     AppBottomSheet.show<void>(
@@ -1374,7 +1430,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const SizedBox(height: AppSpacing.md),
               const Text(
                 'Lý do báo cáo:',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Container(
@@ -1425,7 +1485,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                         ? customSubjectController.text.trim()
                         : selectedReason;
                     if (subject.isEmpty) {
-                      AppSnackBar.showError(sheetContext, message: 'Vui lòng cung cấp lý do báo cáo');
+                      AppSnackBar.showError(
+                        sheetContext,
+                        message: 'Vui lòng cung cấp lý do báo cáo',
+                      );
                       return;
                     }
                     context.read<ProductDetailBloc>().add(
@@ -1585,8 +1648,6 @@ class _RatingsSectionState extends State<_RatingsSection> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
@@ -1608,10 +1669,7 @@ class _RatingsSectionState extends State<_RatingsSection> {
                 _loadRates();
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 0,
-                  child: Text('Tất cả đánh giá'),
-                ),
+                const PopupMenuItem(value: 0, child: Text('Tất cả đánh giá')),
                 ...List.generate(5, (index) {
                   final star = 5 - index;
                   return PopupMenuItem(
@@ -1628,7 +1686,10 @@ class _RatingsSectionState extends State<_RatingsSection> {
                 }),
               ],
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(16),
@@ -1636,7 +1697,11 @@ class _RatingsSectionState extends State<_RatingsSection> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(_selectedStarFilter == 0 ? 'Số sao' : '$_selectedStarFilter sao'),
+                    Text(
+                      _selectedStarFilter == 0
+                          ? 'Số sao'
+                          : '$_selectedStarFilter sao',
+                    ),
                     const SizedBox(width: 4),
                     const Icon(Icons.star, color: Colors.amber, size: 16),
                     const Icon(Icons.arrow_drop_down, size: 16),
@@ -1678,9 +1743,13 @@ class _RatingsSectionState extends State<_RatingsSection> {
                   ),
                 );
               },
-              leading: r.avatar != null && r.avatar!.isNotEmpty
-                  ? CircleAvatar(backgroundImage: NetworkImage(r.avatar!))
-                  : const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading: AvatarWithFrame(
+                radius: 20,
+                avatarImage: (r.avatar != null && r.avatar!.isNotEmpty)
+                    ? SessionManager.getImageProvider(r.avatar!)
+                    : null,
+                frameUrl: r.coverImageWeb,
+              ),
               title: Text(r.author),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1692,19 +1761,31 @@ class _RatingsSectionState extends State<_RatingsSection> {
                       if (r.createdAt != null && r.createdAt!.isNotEmpty)
                         Text(
                           _formatDateTime(r.createdAt),
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
                         ),
                     ],
                   ),
-                  if (r.purchaseId != null && r.purchaseId!.isNotEmpty && r.purchaseId != '0') ...[
+                  if (r.purchaseId != null &&
+                      r.purchaseId!.isNotEmpty &&
+                      r.purchaseId != '0') ...[
                     const SizedBox(height: 2),
                     Text(
                       'Mã đơn: #${r.purchaseId}',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.xs),
-                  Text(r.content, style: const TextStyle(color: Colors.black87)),
+                  Text(
+                    r.content,
+                    style: const TextStyle(color: Colors.black87),
+                  ),
                 ],
               ),
             ),

@@ -13,6 +13,7 @@ import '../../blocs/follow/follow_bloc.dart';
 import '../../repositories/follow_repository.dart';
 import '../follow/followers_screen.dart';
 import '../follow/following_screen.dart';
+import '../util/widgets/avatar_with_frame.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String? userId;
@@ -31,7 +32,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<AuthBloc>().add(GetUserInfoRequested(userId: widget.userId == null ? null : int.tryParse(widget.userId!)));
+      final userIdStr = widget.userId;
+      final userIdInt = userIdStr != null ? int.tryParse(userIdStr) : null;
+      context.read<AuthBloc>().add(GetUserInfoRequested(userId: userIdInt));
     });
   }
 
@@ -39,8 +42,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   void _loadProfile() {
     SessionManager.updateAvatarCacheBustKey();
+    final userIdStr = widget.userId;
+    final userIdInt = userIdStr != null ? int.tryParse(userIdStr) : null;
     context.read<AuthBloc>().add(
-      GetUserInfoRequested(userId: widget.userId == null ? null : int.tryParse(widget.userId!)),
+      GetUserInfoRequested(userId: userIdInt),
     );
   }
 
@@ -96,10 +101,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  String _boolLabel(bool? value) {
-    if (value == null) return '-';
-    return value ? 'Có' : 'Không';
-  }
+  // String _boolLabel(bool? value) {
+  //   if (value == null) return '-';
+  //   return value ? 'Có' : 'Không';
+  // }
 
   String _defaultAddressLabel(dynamic defaultAddress) {
     if (defaultAddress == null) return '-';
@@ -297,30 +302,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                         height: avatarBoxSize,
                                         child: Stack(
                                           children: [
-                                            // Centered avatar with white circular border
+                                            // Avatar với viền trắng + khung frame nếu có
                                             Center(
-                                              child: GestureDetector(
+                                              child: AvatarWithFrame(
+                                                avatarImage: profile.avatar != null && profile.avatar!.isNotEmpty
+                                                    ? SessionManager.getImageProvider(
+                                                        SessionManager.bustAvatarUrl(profile.avatar!),
+                                                      )
+                                                    : null,
+                                                frameUrl: profile.coverImageWeb,
+                                                radius: avatarRadius,
+                                                fallbackChild: Icon(
+                                                  Icons.person,
+                                                  size: avatarRadius * 0.9,
+                                                  color: Colors.grey,
+                                                ),
                                                 onTap: () {
                                                   if (profile.avatar != null && profile.avatar!.isNotEmpty) {
-                                                    _showZoomedAvatar(context, SessionManager.bustAvatarUrl(profile.avatar!), profile.username);
+                                                    _showZoomedAvatar(
+                                                      context,
+                                                      SessionManager.bustAvatarUrl(profile.avatar!),
+                                                      profile.username,
+                                                    );
                                                   }
                                                 },
-                                                child: Container(
-                                                  padding: const EdgeInsets.all(4),
-                                                  decoration: const BoxDecoration(
-                                                    color: Colors.white,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: CircleAvatar(
-                                                    radius: avatarRadius,
-                                                    backgroundImage: profile.avatar != null && profile.avatar!.isNotEmpty
-                                                        ? SessionManager.getImageProvider(profile.avatar!)
-                                                        : null,
-                                                    child: profile.avatar == null || profile.avatar!.isEmpty
-                                                        ? const Icon(Icons.person, size: 56, color: Colors.grey)
-                                                        : null,
-                                                  ),
-                                                ),
                                               ),
                                             ),
 
@@ -434,12 +439,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            _SectionCard(
+                              _SectionCard(
                               title: 'Thông tin hiển thị',
                               children: [
                                 _infoRow('Username', profile.username),
-                                _infoRow('Họ', profile.firstName),
-                                _infoRow('Tên', profile.lastName),
+                                _infoRow('Họ', profile.lastName),
+                                _infoRow('Tên', profile.firstName),
                                 _infoRow('Email', profile.email),
                                 _infoRow('Số điện thoại', profile.phoneNumber),
                               ],
@@ -450,9 +455,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               children: [
                                 _infoRow('ID', profile.id),
                                 _infoRow('Active', profile.active.toString()),
-                                _infoRow('Đang follow', _boolLabel(profile.followed)),
-                                _infoRow('Bị chặn', _boolLabel(profile.isBlocked)),
-                                _infoRow('Listing', profile.listing?.toString()),
+                                // _infoRow('Đang follow', _boolLabel(profile.followed)),
+                                // _infoRow('Bị chặn', _boolLabel(profile.isBlocked)),
+                                _infoRow('Số đơn', profile.listing?.toString()),
                               ],
                             ),
                             const SizedBox(height: 16),

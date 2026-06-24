@@ -43,6 +43,7 @@ class SessionManager {
   static const String _keyAvatar = "avatar";
   static const String _keyLastDevToken = "last_dev_token";
   static const String _keyCoverImage = "cover_image";
+  static const String _keyCoverImageWeb = "cover_image_web";
   static const String _keyUserId = "user_id";
 
   // Lưu thông tin khi đăng nhập thành công
@@ -129,6 +130,20 @@ class SessionManager {
     final coverImage = prefs.getString(_keyCoverImage);
     logger.d('SessionManager: getCoverImage -> ${coverImage != null ? "[RETRIEVED]" : "null"}');
     return coverImage;
+  }
+
+  static Future<void> setCoverImageWeb(String coverImageWeb) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyCoverImageWeb, coverImageWeb);
+    updateAvatarCacheBustKey();
+    logger.d('SessionManager: setCoverImageWeb -> [SAVED] and updated cache bust key');
+  }
+
+  static Future<String?> getCoverImageWeb() async {
+    final prefs = await SharedPreferences.getInstance();
+    final coverImageWeb = prefs.getString(_keyCoverImageWeb);
+    logger.d('SessionManager: getCoverImageWeb -> ${coverImageWeb != null ? "[RETRIEVED]" : "null"}');
+    return coverImageWeb;
   }
 
   static const String _keyCachedProducts = "cached_products_json";

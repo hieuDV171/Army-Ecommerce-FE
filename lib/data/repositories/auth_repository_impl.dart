@@ -79,6 +79,9 @@ class AuthRepositoryImpl implements AuthRepository {
     String? password,
     File? coverImageFile,
     File? coverImageWebFile,
+    bool removeAvatar = false,
+    bool removeCoverImage = false,
+    bool removeCoverImageWeb = false,
   }) {
     return remoteDataSource.setUserInfo(
       currentUser: currentUser,
@@ -92,6 +95,9 @@ class AuthRepositoryImpl implements AuthRepository {
       password: password,
       coverImageFile: coverImageFile,
       coverImageWebFile: coverImageWebFile,
+      removeAvatar: removeAvatar,
+      removeCoverImage: removeCoverImage,
+      removeCoverImageWeb: removeCoverImageWeb,
     );
   }
 }

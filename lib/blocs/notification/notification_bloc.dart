@@ -21,6 +21,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<LoadMoreNotificationsRequested>(_onLoadMoreNotificationsRequested);
     on<MarkNotificationReadRequested>(_onMarkNotificationReadRequested);
     on<RealTimeNotificationReceived>(_onRealTimeNotificationReceived);
+    on<MarkAllNotificationsReadRequested>(_onMarkAllNotificationsReadRequested);
 
     _notificationSubscription = SocketService().newNotificationsStream.listen((data) {
       try {
@@ -183,6 +184,38 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         hasMore: hasMore ?? false,
         unreadCount: _countUnread(updatedList),
       ));
+    }
+  }
+
+  // Xử lý đánh dấu đọc tất cả thông báo (optimistic + bulk parallel API calls)
+  Future<void> _onMarkAllNotificationsReadRequested(
+    MarkAllNotificationsReadRequested event,
+    Emitter<NotificationState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! NotificationsLoaded) return;
+
+    final unreadList = currentState.notifications.where((n) => !n.isRead).toList();
+    if (unreadList.isEmpty) return;
+
+    // Optimistic update ngay lập tức
+    final updatedList = currentState.notifications.map((n) => n.copyWith(isRead: true)).toList();
+    emit(NotificationsLoaded(
+      notifications: updatedList,
+      hasMore: currentState.hasMore,
+      unreadCount: 0,
+    ));
+
+    // Gọi API song song cho tất cả thông báo chưa đọc
+    try {
+      await Future.wait(
+        unreadList.map(
+          (n) => notificationRepository.setReadNotification(notificationId: n.notificationId),
+        ),
+      );
+    } catch (e) {
+      logger.e('NotificationBloc: markAllRead error: $e');
+      // Không rollback — giữ optimistic update để UX mượt hơn
     }
   }
 

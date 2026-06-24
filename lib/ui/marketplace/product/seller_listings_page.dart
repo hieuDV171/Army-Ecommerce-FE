@@ -35,6 +35,7 @@ import '../product_form_page.dart';
 import '../../util/theme/special_app_theme.dart';
 import 'product_detail_page.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
+import '../../util/widgets/avatar_with_frame.dart';
 
 class SellerListingsPage extends StatefulWidget {
   final String userId;
@@ -676,6 +677,8 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     final displayName = _user?.username ?? widget.sellerName;
     final displayListing = _user?.listing?.toString() ?? widget.sellerListing;
     final displayScore = widget.sellerScore;
+    final displayCover = _user?.coverImage;
+    final displayFrame = _user?.coverImageWeb;
 
     final authState = context.read<AuthBloc>().state;
     final currentUserId = authState.currentUser?.id ?? '';
@@ -707,7 +710,6 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
               if (state is FollowActionSuccess) {
                 setState(() {
                   _isFollowed = state.isFollowed;
-                  // sync counters if the state returns it, or keep our optimistic values
                 });
                 final msg = state.isFollowed
                     ? 'Theo dõi ${state.username} thành công'
@@ -766,245 +768,303 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                     )
                   : ListView(
                       controller: _scrollController,
-                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      padding: EdgeInsets.zero,
                       children: [
-                        Row(
+                        // Header with Cover Image
+                        Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                if (displayAvatar != null && displayAvatar.isNotEmpty) {
-                                  _showZoomedAvatar(context, displayAvatar, displayName);
-                                }
-                              },
-                              child: displayAvatar != null && displayAvatar.isNotEmpty
-                                  ? CircleAvatar(radius: 36, backgroundImage: SessionManager.getImageProvider(displayAvatar))
-                                  : const CircleAvatar(radius: 36, child: Icon(Icons.storefront)),
+                            Container(
+                              height: 160,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                image: (displayCover != null && displayCover.isNotEmpty)
+                                    ? DecorationImage(
+                                        image: SessionManager.getImageProvider(displayCover),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
                             ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(displayName, style: AppTextStyles.screenTitle),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  if (displayScore != null && displayScore.isNotEmpty) Text('Điểm: $displayScore'),
-                                ],
+                            // Avatar
+                            Positioned(
+                              left: 16,
+                              bottom: -40,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: AvatarWithFrame(
+                                  radius: 40,
+                                  avatarImage: (displayAvatar != null && displayAvatar.isNotEmpty)
+                                      ? SessionManager.getImageProvider(displayAvatar)
+                                      : null,
+                                  frameUrl: displayFrame,
+                                  onTap: () {
+                                    if (displayAvatar != null && displayAvatar.isNotEmpty) {
+                                      _showZoomedAvatar(context, displayAvatar, displayName);
+                                    }
+                                  },
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        const SizedBox(height: 50),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildStatItem('Đơn đã bán', int.tryParse(displayListing ?? '0') ?? 0),
-                              _buildStatItem(
-                                'Người theo dõi',
-                                _followersCount,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BlocProvider(
-                                        create: (_) => FollowBloc(
-                                          followRepository: context.read<FollowRepository>(),
-                                        ),
-                                        child: FollowersScreen(
-                                          userId: _sellerUserId,
+                              Text(displayName, style: AppTextStyles.screenTitle),
+                              const SizedBox(height: AppSpacing.xs),
+                              if (displayScore != null && displayScore.isNotEmpty) Text('Điểm: $displayScore'),
+                              const SizedBox(height: AppSpacing.md),
+                              Container(
+                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _buildStatItem('Đơn đã bán', int.tryParse(displayListing ?? '0') ?? 0),
+                                    _buildStatItem(
+                                      'Người theo dõi',
+                                      _followersCount,
+                                      onTap: () {
+                                        if (_isBlocked) {
+                                          _showNotAccessDialog();
+                                          return;
+                                        }
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => BlocProvider(
+                                              create: (_) => FollowBloc(
+                                                followRepository: context.read<FollowRepository>(),
+                                              ),
+                                              child: FollowersScreen(
+                                                userId: _sellerUserId,
+                                              ),
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (mounted) {
+                                            _loadUser();
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    _buildStatItem(
+                                      'Đang theo dõi',
+                                      _followingCount,
+                                      onTap: () {
+                                        if (_isBlocked) {
+                                          _showNotAccessDialog();
+                                          return;
+                                        }
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => BlocProvider(
+                                              create: (_) => FollowBloc(
+                                                followRepository: context.read<FollowRepository>(),
+                                              ),
+                                              child: FollowingScreen(
+                                                userId: _sellerUserId,
+                                              ),
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (mounted) {
+                                            _loadUser();
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              if (isMe) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(
+                                      color: AppColors.primary.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.info_outline, color: AppColors.primary),
+                                      SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: Text(
+                                          'Đây là trang cửa hàng của bạn. Bạn không thể tự nhắn tin, theo dõi hoặc tự chặn chính mình.',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                              ] else if (isGuest) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(
+                                      color: Colors.grey.withValues(alpha: 0.3),
                                     ),
-                                  ).then((_) {
-                                    if (mounted) {
-                                      _loadUser();
-                                    }
-                                  });
-                                },
-                              ),
-                              _buildStatItem(
-                                'Đang theo dõi',
-                                _followingCount,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BlocProvider(
-                                        create: (_) => FollowBloc(
-                                          followRepository: context.read<FollowRepository>(),
-                                        ),
-                                        child: FollowingScreen(
-                                          userId: _sellerUserId,
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.info_outline, color: Colors.grey),
+                                      SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: Text(
+                                          'Bạn đang ở chế độ khách. Đăng nhập để nhắn tin, theo dõi hoặc chặn người bán này.',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ).then((_) {
-                                    if (mounted) {
-                                      _loadUser();
-                                    }
-                                  });
-                                },
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.lg),
+                              ],
+                              SizedBox(
+                                width: double.infinity,
+                                child: AppButton(
+                                  label: 'Chat',
+                                  icon: Icons.chat_bubble_outline,
+                                  onPressed: isMe ? null : _openChat,
+                                ),
                               ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _SellerActionButton(
+                                      label: _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
+                                      icon: _isFollowed ? Icons.check : Icons.person_add_outlined,
+                                      isActive: _isFollowed,
+                                      activeColor: context.specialTheme.primaryColor,
+                                      onTap: isMe ? null : _toggleFollow,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: _SellerActionButton(
+                                      label: _isBlocked ? 'Đã chặn' : 'Chặn',
+                                      icon: Icons.block,
+                                      isActive: _isBlocked,
+                                      activeColor: Colors.black87,
+                                      onTap: isMe ? null : _toggleBlock,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              const SectionHeader(title: 'Thông tin người bán'),
+                              const SizedBox(height: AppSpacing.sm),
+                              if (hasSellerInfo) ...[
+                                if ((_user!.email ?? '').isNotEmpty) _MetaRow(label: 'Email', value: _user!.email!),
+                                if ((_user!.phoneNumber ?? '').isNotEmpty) _MetaRow(label: 'Số điện thoại', value: _user!.phoneNumber!),
+                                if ((_user!.address ?? '').isNotEmpty) _MetaRow(label: 'Địa chỉ', value: _user!.address!),
+                                if ((_user!.city ?? '').isNotEmpty) _MetaRow(label: 'Thành phố', value: _user!.city!),
+                                if ((_user!.status ?? '').isNotEmpty) _MetaRow(label: 'Trạng thái', value: _user!.status!),
+                                if ((_user!.firstName ?? '').isNotEmpty || (_user!.lastName ?? '').isNotEmpty)
+                                  _MetaRow(label: 'Tên', value: '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'.trim()),
+                              ] else
+                                const Text(
+                                  'Người này lười lắm, không để lại thông tin gì.',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              const Divider(height: 32),
+                              const SectionHeader(title: 'Sản phẩm đang bán'),
+                              const SizedBox(height: AppSpacing.sm),
+                              if (_products.isEmpty && !_isLoadingProducts)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                  child: Text(
+                                    'Chưa đăng bán sản phẩm nào.',
+                                    style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+                                  ),
+                                )
+                              else ...[
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: _products.length,
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: AppSpacing.md,
+                                    crossAxisSpacing: AppSpacing.md,
+                                    childAspectRatio: 0.51,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final product = _products[index];
+                                    return ProductCard(
+                                      product: productCardDataFromModel(product),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
+                                        ),
+                                      ),
+                                      onLikeTap: () => _toggleLikeProduct(product),
+                                    );
+                                  },
+                                ),
+                                if (_isLoadingProducts)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  ),
+                              ],
+                              const SizedBox(height: 32),
                             ],
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        if (isMe) ...[
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.info_outline, color: AppColors.primary),
-                                SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: Text(
-                                    'Đây là trang cửa hàng của bạn. Bạn không thể tự nhắn tin, theo dõi hoặc tự chặn chính mình.',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                        ] else if (isGuest) ...[
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              border: Border.all(
-                                color: Colors.grey.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.info_outline, color: Colors.grey),
-                                SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: Text(
-                                    'Bạn đang ở chế độ khách. Đăng nhập để nhắn tin, theo dõi hoặc chặn người bán này.',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                        ],
-                        AppButton(
-                          label: 'Chat',
-                          icon: Icons.chat_bubble_outline,
-                          onPressed: isMe ? null : _openChat,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _SellerActionButton(
-                                label: _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
-                                icon: _isFollowed ? Icons.check : Icons.person_add_outlined,
-                                isActive: _isFollowed,
-                                activeColor: context.specialTheme.primaryColor,
-                                onTap: isMe ? null : _toggleFollow,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: _SellerActionButton(
-                                label: _isBlocked ? 'Đã chặn' : 'Chặn',
-                                icon: Icons.block,
-                                isActive: _isBlocked,
-                                activeColor: Colors.black87,
-                                onTap: isMe ? null : _toggleBlock,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        const SectionHeader(title: 'Thông tin người bán'),
-                        const SizedBox(height: AppSpacing.sm),
-                        if (hasSellerInfo) ...[
-                          if ((_user!.email ?? '').isNotEmpty) _MetaRow(label: 'Email', value: _user!.email!),
-                          if ((_user!.phoneNumber ?? '').isNotEmpty) _MetaRow(label: 'Số điện thoại', value: _user!.phoneNumber!),
-                          if ((_user!.address ?? '').isNotEmpty) _MetaRow(label: 'Địa chỉ', value: _user!.address!),
-                          if ((_user!.city ?? '').isNotEmpty) _MetaRow(label: 'Thành phố', value: _user!.city!),
-                          if ((_user!.status ?? '').isNotEmpty) _MetaRow(label: 'Trạng thái', value: _user!.status!),
-                          if ((_user!.firstName ?? '').isNotEmpty || (_user!.lastName ?? '').isNotEmpty)
-                            _MetaRow(label: 'Tên', value: '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'.trim()),
-                        ] else
-                          const Text(
-                            'Người này lười lắm, không để lại thông tin gì.',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        const Divider(height: 32),
-                        const SectionHeader(title: 'Sản phẩm đang bán'),
-                        const SizedBox(height: AppSpacing.sm),
-                        if (_products.isEmpty && !_isLoadingProducts)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                            child: Text(
-                              'Chưa đăng bán sản phẩm nào.',
-                              style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
-                            ),
-                          )
-                        else ...[
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _products.length,
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: AppSpacing.md,
-                              crossAxisSpacing: AppSpacing.md,
-                              childAspectRatio: 0.51,
-                            ),
-                            itemBuilder: (context, index) {
-                              final product = _products[index];
-                              return ProductCard(
-                                product: productCardDataFromModel(product),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
-                                  ),
-                                ),
-                                onLikeTap: () => _toggleLikeProduct(product),
-                              );
-                            },
-                          ),
-                          if (_isLoadingProducts)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                        ],
                       ],
                     ),
         ),
+      ),
+    );
+  }
+
+  void _showNotAccessDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Thông báo'),
+        content: const Text('Bạn không có quyền truy cập vào đây'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
+        ],
       ),
     );
   }

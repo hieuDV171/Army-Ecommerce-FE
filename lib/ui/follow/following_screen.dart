@@ -2,6 +2,7 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/follow/follow_bloc.dart';
 import 'package:army_ecommerce/blocs/follow/follow_event.dart';
 import 'package:army_ecommerce/blocs/follow/follow_state.dart';
+import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:army_ecommerce/ui/marketplace/product/seller_listings_page.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,8 @@ import '../util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
+Color _themePrimaryColor(BuildContext context) =>
+    context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
 
 class FollowingScreen extends StatefulWidget {
@@ -30,7 +32,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
   void initState() {
     super.initState();
     // Tải danh sách đang theo dõi khi màn hình được mở
-    context.read<FollowBloc>().add(LoadFollowingRequested(userId: widget.userId));
+    context.read<FollowBloc>().add(
+      LoadFollowingRequested(userId: widget.userId),
+    );
     _scrollController.addListener(_onScroll);
   }
 
@@ -45,13 +49,17 @@ class _FollowingScreenState extends State<FollowingScreen> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     if (currentScroll >= maxScroll - 200) {
-      context.read<FollowBloc>().add(LoadMoreFollowingRequested(userId: widget.userId));
+      context.read<FollowBloc>().add(
+        LoadMoreFollowingRequested(userId: widget.userId),
+      );
     }
   }
 
   // Xử lý kéo để làm mới danh sách
   Future<void> _onRefresh() async {
-    context.read<FollowBloc>().add(LoadFollowingRequested(userId: widget.userId));
+    context.read<FollowBloc>().add(
+      LoadFollowingRequested(userId: widget.userId),
+    );
     await Future.delayed(const Duration(milliseconds: 800));
   }
 
@@ -95,9 +103,35 @@ class _FollowingScreenState extends State<FollowingScreen> {
             final message = state.isFollowed
                 ? 'Theo dõi ${state.username} thành công'
                 : 'Đã hủy theo dõi ${state.username}';
-            AppSnackBar.show(context, message: message, backgroundColor: _shopeeOrange(context), duration: const Duration(seconds: 2));
+            AppSnackBar.show(
+              context,
+              message: message,
+              backgroundColor: _themePrimaryColor(context),
+              duration: const Duration(seconds: 2),
+            );
           } else if (state is FollowFailure) {
-            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+            if (state.code == ResponseCode.notAccess.code ||
+                state.error == ResponseCode.notAccess.message ||
+                state.error.contains('Not access')) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Thông báo'),
+                  content: const Text('Bạn không có quyền truy cập vào đây'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Đóng'),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+            }
           }
         },
         builder: (context, state) {
@@ -120,7 +154,7 @@ class _FollowingScreenState extends State<FollowingScreen> {
           }
 
           return RefreshIndicator(
-            color: _shopeeOrange(context),
+            color: _themePrimaryColor(context),
             onRefresh: _onRefresh,
             child: ListView.builder(
               controller: _scrollController,
@@ -131,7 +165,9 @@ class _FollowingScreenState extends State<FollowingScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: _shopeeOrange(context)),
+                      child: CircularProgressIndicator(
+                        color: _themePrimaryColor(context),
+                      ),
                     ),
                   );
                 }
@@ -140,17 +176,17 @@ class _FollowingScreenState extends State<FollowingScreen> {
                   user: following[index],
                   onFollowToggle: (user, action) {
                     context.read<FollowBloc>().add(
-                          FollowUserRequested(
-                            followeeId: user.id,
-                            username: user.username,
-                            action: action,
-                          ),
-                        );
+                      FollowUserRequested(
+                        followeeId: user.id,
+                        username: user.username,
+                        action: action,
+                      ),
+                    );
                   },
                   onRefresh: () {
                     context.read<FollowBloc>().add(
-                          LoadFollowingRequested(userId: widget.userId),
-                        );
+                      LoadFollowingRequested(userId: widget.userId),
+                    );
                   },
                 );
               },
@@ -245,7 +281,9 @@ class _UserListItemState extends State<_UserListItem> {
             onPressed: () => Navigator.pop(dialogContext, false),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.grey),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
             child: const Text('Hủy', style: TextStyle(color: Colors.black54)),
           ),
@@ -253,10 +291,15 @@ class _UserListItemState extends State<_UserListItem> {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _shopeeOrange(context),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              backgroundColor: _themePrimaryColor(context),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -297,7 +340,9 @@ class _UserListItemState extends State<_UserListItem> {
                 ? context.specialTheme.primaryGradient
                 : null,
             color: _isFollowed
-                ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor)
+                ? (context.specialTheme.useGradient
+                      ? null
+                      : context.specialTheme.primaryDarkColor)
                 : Colors.white,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
@@ -311,7 +356,9 @@ class _UserListItemState extends State<_UserListItem> {
       fontWeight: FontWeight.w500,
       color: isMe
           ? Colors.grey[500]
-          : (_isFollowed ? Colors.white : context.specialTheme.primaryDarkColor),
+          : (_isFollowed
+                ? Colors.white
+                : context.specialTheme.primaryDarkColor),
     );
 
     return Container(
@@ -344,10 +391,14 @@ class _UserListItemState extends State<_UserListItem> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
+                    backgroundImage:
+                        (widget.user.avatar != null &&
+                            widget.user.avatar!.isNotEmpty)
                         ? NetworkImage(widget.user.avatar!)
                         : null,
-                    child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
+                    child:
+                        (widget.user.avatar == null ||
+                            widget.user.avatar!.isEmpty)
                         ? Icon(Icons.person, size: 28, color: Colors.grey[500])
                         : null,
                   ),
@@ -378,7 +429,9 @@ class _UserListItemState extends State<_UserListItem> {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                isMe ? 'Theo dõi' : (_isFollowed ? 'Đang theo dõi' : 'Theo dõi'),
+                isMe
+                    ? 'Theo dõi'
+                    : (_isFollowed ? 'Đang theo dõi' : 'Theo dõi'),
                 style: textStyle,
               ),
             ),

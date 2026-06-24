@@ -10,6 +10,7 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../models/user_model.dart';
 import '../util/widgets/image_crop_screen.dart';
+import '../util/widgets/avatar_with_frame.dart';
 import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
@@ -36,6 +37,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
   File? _avatarFile;
   File? _coverImageFile;
   File? _coverImageWebFile;
+
+  bool _removeAvatar = false;
+  bool _removeCoverImage = false;
+  bool _removeCoverImageWeb = false;
 
   @override
   void initState() {
@@ -75,7 +80,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
         ),
       );
       if (croppedFile != null && mounted) {
-        setState(() => _avatarFile = croppedFile);
+        setState(() {
+          _avatarFile = croppedFile;
+          _removeAvatar = false;
+        });
       }
     }
   }
@@ -95,7 +103,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
         ),
       );
       if (croppedFile != null && mounted) {
-        setState(() => _coverImageFile = croppedFile);
+        setState(() {
+          _coverImageFile = croppedFile;
+          _removeCoverImage = false;
+        });
       }
     }
   }
@@ -109,13 +120,16 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
           builder: (_) => ImageCropScreen(
             imageFile: File(picked.path),
             isCircle: false,
-            aspectRatio: 3.5,
-            title: 'Cắt ảnh bìa cho web',
+            aspectRatio: 1.0,
+            title: 'Cắt ảnh khung đại diện',
           ),
         ),
       );
       if (croppedFile != null && mounted) {
-        setState(() => _coverImageWebFile = croppedFile);
+        setState(() {
+          _coverImageWebFile = croppedFile;
+          _removeCoverImageWeb = false;
+        });
       }
     }
   }
@@ -141,7 +155,13 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
       password,
     ].any((value) => value.isNotEmpty);
 
-    if (!hasAnyTextChange && _avatarFile == null && _coverImageFile == null && _coverImageWebFile == null) {
+    if (!hasAnyTextChange &&
+        _avatarFile == null &&
+        _coverImageFile == null &&
+        _coverImageWebFile == null &&
+        !_removeAvatar &&
+        !_removeCoverImage &&
+        !_removeCoverImageWeb) {
       AppSnackBar.show(context, message: 'Vui lòng thay đổi ít nhất một trường thông tin');
       return;
     }
@@ -179,13 +199,16 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
         email: email.isEmpty ? null : email,
         username: username.isEmpty ? null : username,
         status: status.isEmpty ? null : status,
-        avatarFile: _avatarFile,
+        avatarFile: _removeAvatar ? null : _avatarFile,
         firstName: firstName.isEmpty ? null : firstName,
         lastName: lastName.isEmpty ? null : lastName,
         address: address.isEmpty ? null : address,
         password: password.isEmpty ? null : password,
-        coverImageFile: _coverImageFile,
-        coverImageWebFile: _coverImageWebFile,
+        coverImageFile: _removeCoverImage ? null : _coverImageFile,
+        coverImageWebFile: _removeCoverImageWeb ? null : _coverImageWebFile,
+        removeAvatar: _removeAvatar,
+        removeCoverImage: _removeCoverImage,
+        removeCoverImageWeb: _removeCoverImageWeb,
       ),
     );
   }
@@ -225,20 +248,44 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
-                  child: GestureDetector(
-                    onTap: _pickAvatar,
-                    child: CircleAvatar(
-                      radius: 52,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: _avatarFile != null
-                          ? FileImage(_avatarFile!)
-                          : (widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty
-                              ? SessionManager.getImageProvider(widget.currentUser.avatar!)
-                              : null),
-                      child: (_avatarFile == null && (widget.currentUser.avatar == null || widget.currentUser.avatar!.isEmpty))
-                          ? const Icon(Icons.person, size: 52, color: Colors.grey)
-                          : null,
-                    ),
+                  child: Stack(
+                    children: [
+                      AvatarWithFrame(
+                        radius: 52,
+                        avatarImage: _avatarFile != null
+                            ? FileImage(_avatarFile!)
+                            : (!_removeAvatar && widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty
+                                ? SessionManager.getImageProvider(widget.currentUser.avatar!)
+                                : null),
+                        frameFile: _removeCoverImageWeb ? null : _coverImageWebFile,
+                        frameUrl: _removeCoverImageWeb ? null : widget.currentUser.coverImageWeb,
+                        fallbackChild: (_avatarFile == null && (widget.currentUser.avatar == null || widget.currentUser.avatar!.isEmpty || _removeAvatar))
+                            ? const Icon(Icons.person, size: 52, color: Colors.grey)
+                            : null,
+                        onTap: _pickAvatar,
+                      ),
+                      if (_avatarFile != null || (!_removeAvatar && widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty))
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _avatarFile = null;
+                                _removeAvatar = true;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -257,15 +304,30 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                   description: 'Ảnh bìa chính cho hồ sơ',
                   selectedFile: _coverImageFile,
                   currentUrl: widget.currentUser.coverImage,
+                  isRemoved: _removeCoverImage,
                   onPick: _pickCoverImage,
+                  onRemove: () {
+                    setState(() {
+                      _coverImageFile = null;
+                      _removeCoverImage = true;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
                 _buildFilePickerCard(
-                  title: 'Cover image web',
-                  description: 'Ảnh bìa dành cho web',
+                  title: 'Avatar Frame',
+                  description: 'Khung viền bao quanh ảnh đại diện (nên là ảnh vuông PNG trong suốt)',
                   selectedFile: _coverImageWebFile,
-                  currentUrl: null,
+                  currentUrl: widget.currentUser.coverImageWeb,
+                  isRemoved: _removeCoverImageWeb,
                   onPick: _pickCoverImageWeb,
+                  isFrame: true,
+                  onRemove: () {
+                    setState(() {
+                      _coverImageWebFile = null;
+                      _removeCoverImageWeb = true;
+                    });
+                  },
                 ),
                 const SizedBox(height: 24),
                 AppButton(
@@ -306,7 +368,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
     required String description,
     required File? selectedFile,
     required String? currentUrl,
+    required bool isRemoved,
     required VoidCallback onPick,
+    required VoidCallback onRemove,
+    bool isFrame = false,
   }) {
     return Card(
       child: Padding(
@@ -314,19 +379,59 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                if (selectedFile != null || (!isRemoved && currentUrl != null && currentUrl.isNotEmpty))
+                  IconButton(
+                    icon: const Icon(Icons.delete_forever, color: Colors.red),
+                    onPressed: onRemove,
+                    tooltip: 'Xóa ảnh',
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                  ),
+              ],
+            ),
             const SizedBox(height: 6),
             Text(description, style: TextStyle(color: Colors.grey.shade600)),
             const SizedBox(height: 12),
-            if (selectedFile != null)
+            if (isFrame)
+              Center(
+                child: AvatarWithFrame(
+                  radius: 64,
+                  avatarImage: _avatarFile != null
+                      ? FileImage(_avatarFile!)
+                      : (!_removeAvatar && widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty
+                          ? SessionManager.getImageProvider(widget.currentUser.avatar!)
+                          : null),
+                  frameFile: isRemoved ? null : selectedFile,
+                  frameUrl: isRemoved ? null : currentUrl,
+                  fallbackChild: (_avatarFile == null && (widget.currentUser.avatar == null || widget.currentUser.avatar!.isEmpty || _removeAvatar))
+                      ? const Icon(Icons.person, size: 64, color: Colors.grey)
+                      : null,
+                ),
+              )
+            else if (selectedFile != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.file(selectedFile, height: 160, width: double.infinity, fit: BoxFit.cover),
               )
-            else if (currentUrl != null && currentUrl.isNotEmpty)
+            else if (!isRemoved && currentUrl != null && currentUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(currentUrl, height: 160, width: double.infinity, fit: BoxFit.cover),
+                child: Image.network(
+                  currentUrl,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 160,
+                    width: double.infinity,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                  ),
+                ),
               )
             else
               Container(

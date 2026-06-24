@@ -1,6 +1,5 @@
 import 'dart:io';
 
-
 import '../models/api_response.dart';
 import '../models/user_model.dart';
 
@@ -28,5 +27,8 @@ abstract class AuthRepository {
     String? password,
     File? coverImageFile,
     File? coverImageWebFile,
+    bool removeAvatar = false,
+    bool removeCoverImage = false,
+    bool removeCoverImageWeb = false,
   });
 }

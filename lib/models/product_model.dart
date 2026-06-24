@@ -81,6 +81,8 @@ class ProductSellerInfo {
   final String? avatar;
   final String? score;
   final String? listing;
+  final String? coverImage;
+  final String? coverImageWeb;
 
   const ProductSellerInfo({
     required this.id,
@@ -88,6 +90,8 @@ class ProductSellerInfo {
     this.avatar,
     this.score,
     this.listing,
+    this.coverImage,
+    this.coverImageWeb,
   });
 
   factory ProductSellerInfo.fromJson(Map<String, dynamic> json) {
@@ -97,6 +101,8 @@ class ProductSellerInfo {
       avatar: readOptionalString(json, ['avatar']),
       score: readOptionalString(json, ['score']),
       listing: readOptionalString(json, ['listing']),
+      coverImage: readOptionalString(json, ['cover_image']),
+      coverImageWeb: readOptionalString(json, ['cover_image_web']),
     );
   }
 }
@@ -397,6 +403,7 @@ class CommentModel {
   final String content;
   final String? createdAt;
   final String? avatar;
+  final String? coverImageWeb;
 
   const CommentModel({
     required this.id,
@@ -405,11 +412,13 @@ class CommentModel {
     required this.content,
     this.createdAt,
     this.avatar,
+    this.coverImageWeb,
   });
 
   CommentModel copyWith({
     String? authorName,
     String? avatar,
+    String? coverImageWeb,
   }) {
     return CommentModel(
       id: id,
@@ -418,6 +427,7 @@ class CommentModel {
       content: content,
       createdAt: createdAt,
       avatar: avatar ?? this.avatar,
+      coverImageWeb: coverImageWeb ?? this.coverImageWeb,
     );
   }
 
@@ -429,6 +439,7 @@ class CommentModel {
       content: readString(json, ['content', 'message'], fallback: ''),
       createdAt: readOptionalString(json, ['created_at', 'createdAt']),
       avatar: readOptionalString(json, ['avatar', 'image', 'user_avatar']),
+      coverImageWeb: readOptionalString(json, ['cover_image_web', 'avatar_frame']),
     );
   }
 }
@@ -442,6 +453,7 @@ class RateModel {
   final String? createdAt;
   final String? productId;
   final String? avatar;
+  final String? coverImageWeb;
   final String? purchaseId;
 
   const RateModel({
@@ -453,6 +465,7 @@ class RateModel {
     this.createdAt,
     this.productId,
     this.avatar,
+    this.coverImageWeb,
     this.purchaseId,
   });
 
@@ -466,6 +479,7 @@ class RateModel {
       createdAt: readOptionalString(json, ['created_at', 'createdAt', 'time', 'created']),
       productId: readOptionalString(json, ['product_id', 'productId']),
       avatar: readOptionalString(json, ['avatar']),
+      coverImageWeb: readOptionalString(json, ['cover_image_web', 'avatar_frame']),
       purchaseId: readOptionalString(json, ['purchase_id', 'purchaseId']),
     );
   }

@@ -42,6 +42,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
             await SessionManager.setCoverImage(response.data!.coverImage!);
           }
+          if (response.data!.coverImageWeb != null && response.data!.coverImageWeb!.isNotEmpty) {
+            await SessionManager.setCoverImageWeb(response.data!.coverImageWeb!);
+          }
           logger.i('Login: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
 
           // 4. Nếu đăng nhập thành công, chuyển sang trạng thái AuthSuccess với dữ liệu người dùng
@@ -134,6 +137,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             if (realUser.coverImage != null && realUser.coverImage!.isNotEmpty) {
               await SessionManager.setCoverImage(realUser.coverImage!);
             }
+            if (realUser.coverImageWeb != null && realUser.coverImageWeb!.isNotEmpty) {
+              await SessionManager.setCoverImageWeb(realUser.coverImageWeb!);
+            }
             logger.i('VerifyOtp (Autologin): saved session for username="${realUser.username}" phone="${event.phoneNumber}"');
 
             emit(AuthSuccess(user: realUser));
@@ -193,6 +199,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             final coverToUse = (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty)
                 ? response.data!.coverImage
                 : localCover;
+            final localCoverWeb = await SessionManager.getCoverImageWeb();
+            final coverWebToUse = (response.data!.coverImageWeb != null && response.data!.coverImageWeb!.isNotEmpty)
+                ? response.data!.coverImageWeb
+                : localCoverWeb;
 
             // Lưu avatar và coverImage lại nếu API trả về
             if (response.data!.avatar != null && response.data!.avatar!.isNotEmpty) {
@@ -201,12 +211,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
               await SessionManager.setCoverImage(response.data!.coverImage!);
             }
+            if (response.data!.coverImageWeb != null && response.data!.coverImageWeb!.isNotEmpty) {
+              await SessionManager.setCoverImageWeb(response.data!.coverImageWeb!);
+            }
 
             final user = response.data!.copyWith(
               token: token,
               username: usernameToUse,
               avatar: avatarToUse,
               coverImage: coverToUse,
+              coverImageWeb: coverWebToUse,
             );
            // Token hợp lệ -> Chuyển thẳng vào trang Home
            await SessionManager.setUserId(response.data!.id.toString());
@@ -293,6 +307,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
             await SessionManager.setCoverImage(response.data!.coverImage!);
           }
+          if (response.data!.coverImageWeb != null && response.data!.coverImageWeb!.isNotEmpty) {
+            await SessionManager.setCoverImageWeb(response.data!.coverImageWeb!);
+          }
           logger.i('ResetPassword: saved session for username="${response.data!.username}" phone="${event.phoneNumber}"');
 
           emit(ResetPasswordSuccess(user: response.data!));
@@ -365,6 +382,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
            if (response.data!.coverImage != null && response.data!.coverImage!.isNotEmpty) {
              await SessionManager.setCoverImage(response.data!.coverImage!);
            }
+           if (response.data!.coverImageWeb != null && response.data!.coverImageWeb!.isNotEmpty) {
+             await SessionManager.setCoverImageWeb(response.data!.coverImageWeb!);
+           }
 
            final token = await SessionManager.getToken() ?? '';
            final updatedUser = response.data!.copyWith(token: token);
@@ -419,6 +439,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             if (fetchedUser.coverImage != null && fetchedUser.coverImage!.isNotEmpty) {
               await SessionManager.setCoverImage(fetchedUser.coverImage!);
             }
+            if (fetchedUser.coverImageWeb != null && fetchedUser.coverImageWeb!.isNotEmpty) {
+              await SessionManager.setCoverImageWeb(fetchedUser.coverImageWeb!);
+            }
           }
           emit(GetUserInfoSuccess(user: fetchedUser));
         } else {
@@ -452,6 +475,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           password: event.password,
           coverImageFile: event.coverImageFile,
           coverImageWebFile: event.coverImageWebFile,
+          removeAvatar: event.removeAvatar,
+          removeCoverImage: event.removeCoverImage,
+          removeCoverImageWeb: event.removeCoverImageWeb,
         );
 
         final responseCode = ResponseCode.fromCode(response.code);
@@ -467,6 +493,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           }
           if (updatedUser.coverImage != null && updatedUser.coverImage!.isNotEmpty) {
             await SessionManager.setCoverImage(updatedUser.coverImage!);
+          }
+          if (updatedUser.coverImageWeb != null && updatedUser.coverImageWeb!.isNotEmpty) {
+            await SessionManager.setCoverImageWeb(updatedUser.coverImageWeb!);
           }
 
           emit(SetUserInfoSuccess(user: updatedUser));

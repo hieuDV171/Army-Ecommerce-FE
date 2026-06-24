@@ -5,12 +5,15 @@ class MarketplaceItem extends Equatable {
   final String title;
   final String subtitle;
   final String? trailing;
+  // Trường ảnh — BE chưa trả về; parse sẵn để khi BE thêm sẽ hoạt động ngay
+  final String? imageUrl;
 
   const MarketplaceItem({
     required this.id,
     required this.title,
     required this.subtitle,
     this.trailing,
+    this.imageUrl,
   });
 
   factory MarketplaceItem.fromJson(Map<String, dynamic> json) {
@@ -23,11 +26,12 @@ class MarketplaceItem extends Equatable {
         fallback: '',
       ),
       trailing: readOptionalString(json, ['created_at', 'time', 'state', 'total']),
+      imageUrl: readOptionalString(json, ['image_url', 'thumbnail', 'image', 'cover']),
     );
   }
 
   @override
-  List<Object?> get props => [id, title, subtitle, trailing];
+  List<Object?> get props => [id, title, subtitle, trailing, imageUrl];
 }
 
 List<T> parseListFromData<T>(

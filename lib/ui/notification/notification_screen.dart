@@ -11,7 +11,7 @@ import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
+Color __themePrimaryColor(BuildContext context) => context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
 
 class NotificationScreen extends StatefulWidget {
@@ -92,164 +92,154 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isTab) {
+      return _buildBody();
+    }
+
     if (widget.token.isEmpty) {
       return Scaffold(
         backgroundColor: _greyBackground,
         appBar: AppBar(
-          backgroundColor: widget.isTab
-              ? (context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor)
-              : Colors.white,
-          flexibleSpace: widget.isTab && context.specialTheme.useGradient
-              ? Container(
-                  decoration: BoxDecoration(
-                    gradient: context.specialTheme.primaryGradient,
-                  ),
-                )
-              : null,
-          elevation: widget.isTab ? 0.0 : 0.5,
-          iconTheme: IconThemeData(color: widget.isTab ? Colors.white : Colors.black87),
-          leading: widget.isTab
-              ? IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.white),
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
-                )
-              : null,
-          title: Text(
+          backgroundColor: Colors.white,
+          elevation: 0.5,
+          iconTheme: const IconThemeData(color: Colors.black87),
+          title: const Text(
             'Thông báo',
             style: TextStyle(
-              color: widget.isTab ? Colors.white : Colors.black87,
+              color: Colors.black87,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
           centerTitle: true,
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.notifications_none_outlined, size: 80, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              const Text(
-                'Vui lòng đăng nhập để xem thông báo',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _shopeeOrange(context),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                },
-                child: const Text('Đăng nhập ngay', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
+        body: _buildLoginPrompt(),
       );
     }
 
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(
-        backgroundColor: widget.isTab
-            ? (context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor)
-            : Colors.white,
-        flexibleSpace: widget.isTab && context.specialTheme.useGradient
-            ? Container(
-                decoration: BoxDecoration(
-                  gradient: context.specialTheme.primaryGradient,
-                ),
-              )
-            : null,
-        elevation: widget.isTab ? 0.0 : 0.5,
-        iconTheme: IconThemeData(color: widget.isTab ? Colors.white : Colors.black87),
-        leading: widget.isTab
-            ? IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () {
-                  Scaffold.of(context).openDrawer();
-                },
-              )
-            : IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-        automaticallyImplyLeading: !widget.isTab,
-        title: Text(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
           'Thông báo',
           style: TextStyle(
-            color: widget.isTab ? Colors.white : Colors.black87,
+            color: Colors.black87,
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.read<NotificationBloc>().add(MarkAllNotificationsReadRequested());
+            },
+            icon: Icon(Icons.done_all, color: context.specialTheme.primaryColor),
+            tooltip: 'Đọc tất cả',
+          ),
+        ],
       ),
-      body: BlocConsumer<NotificationBloc, NotificationState>(
-        listener: (context, state) {
-          if (state is NotificationFailure) {
-            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
-          }
-        },
-        builder: (context, state) {
-          if (state is NotificationLoading) {
-            return _buildSkeleton();
-          }
+      body: _buildBody(),
+    );
+  }
 
-          List<NotificationModel> notifications = [];
-          bool isLoadingMore = false;
-
-          if (state is NotificationsLoaded) {
-            notifications = state.notifications;
-          } else if (state is NotificationLoadingMore) {
-            notifications = state.currentList;
-            isLoadingMore = true;
-          }
-
-          if (notifications.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          return RefreshIndicator(
-            color: _shopeeOrange(context),
-            onRefresh: _onRefresh,
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: notifications.length + (isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == notifications.length) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Center(
-                      child: CircularProgressIndicator(color: _shopeeOrange(context)),
-                    ),
-                  );
-                }
-                final notification = notifications[index];
-                final isRead = notification.isRead ||
-                    _locallyReadIds.contains(notification.notificationId);
-                return _NotificationItem(
-                  notification: notification,
-                  isRead: isRead,
-                  onTap: () => _onNotificationTap(notification),
-                );
-              },
+  Widget _buildLoginPrompt() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.notifications_none_outlined, size: 80, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          const Text(
+            'Vui lòng đăng nhập để xem thông báo',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: __themePrimaryColor(context),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             ),
-          );
-        },
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            child: const Text('Đăng nhập ngay', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (widget.token.isEmpty) {
+      return _buildLoginPrompt();
+    }
+    return BlocConsumer<NotificationBloc, NotificationState>(
+      listener: (context, state) {
+        if (state is NotificationFailure) {
+          AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+        }
+      },
+      builder: (context, state) {
+        if (state is NotificationLoading) {
+          return _buildSkeleton();
+        }
+
+        List<NotificationModel> notifications = [];
+        bool isLoadingMore = false;
+
+        if (state is NotificationsLoaded) {
+          notifications = state.notifications;
+        } else if (state is NotificationLoadingMore) {
+          notifications = state.currentList;
+          isLoadingMore = true;
+        }
+
+        if (notifications.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        return RefreshIndicator(
+          color: __themePrimaryColor(context),
+          onRefresh: _onRefresh,
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: notifications.length + (isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == notifications.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: CircularProgressIndicator(color: __themePrimaryColor(context)),
+                  ),
+                );
+              }
+              final notification = notifications[index];
+              final isRead = notification.isRead ||
+                  _locallyReadIds.contains(notification.notificationId);
+              return _NotificationItem(
+                notification: notification,
+                isRead: isRead,
+                onTap: () => _onNotificationTap(notification),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -262,7 +252,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildEmptyState() {
     return RefreshIndicator(
-      color: _shopeeOrange(context),
+      color: __themePrimaryColor(context),
       onRefresh: _onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -352,7 +342,7 @@ class _NotificationItem extends StatelessWidget {
                 height: 8,
                 margin: const EdgeInsets.only(top: 4),
                 decoration: BoxDecoration(
-                  color: _shopeeOrange(context),
+                  color: __themePrimaryColor(context),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -405,14 +395,14 @@ class _NotificationIcon extends StatelessWidget {
         return (Icons.local_shipping_outlined, AppColors.info);
       case 'like':
       case 'like_product':
-        return (Icons.favorite_outline, _shopeeOrange(context));
+        return (Icons.favorite_outline, __themePrimaryColor(context));
       case 'follow':
         return (Icons.person_add_outlined, AppColors.success);
       case 'comment':
       case 'comment_product':
         return (Icons.chat_bubble_outline, AppColors.purple);
       case 'promotion':
-        return (Icons.local_offer_outlined, _shopeeOrange(context));
+        return (Icons.local_offer_outlined, __themePrimaryColor(context));
       case 'system':
         return (Icons.notifications_outlined, AppColors.textSecondary);
       default:

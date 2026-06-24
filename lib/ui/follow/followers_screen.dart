@@ -2,6 +2,7 @@ import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/follow/follow_bloc.dart';
 import 'package:army_ecommerce/blocs/follow/follow_event.dart';
 import 'package:army_ecommerce/blocs/follow/follow_state.dart';
+import 'package:army_ecommerce/core/constants/response_code.dart';
 import 'package:army_ecommerce/models/user_follow_model.dart';
 import 'package:army_ecommerce/ui/marketplace/product/seller_listings_page.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,7 @@ import '../util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-Color _shopeeOrange(BuildContext context) => context.specialTheme.primaryDarkColor;
+Color _themePrimaryColor(BuildContext context) => context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
 
 class FollowersScreen extends StatefulWidget {
@@ -100,9 +101,30 @@ class _FollowersScreenState extends State<FollowersScreen> {
             final message = state.isFollowed
                 ? 'Theo dõi ${state.username} thành công'
                 : 'Đã hủy theo dõi ${state.username}';
-            AppSnackBar.show(context, message: message, backgroundColor: _shopeeOrange(context), duration: Duration(seconds: 2));
+            AppSnackBar.show(context, message: message, backgroundColor: _themePrimaryColor(context), duration: Duration(seconds: 2));
           } else if (state is FollowFailure) {
-            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+            if (state.code == ResponseCode.notAccess.code ||
+                state.error == ResponseCode.notAccess.message ||
+                state.error.contains('Not access')) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Thông báo'),
+                  content: const Text('Bạn không có quyền truy cập vào đây'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Đóng'),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+            }
           }
         },
         builder: (context, state) {
@@ -125,7 +147,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
           }
 
           return RefreshIndicator(
-            color: _shopeeOrange(context),
+            color: _themePrimaryColor(context),
             onRefresh: _onRefresh,
             child: ListView.builder(
               controller: _scrollController,
@@ -136,7 +158,7 @@ class _FollowersScreenState extends State<FollowersScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: _shopeeOrange(context)),
+                      child: CircularProgressIndicator(color: _themePrimaryColor(context)),
                     ),
                   );
                 }
@@ -259,7 +281,7 @@ class _UserFollowItemState extends State<_UserFollowItem> {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _shopeeOrange(context),
+              backgroundColor: _themePrimaryColor(context),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             ),
             child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
