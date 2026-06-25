@@ -859,125 +859,135 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const Divider(height: 32),
               const SectionHeader(title: 'Người bán'),
               const SizedBox(height: AppSpacing.sm),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: AvatarWithFrame(
-                  radius: 20,
-                  avatarImage:
-                      product.seller?.avatar != null &&
-                          product.seller!.avatar!.isNotEmpty
-                      ? SessionManager.getImageProvider(product.seller!.avatar!)
-                      : null,
-                  frameUrl: product.seller?.coverImageWeb,
-                  fallbackChild: const Icon(Icons.storefront),
-                ),
-                title: Text(sellerName),
-                subtitle: Text(
-                  product.sellerLocation ??
-                      product.shipsFrom ??
-                      'Chưa có vị trí',
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if ((sellerScore ?? '').isNotEmpty)
-                          Text('Điểm: $sellerScore'),
-                        if ((sellerListing ?? '').isNotEmpty)
-                          Text('Listing: $sellerListing'),
-                      ],
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isMe
-                            ? Colors.grey[200]
-                            : (context.specialTheme.useGradient
-                                  ? null
-                                  : context.specialTheme.primaryColor),
-                        gradient: isMe
-                            ? null
-                            : (context.specialTheme.useGradient
-                                  ? context.specialTheme.primaryGradient
-                                  : null),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                        color: isMe ? Colors.grey[400] : Colors.white,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 40,
-                          minHeight: 40,
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  splashColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.15,
+                  ),
+                  highlightColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.05,
+                  ),
+                  onTap: () {
+                    final authState = context.read<AuthBloc>().state;
+                    final token = authState.currentUser?.token ?? '';
+                    if (!checkLogin(context, token: token)) {
+                      return;
+                    }
+                    final userId = product.seller?.id ?? '';
+                    if (userId.isEmpty) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SellerInfoPage(
+                          userId: userId,
+                          productId: product.id,
+                          sellerName: sellerName,
+                          avatarUrl: product.seller?.avatar,
+                          sellerScore: sellerScore,
+                          sellerListing: sellerListing,
                         ),
-                        onPressed: isMe
-                            ? null
-                            : () {
-                                final token =
-                                    authState.currentUser?.token ?? '';
-                                if (checkLogin(context, token: token)) {
-                                  final chatBloc = context.read<ChatBloc>();
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BlocProvider(
-                                        create: (context) => ChatBloc(
-                                          marketplaceRepository: context
-                                              .read<MarketplaceRepository>(),
-                                        ),
-                                        child: ChatScreen(
-                                          partnerId: sellerId,
-                                          partnerUsername: sellerName,
-                                          partnerAvatar: product.seller?.avatar,
-                                          currentUserId: currentUserId,
-                                          productId: product.id,
-                                          productTitle: product.title,
-                                          productPrice: product.price,
-                                          productImageUrl:
-                                              product.imageUrls.isNotEmpty
-                                              ? product.imageUrls.first
-                                              : null,
-                                        ),
-                                      ),
-                                    ),
-                                  ).then((_) {
-                                    if (context.mounted && token.isNotEmpty) {
-                                      chatBloc.add(
-                                        LoadConversationsRequested(),
-                                      );
-                                    }
-                                  });
-                                }
-                              },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: AvatarWithFrame(
+                        radius: 24,
+                        avatarImage: product.seller?.avatar != null && product.seller!.avatar!.isNotEmpty
+                            ? SessionManager.getImageProvider(product.seller!.avatar!)
+                            : null,
+                        frameUrl: product.seller?.coverImageWeb,
+                        fallbackChild: const Icon(Icons.storefront),
+                      ),
+                      title: Text(sellerName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                        product.sellerLocation ??
+                            product.shipsFrom ??
+                            'Chưa có vị trí',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if ((sellerScore ?? '').isNotEmpty)
+                                Text('Điểm: $sellerScore', style: const TextStyle(fontSize: 12)),
+                              if ((sellerListing ?? '').isNotEmpty)
+                                Text('Listing: $sellerListing', style: const TextStyle(fontSize: 12)),
+                            ],
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isMe
+                                  ? Colors.grey[200]
+                                  : (context.specialTheme.useGradient
+                                      ? null
+                                      : context.specialTheme.primaryColor),
+                              gradient: isMe
+                                  ? null
+                                  : (context.specialTheme.useGradient
+                                      ? context.specialTheme.primaryGradient
+                                      : null),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                              color: isMe ? Colors.grey[400] : Colors.white,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                              onPressed: isMe
+                                  ? null
+                                  : () {
+                                      final token = authState.currentUser?.token ?? '';
+                                      if (checkLogin(context, token: token)) {
+                                        final chatBloc = context.read<ChatBloc>();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => BlocProvider(
+                                              create: (context) => ChatBloc(
+                                                marketplaceRepository: context.read<MarketplaceRepository>(),
+                                              ),
+                                              child: ChatScreen(
+                                                partnerId: sellerId,
+                                                partnerUsername: sellerName,
+                                                partnerAvatar: product.seller?.avatar,
+                                                currentUserId: currentUserId,
+                                                productId: product.id,
+                                                productTitle: product.title,
+                                                productPrice: product.price,
+                                                productImageUrl: product.imageUrls.isNotEmpty
+                                                    ? product.imageUrls.first
+                                                    : null,
+                                              ),
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (context.mounted && token.isNotEmpty) {
+                                            chatBloc.add(LoadConversationsRequested());
+                                          }
+                                        });
+                                      }
+                                    },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-                onTap: () {
-                  final authState = context.read<AuthBloc>().state;
-                  final token = authState.currentUser?.token ?? '';
-                  if (!checkLogin(context, token: token)) {
-                    return;
-                  }
-                  final userId = product.seller?.id ?? '';
-                  if (userId.isEmpty) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SellerInfoPage(
-                        userId: userId,
-                        productId: product.id,
-                        sellerName: sellerName,
-                        avatarUrl: product.seller?.avatar,
-                        sellerScore: sellerScore,
-                        sellerListing: sellerListing,
-                      ),
-                    ),
-                  );
-                },
               ),
               if (product.videos.isNotEmpty) ...[
                 const Divider(height: 32),
@@ -1045,51 +1055,71 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                 const Text('Chưa có bình luận.')
               else
                 ...state.comments.map(
-                  (comment) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    onTap: () {
-                      final authState = context.read<AuthBloc>().state;
-                      final token = authState.currentUser?.token ?? '';
-                      if (!checkLogin(context, token: token)) {
-                        return;
-                      }
-                      if (comment.authorId.isEmpty) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SellerInfoPage(
-                            userId: comment.authorId,
-                            sellerName: comment.authorName,
-                            avatarUrl: comment.avatar,
+                  (comment) => Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        splashColor: context.specialTheme.primaryColor.withValues(
+                          alpha: 0.15,
+                        ),
+                        highlightColor: context.specialTheme.primaryColor.withValues(
+                          alpha: 0.05,
+                        ),
+                        onTap: () {
+                          final authState = context.read<AuthBloc>().state;
+                          final token = authState.currentUser?.token ?? '';
+                          if (!checkLogin(context, token: token)) {
+                            return;
+                          }
+                          if (comment.authorId.isEmpty) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => SellerInfoPage(
+                                userId: comment.authorId,
+                                sellerName: comment.authorName,
+                                avatarUrl: comment.avatar,
+                              ),
+                            ),
+                          );
+                        },
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          leading: AvatarWithFrame(
+                            radius: 24,
+                            avatarImage:
+                                (comment.avatar != null && comment.avatar!.isNotEmpty)
+                                ? SessionManager.getImageProvider(comment.avatar!)
+                                : null,
+                            frameUrl: comment.coverImageWeb,
+                          ),
+                          title: Text(comment.authorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(comment.content, style: const TextStyle(color: Colors.black87)),
+                              if (comment.createdAt != null &&
+                                  comment.createdAt!.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatDateTime(comment.createdAt),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                      );
-                    },
-                    leading: AvatarWithFrame(
-                      radius: 20,
-                      avatarImage:
-                          (comment.avatar != null && comment.avatar!.isNotEmpty)
-                          ? SessionManager.getImageProvider(comment.avatar!)
-                          : null,
-                      frameUrl: comment.coverImageWeb,
-                    ),
-                    title: Text(comment.authorName),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(comment.content),
-                        if (comment.createdAt != null &&
-                            comment.createdAt!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDateTime(comment.createdAt),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -1723,70 +1753,90 @@ class _RatingsSectionState extends State<_RatingsSection> {
           )
         else
           ..._rates.map(
-            (r) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              onTap: () {
-                final authState = context.read<AuthBloc>().state;
-                final token = authState.currentUser?.token ?? '';
-                if (!checkLogin(context, token: token)) {
-                  return;
-                }
-                if (r.authorId == null || r.authorId!.isEmpty) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SellerInfoPage(
-                      userId: r.authorId!,
-                      sellerName: r.author,
-                      avatarUrl: r.avatar,
-                    ),
+            (r) => Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  splashColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.15,
                   ),
-                );
-              },
-              leading: AvatarWithFrame(
-                radius: 20,
-                avatarImage: (r.avatar != null && r.avatar!.isNotEmpty)
-                    ? SessionManager.getImageProvider(r.avatar!)
-                    : null,
-                frameUrl: r.coverImageWeb,
-              ),
-              title: Text(r.author),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      RatingStars(rating: r.level.toDouble()),
-                      const Spacer(),
-                      if (r.createdAt != null && r.createdAt!.isNotEmpty)
-                        Text(
-                          _formatDateTime(r.createdAt),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey,
-                          ),
+                  highlightColor: context.specialTheme.primaryColor.withValues(
+                    alpha: 0.05,
+                  ),
+                  onTap: () {
+                    final authState = context.read<AuthBloc>().state;
+                    final token = authState.currentUser?.token ?? '';
+                    if (!checkLogin(context, token: token)) {
+                      return;
+                    }
+                    if (r.authorId == null || r.authorId!.isEmpty) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SellerInfoPage(
+                          userId: r.authorId!,
+                          sellerName: r.author,
+                          avatarUrl: r.avatar,
                         ),
-                    ],
-                  ),
-                  if (r.purchaseId != null &&
-                      r.purchaseId!.isNotEmpty &&
-                      r.purchaseId != '0') ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      'Mã đơn: #${r.purchaseId}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
                       ),
+                    );
+                  },
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    leading: AvatarWithFrame(
+                      radius: 24,
+                      avatarImage: (r.avatar != null && r.avatar!.isNotEmpty)
+                          ? SessionManager.getImageProvider(r.avatar!)
+                          : null,
+                      frameUrl: r.coverImageWeb,
                     ),
-                  ],
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    r.content,
-                    style: const TextStyle(color: Colors.black87),
+                    title: Text(r.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            RatingStars(rating: r.level.toDouble()),
+                            const Spacer(),
+                            if (r.createdAt != null && r.createdAt!.isNotEmpty)
+                              Text(
+                                _formatDateTime(r.createdAt),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (r.purchaseId != null &&
+                            r.purchaseId!.isNotEmpty &&
+                            r.purchaseId != '0') ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Mã đơn: #${r.purchaseId}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          r.content,
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

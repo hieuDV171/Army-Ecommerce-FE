@@ -36,6 +36,7 @@ import '../../util/theme/special_app_theme.dart';
 import 'product_detail_page.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import '../../util/widgets/avatar_with_frame.dart';
+import '../../util/widgets/status_bubble.dart';
 
 class SellerListingsPage extends StatefulWidget {
   final String userId;
@@ -122,7 +123,10 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
         final newLikeCount = newIsLiked
             ? originalLikeCount + 1
             : (originalLikeCount - 1).clamp(0, 999999).toInt();
-        _products[index] = _products[index].copyWith(isLiked: newIsLiked, likeCount: newLikeCount);
+        _products[index] = _products[index].copyWith(
+          isLiked: newIsLiked,
+          likeCount: newLikeCount,
+        );
       }
     });
 
@@ -133,7 +137,10 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
       setState(() {
         final index = _products.indexWhere((p) => p.id == product.id);
         if (index != -1) {
-          _products[index] = _products[index].copyWith(isLiked: originalIsLiked, likeCount: originalLikeCount);
+          _products[index] = _products[index].copyWith(
+            isLiked: originalIsLiked,
+            likeCount: originalLikeCount,
+          );
         }
       });
       AppSnackBar.showError(context, message: e.toString());
@@ -170,7 +177,9 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
   Widget build(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
     final currentUserId = authState.currentUser?.id ?? '';
-    final isOwnListings = currentUserId.isNotEmpty && currentUserId.toString() == widget.userId.toString();
+    final isOwnListings =
+        currentUserId.isNotEmpty &&
+        currentUserId.toString() == widget.userId.toString();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sản phẩm người bán')),
@@ -179,9 +188,7 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProductFormPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ProductFormPage()),
                 );
                 if (result == true) {
                   _loadProducts();
@@ -196,53 +203,56 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null && _products.isEmpty
-              ? ErrorState(
-                  message: _error!,
-                  onRetry: _loadProducts,
-                )
-              : _products.isEmpty
-                  ? const EmptyState(title: 'Chưa có sản phẩm')
-                  : RefreshIndicator(
-                      onRefresh: () async => _loadProducts(),
-                      child: CustomScrollView(
-                        controller: _scrollController,
-                        slivers: [
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.lg,
-                              AppSpacing.lg,
-                              AppSpacing.lg,
-                              AppSpacing.lg,
-                            ),
-                            sliver: SliverGrid.builder(
-                              itemCount: _products.length + (_isLoadingMore ? 1 : 0),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: AppSpacing.md,
-                                crossAxisSpacing: AppSpacing.md,
-                                childAspectRatio: 0.51,
-                              ),
-                              itemBuilder: (context, index) {
-                                if (index >= _products.length) {
-                                  return const Center(child: CircularProgressIndicator());
-                                }
-                                final product = _products[index];
-                                return ProductCard(
-                                  product: productCardDataFromModel(product),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
-                                    ),
-                                  ).then((_) => _loadProducts()),
-                                  onLikeTap: () => _toggleLikeProduct(product),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+          ? ErrorState(message: _error!, onRetry: _loadProducts)
+          : _products.isEmpty
+          ? const EmptyState(title: 'Chưa có sản phẩm')
+          : RefreshIndicator(
+              onRefresh: () async => _loadProducts(),
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
                     ),
+                    sliver: SliverGrid.builder(
+                      itemCount: _products.length + (_isLoadingMore ? 1 : 0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: AppSpacing.md,
+                            crossAxisSpacing: AppSpacing.md,
+                            childAspectRatio: 0.51,
+                          ),
+                      itemBuilder: (context, index) {
+                        if (index >= _products.length) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final product = _products[index];
+                        return ProductCard(
+                          product: productCardDataFromModel(product),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailPage(
+                                productId: product.id,
+                                isStock: product.isStock,
+                              ),
+                            ),
+                          ).then((_) => _loadProducts()),
+                          onLikeTap: () => _toggleLikeProduct(product),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
@@ -278,7 +288,9 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 
   String get _sellerUserId {
     final loadedUserId = _user?.id;
-    return loadedUserId != null && loadedUserId.isNotEmpty ? loadedUserId : widget.userId;
+    return loadedUserId != null && loadedUserId.isNotEmpty
+        ? loadedUserId
+        : widget.userId;
   }
 
   late final FollowBloc _followBloc;
@@ -296,9 +308,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
   @override
   void initState() {
     super.initState();
-    _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
+    _followBloc = FollowBloc(
+      followRepository: context.read<FollowRepository>(),
+    );
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
-    _chatBloc = ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>());
+    _chatBloc = ChatBloc(
+      marketplaceRepository: context.read<MarketplaceRepository>(),
+    );
     _scrollController = ScrollController()..addListener(_onScroll);
     _loadUser();
   }
@@ -339,7 +355,11 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                   fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 80),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image,
+                    color: Colors.white,
+                    size: 80,
+                  ),
                 ),
               ),
               Positioned(
@@ -405,7 +425,11 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       } else {
         final results = await Future.wait([
           authRepo.getUserInfo(token: token, userId: _sellerUserId),
-          marketRepo.getUserListings(userId: _sellerUserId, index: 0, count: 20),
+          marketRepo.getUserListings(
+            userId: _sellerUserId,
+            index: 0,
+            count: 20,
+          ),
         ]);
 
         final userResponse = results[0] as ApiResponse<UserModel>;
@@ -428,7 +452,9 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         } else {
           if (!mounted) return;
           setState(() {
-            _error = userResponse.message.isNotEmpty ? userResponse.message : 'Không tìm thấy người dùng.';
+            _error = userResponse.message.isNotEmpty
+                ? userResponse.message
+                : 'Không tìm thấy người dùng.';
             _isLoading = false;
             _isLoadingProducts = false;
           });
@@ -478,7 +504,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         final newLikeCount = newIsLiked
             ? originalLikeCount + 1
             : (originalLikeCount - 1).clamp(0, 999999).toInt();
-        _products[index] = _products[index].copyWith(isLiked: newIsLiked, likeCount: newLikeCount);
+        _products[index] = _products[index].copyWith(
+          isLiked: newIsLiked,
+          likeCount: newLikeCount,
+        );
       }
     });
 
@@ -490,7 +519,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
       setState(() {
         final index = _products.indexWhere((p) => p.id == product.id);
         if (index != -1) {
-          _products[index] = _products[index].copyWith(isLiked: originalIsLiked, likeCount: originalLikeCount);
+          _products[index] = _products[index].copyWith(
+            isLiked: originalIsLiked,
+            likeCount: originalLikeCount,
+          );
         }
       });
       AppSnackBar.showError(context, message: e.toString());
@@ -499,7 +531,10 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
 
   void _toggleFollow() {
     if (_isBlocked) {
-      AppSnackBar.showError(context, message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.');
+      AppSnackBar.showError(
+        context,
+        message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.',
+      );
       return;
     }
     final authState = context.read<AuthBloc>().state;
@@ -512,11 +547,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           _isFollowed = true;
           _followersCount++;
         });
-        _followBloc.add(FollowUserRequested(
-          followeeId: _sellerUserId,
-          username: widget.sellerName,
-          action: 'follow',
-        ));
+        _followBloc.add(
+          FollowUserRequested(
+            followeeId: _sellerUserId,
+            username: widget.sellerName,
+            action: 'follow',
+          ),
+        );
       }
     }
   }
@@ -535,8 +572,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: context.specialTheme.primaryColor),
-            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.specialTheme.primaryColor,
+            ),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -546,11 +588,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         _isFollowed = false;
         _followersCount = (_followersCount - 1).clamp(0, 999999);
       });
-      _followBloc.add(FollowUserRequested(
-        followeeId: _sellerUserId,
-        username: widget.sellerName,
-        action: 'unfollow',
-      ));
+      _followBloc.add(
+        FollowUserRequested(
+          followeeId: _sellerUserId,
+          username: widget.sellerName,
+          action: 'unfollow',
+        ),
+      );
     }
   }
 
@@ -596,11 +640,13 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           _followersCount = (_followersCount - 1).clamp(0, 999999);
         }
       });
-      _blockBloc.add(BlockUserRequested(
-        userId: _sellerUserId,
-        username: widget.sellerName,
-        action: 'block',
-      ));
+      _blockBloc.add(
+        BlockUserRequested(
+          userId: _sellerUserId,
+          username: widget.sellerName,
+          action: 'block',
+        ),
+      );
     }
   }
 
@@ -620,32 +666,45 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: context.specialTheme.primaryColor),
-            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.specialTheme.primaryColor,
+            ),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
     if (confirmed == true) {
       setState(() => _isBlocked = false);
-      _blockBloc.add(BlockUserRequested(
-        userId: _sellerUserId,
-        username: widget.sellerName,
-        action: 'unblock',
-      ));
+      _blockBloc.add(
+        BlockUserRequested(
+          userId: _sellerUserId,
+          username: widget.sellerName,
+          action: 'unblock',
+        ),
+      );
     }
   }
 
   void _openChat() {
     if (_isBlocked) {
-      AppSnackBar.showError(context, message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.');
+      AppSnackBar.showError(
+        context,
+        message: 'Bạn đã chặn người dùng này, không thể thực hiện thao tác.',
+      );
       return;
     }
     final authState = context.read<AuthBloc>().state;
     final token = authState.currentUser?.token ?? '';
     if (checkLogin(context, token: token)) {
       if (_isBlocked) {
-        AppSnackBar.showError(context, message: 'Bạn đã chặn người này, không thể thực hiện thao tác.');
+        AppSnackBar.showError(
+          context,
+          message: 'Bạn đã chặn người này, không thể thực hiện thao tác.',
+        );
         return;
       }
       final currentUserId = authState.currentUser?.id ?? '';
@@ -685,15 +744,32 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
     final isMe = _sellerUserId == currentUserId && currentUserId.isNotEmpty;
     final isGuest = !authState.isAuthenticated;
 
-    final hasSellerInfo = _user != null && (
-      (_user!.email ?? '').trim().isNotEmpty ||
-      (_user!.phoneNumber ?? '').trim().isNotEmpty ||
-      (_user!.address ?? '').trim().isNotEmpty ||
-      (_user!.city ?? '').trim().isNotEmpty ||
-      (_user!.status ?? '').trim().isNotEmpty ||
-      (_user!.firstName ?? '').trim().isNotEmpty ||
-      (_user!.lastName ?? '').trim().isNotEmpty
-    );
+    // Định nghĩa helper đọc địa chỉ mặc định
+    String defaultAddressLabel(dynamic defaultAddress) {
+      if (defaultAddress == null) return '';
+      if (defaultAddress is Map) {
+        return defaultAddress['address']?.toString() ?? '';
+      }
+      return defaultAddress.toString().trim();
+    }
+
+    final shopAddress = defaultAddressLabel(_user?.defaultAddress);
+
+    // Kiểm tra thông tin dành riêng cho chính mình
+    final hasSellerInfo =
+        _user != null &&
+        ((_user!.email ?? '').trim().isNotEmpty ||
+            (_user!.phoneNumber ?? '').trim().isNotEmpty ||
+            (_user!.address ?? '').trim().isNotEmpty ||
+            (_user!.city ?? '').trim().isNotEmpty ||
+            (_user!.status ?? '').trim().isNotEmpty ||
+            (_user!.firstName ?? '').trim().isNotEmpty ||
+            (_user!.lastName ?? '').trim().isNotEmpty);
+
+    // Kiểm tra thông tin công khai dành cho người khác
+    final hasPublicInfo =
+        _user != null &&
+        ((_user!.status ?? '').trim().isNotEmpty || shopAddress.isNotEmpty);
 
     return MultiBlocProvider(
       providers: [
@@ -714,7 +790,11 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
                 final msg = state.isFollowed
                     ? 'Theo dõi ${state.username} thành công'
                     : 'Đã hủy theo dõi ${state.username}';
-                AppSnackBar.show(context, message: msg, backgroundColor: context.specialTheme.primaryColor);
+                AppSnackBar.show(
+                  context,
+                  message: msg,
+                  backgroundColor: context.specialTheme.primaryColor,
+                );
               } else if (state is FollowFailure) {
                 // Revert optimistic counts
                 setState(() {
@@ -762,292 +842,396 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
           body: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? ErrorState(
-                      message: _error!,
-                      onRetry: _loadUser,
-                    )
-                  : ListView(
-                      controller: _scrollController,
-                      padding: EdgeInsets.zero,
+              ? ErrorState(message: _error!, onRetry: _loadUser)
+              : ListView(
+                  controller: _scrollController,
+                  padding: EdgeInsets.zero,
+                  children: [
+                    // Header with Cover Image
+                    Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        // Header with Cover Image
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              height: 160,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                image: (displayCover != null && displayCover.isNotEmpty)
-                                    ? DecorationImage(
-                                        image: SessionManager.getImageProvider(displayCover),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
+                        Container(
+                          height: 160,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            image:
+                                (displayCover != null &&
+                                    displayCover.isNotEmpty)
+                                ? DecorationImage(
+                                    image: SessionManager.getImageProvider(
+                                      displayCover,
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                        ),
+                        // Avatar
+                        Positioned(
+                          left: 16,
+                          bottom: -40,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
                             ),
-                            // Avatar
-                            Positioned(
-                              left: 16,
-                              bottom: -40,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
+                            child: AvatarWithFrame(
+                              radius: 40,
+                              avatarImage:
+                                  (displayAvatar != null &&
+                                      displayAvatar.isNotEmpty)
+                                  ? SessionManager.getImageProvider(
+                                      displayAvatar,
+                                    )
+                                  : null,
+                              frameUrl: displayFrame,
+                              onTap: () {
+                                if (displayAvatar != null &&
+                                    displayAvatar.isNotEmpty) {
+                                  _showZoomedAvatar(
+                                    context,
+                                    displayAvatar,
+                                    displayName,
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  style: AppTextStyles.screenTitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                child: AvatarWithFrame(
-                                  radius: 40,
-                                  avatarImage: (displayAvatar != null && displayAvatar.isNotEmpty)
-                                      ? SessionManager.getImageProvider(displayAvatar)
-                                      : null,
-                                  frameUrl: displayFrame,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 8,
+                                  bottom: 4,
+                                ),
+                                child: StatusBubble(
+                                  status: _user?.status ?? '',
+                                  title: 'Trạng thái',
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          if (displayScore != null && displayScore.isNotEmpty)
+                            Text('Điểm: $displayScore'),
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildStatItem(
+                                  'Đơn đã bán',
+                                  int.tryParse(displayListing ?? '0') ?? 0,
+                                ),
+                                _buildStatItem(
+                                  'Người theo dõi',
+                                  _followersCount,
                                   onTap: () {
-                                    if (displayAvatar != null && displayAvatar.isNotEmpty) {
-                                      _showZoomedAvatar(context, displayAvatar, displayName);
+                                    if (_isBlocked) {
+                                      _showNotAccessDialog();
+                                      return;
                                     }
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => BlocProvider(
+                                          create: (_) => FollowBloc(
+                                            followRepository: context
+                                                .read<FollowRepository>(),
+                                          ),
+                                          child: FollowersScreen(
+                                            userId: _sellerUserId,
+                                          ),
+                                        ),
+                                      ),
+                                    ).then((_) {
+                                      if (mounted) {
+                                        _loadUser();
+                                      }
+                                    });
                                   },
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 50),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(displayName, style: AppTextStyles.screenTitle),
-                              const SizedBox(height: AppSpacing.xs),
-                              if (displayScore != null && displayScore.isNotEmpty) Text('Điểm: $displayScore'),
-                              const SizedBox(height: AppSpacing.md),
-                              Container(
-                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    _buildStatItem('Đơn đã bán', int.tryParse(displayListing ?? '0') ?? 0),
-                                    _buildStatItem(
-                                      'Người theo dõi',
-                                      _followersCount,
-                                      onTap: () {
-                                        if (_isBlocked) {
-                                          _showNotAccessDialog();
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => BlocProvider(
-                                              create: (_) => FollowBloc(
-                                                followRepository: context.read<FollowRepository>(),
-                                              ),
-                                              child: FollowersScreen(
-                                                userId: _sellerUserId,
-                                              ),
-                                            ),
+                                _buildStatItem(
+                                  'Đang theo dõi',
+                                  _followingCount,
+                                  onTap: () {
+                                    if (_isBlocked) {
+                                      _showNotAccessDialog();
+                                      return;
+                                    }
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => BlocProvider(
+                                          create: (_) => FollowBloc(
+                                            followRepository: context
+                                                .read<FollowRepository>(),
                                           ),
-                                        ).then((_) {
-                                          if (mounted) {
-                                            _loadUser();
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    _buildStatItem(
-                                      'Đang theo dõi',
-                                      _followingCount,
-                                      onTap: () {
-                                        if (_isBlocked) {
-                                          _showNotAccessDialog();
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => BlocProvider(
-                                              create: (_) => FollowBloc(
-                                                followRepository: context.read<FollowRepository>(),
-                                              ),
-                                              child: FollowingScreen(
-                                                userId: _sellerUserId,
-                                              ),
-                                            ),
-                                          ),
-                                        ).then((_) {
-                                          if (mounted) {
-                                            _loadUser();
-                                          }
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              if (isMe) ...[
-                                Container(
-                                  padding: const EdgeInsets.all(AppSpacing.md),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
-                                    border: Border.all(
-                                      color: AppColors.primary.withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(Icons.info_outline, color: AppColors.primary),
-                                      SizedBox(width: AppSpacing.sm),
-                                      Expanded(
-                                        child: Text(
-                                          'Đây là trang cửa hàng của bạn. Bạn không thể tự nhắn tin, theo dõi hoặc tự chặn chính mình.',
-                                          style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 13,
+                                          child: FollowingScreen(
+                                            userId: _sellerUserId,
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ).then((_) {
+                                      if (mounted) {
+                                        _loadUser();
+                                      }
+                                    });
+                                  },
                                 ),
-                                const SizedBox(height: AppSpacing.lg),
-                              ] else if (isGuest) ...[
-                                Container(
-                                  padding: const EdgeInsets.all(AppSpacing.md),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
-                                    border: Border.all(
-                                      color: Colors.grey.withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(Icons.info_outline, color: Colors.grey),
-                                      SizedBox(width: AppSpacing.sm),
-                                      Expanded(
-                                        child: Text(
-                                          'Bạn đang ở chế độ khách. Đăng nhập để nhắn tin, theo dõi hoặc chặn người bán này.',
-                                          style: TextStyle(
-                                            color: Colors.grey,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.lg),
                               ],
-                              SizedBox(
-                                width: double.infinity,
-                                child: AppButton(
-                                  label: 'Chat',
-                                  icon: Icons.chat_bubble_outline,
-                                  onPressed: isMe ? null : _openChat,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          if (isMe) ...[
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
+                                ),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: AppSpacing.sm),
-                              Row(
+                              child: const Row(
                                 children: [
-                                  Expanded(
-                                    child: _SellerActionButton(
-                                      label: _isFollowed ? 'Đang theo dõi' : 'Theo dõi',
-                                      icon: _isFollowed ? Icons.check : Icons.person_add_outlined,
-                                      isActive: _isFollowed,
-                                      activeColor: context.specialTheme.primaryColor,
-                                      onTap: isMe ? null : _toggleFollow,
-                                    ),
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: AppColors.primary,
                                   ),
-                                  const SizedBox(width: AppSpacing.sm),
+                                  SizedBox(width: AppSpacing.sm),
                                   Expanded(
-                                    child: _SellerActionButton(
-                                      label: _isBlocked ? 'Đã chặn' : 'Chặn',
-                                      icon: Icons.block,
-                                      isActive: _isBlocked,
-                                      activeColor: Colors.black87,
-                                      onTap: isMe ? null : _toggleBlock,
+                                    child: Text(
+                                      'Đây là trang cửa hàng của bạn. Bạn không thể tự nhắn tin, theo dõi hoặc tự chặn chính mình.',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: AppSpacing.lg),
-                              const SectionHeader(title: 'Thông tin người bán'),
-                              const SizedBox(height: AppSpacing.sm),
-                              if (hasSellerInfo) ...[
-                                if ((_user!.email ?? '').isNotEmpty) _MetaRow(label: 'Email', value: _user!.email!),
-                                if ((_user!.phoneNumber ?? '').isNotEmpty) _MetaRow(label: 'Số điện thoại', value: _user!.phoneNumber!),
-                                if ((_user!.address ?? '').isNotEmpty) _MetaRow(label: 'Địa chỉ', value: _user!.address!),
-                                if ((_user!.city ?? '').isNotEmpty) _MetaRow(label: 'Thành phố', value: _user!.city!),
-                                if ((_user!.status ?? '').isNotEmpty) _MetaRow(label: 'Trạng thái', value: _user!.status!),
-                                if ((_user!.firstName ?? '').isNotEmpty || (_user!.lastName ?? '').isNotEmpty)
-                                  _MetaRow(label: 'Tên', value: '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'.trim()),
-                              ] else
-                                const Text(
-                                  'Người này lười lắm, không để lại thông tin gì.',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ] else if (isGuest) ...[
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
                                 ),
-                              const Divider(height: 32),
-                              const SectionHeader(title: 'Sản phẩm đang bán'),
-                              const SizedBox(height: AppSpacing.sm),
-                              if (_products.isEmpty && !_isLoadingProducts)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                                  child: Text(
-                                    'Chưa đăng bán sản phẩm nào.',
-                                    style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+                                border: Border.all(
+                                  color: Colors.grey.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.info_outline, color: Colors.grey),
+                                  SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Text(
+                                      'Bạn đang ở chế độ khách. Đăng nhập để nhắn tin, theo dõi hoặc chặn người bán này.',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ),
-                                )
-                              else ...[
-                                GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: _products.length,
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                          SizedBox(
+                            width: double.infinity,
+                            child: AppButton(
+                              label: 'Chat',
+                              icon: Icons.chat_bubble_outline,
+                              onPressed: isMe ? null : _openChat,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _SellerActionButton(
+                                  label: _isFollowed
+                                      ? 'Đang theo dõi'
+                                      : 'Theo dõi',
+                                  icon: _isFollowed
+                                      ? Icons.check
+                                      : Icons.person_add_outlined,
+                                  isActive: _isFollowed,
+                                  activeColor:
+                                      context.specialTheme.primaryColor,
+                                  onTap: isMe ? null : _toggleFollow,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: _SellerActionButton(
+                                  label: _isBlocked ? 'Đã chặn' : 'Chặn',
+                                  icon: Icons.block,
+                                  isActive: _isBlocked,
+                                  activeColor: Colors.black87,
+                                  onTap: isMe ? null : _toggleBlock,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          const SectionHeader(title: 'Thông tin người bán'),
+                          const SizedBox(height: AppSpacing.sm),
+                          if (isMe) ...[
+                            if (hasSellerInfo) ...[
+                              if ((_user!.email ?? '').isNotEmpty)
+                                _MetaRow(label: 'Email', value: _user!.email!),
+                              if ((_user!.phoneNumber ?? '').isNotEmpty)
+                                _MetaRow(
+                                  label: 'Số điện thoại',
+                                  value: _user!.phoneNumber!,
+                                ),
+                              if ((_user!.address ?? '').isNotEmpty)
+                                _MetaRow(
+                                  label: 'Địa chỉ',
+                                  value: _user!.address!,
+                                ),
+                              if ((_user!.city ?? '').isNotEmpty)
+                                _MetaRow(
+                                  label: 'Thành phố',
+                                  value: _user!.city!,
+                                ),
+                              if ((_user!.firstName ?? '').isNotEmpty ||
+                                  (_user!.lastName ?? '').isNotEmpty)
+                                _MetaRow(
+                                  label: 'Tên',
+                                  value:
+                                      '${_user!.firstName ?? ''} ${_user!.lastName ?? ''}'
+                                          .trim(),
+                                ),
+                            ] else
+                              const Text(
+                                'Bạn chưa cập nhật thông tin cá nhân. Hãy cập nhật trong phần Cài đặt.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                          ] else ...[
+                            if (hasPublicInfo) ...[
+                              if (shopAddress.isNotEmpty)
+                                _MetaRow(
+                                  label: 'Địa chỉ cửa hàng',
+                                  value: shopAddress,
+                                ),
+                            ] else
+                              const Text(
+                                'Người bán không để lại thông tin.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                          ],
+                          const Divider(height: 32),
+                          const SectionHeader(title: 'Sản phẩm đang bán'),
+                          const SizedBox(height: AppSpacing.sm),
+                          if (_products.isEmpty && !_isLoadingProducts)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: AppSpacing.md,
+                              ),
+                              child: Text(
+                                'Chưa đăng bán sản phẩm nào.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            )
+                          else ...[
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _products.length,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
                                     mainAxisSpacing: AppSpacing.md,
                                     crossAxisSpacing: AppSpacing.md,
                                     childAspectRatio: 0.51,
                                   ),
-                                  itemBuilder: (context, index) {
-                                    final product = _products[index];
-                                    return ProductCard(
-                                      product: productCardDataFromModel(product),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
-                                        ),
+                              itemBuilder: (context, index) {
+                                final product = _products[index];
+                                return ProductCard(
+                                  product: productCardDataFromModel(product),
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProductDetailPage(
+                                        productId: product.id,
+                                        isStock: product.isStock,
                                       ),
-                                      onLikeTap: () => _toggleLikeProduct(product),
-                                    );
-                                  },
-                                ),
-                                if (_isLoadingProducts)
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                                    child: Center(child: CircularProgressIndicator()),
+                                    ),
                                   ),
-                              ],
-                              const SizedBox(height: 32),
-                            ],
-                          ),
-                        ),
-                      ],
+                                  onLikeTap: () => _toggleLikeProduct(product),
+                                );
+                              },
+                            ),
+                            if (_isLoadingProducts)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: AppSpacing.md,
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                          ],
+                          const SizedBox(height: 32),
+                        ],
+                      ),
                     ),
+                  ],
+                ),
         ),
       ),
     );
@@ -1084,10 +1268,7 @@ class _SellerInfoPageState extends State<SellerInfoPage> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -1153,7 +1334,9 @@ class _SellerActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDisabled = onTap == null;
     final specialTheme = context.specialTheme;
-    final isThemePrimary = activeColor == AppColors.primary || activeColor == specialTheme.primaryColor;
+    final isThemePrimary =
+        activeColor == AppColors.primary ||
+        activeColor == specialTheme.primaryColor;
 
     Gradient? bgGradient;
     Color? bgSolidColor;
@@ -1185,10 +1368,7 @@ class _SellerActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: borderClr == Colors.transparent
               ? null
-              : Border.all(
-                  color: borderClr,
-                  width: 1,
-                ),
+              : Border.all(color: borderClr, width: 1),
         ),
         alignment: Alignment.center,
         child: Row(
