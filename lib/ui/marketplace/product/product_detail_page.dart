@@ -120,7 +120,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           _buildVariantRow('Màu', size.color ?? 'Mặc định'),
           _buildVariantRow(
             'Tồn kho',
-            size.stock != null ? '${size.stock} sản phẩm' : 'Hết hàng',
+            (size.stock != null && size.stock! > 0) ? '${size.stock} sản phẩm' : 'Hết hàng',
           ),
           _buildVariantRow(
             'Khối lượng',
@@ -161,9 +161,19 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   void initState() {
     super.initState();
     _pageController = PageController();
-    _scrollController = ScrollController();
+    _scrollController = ScrollController()..addListener(_onScroll);
     // Track active product page to suppress redundant notification redirects
     ProductDetailPage.activeProductId = widget.productId;
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      final bloc = context.read<ProductDetailBloc>();
+      if (bloc.state.hasMoreComments && !bloc.state.isFetchingMoreComments) {
+        bloc.add(ProductCommentsLoadMoreRequested());
+      }
+    }
   }
 
   @override
@@ -1053,7 +1063,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const SizedBox(height: AppSpacing.sm),
               if (state.comments.isEmpty)
                 const Text('Chưa có bình luận.')
-              else
+              else ...[
                 ...state.comments.map(
                   (comment) => Material(
                     color: Colors.white,
@@ -1123,19 +1133,38 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     ),
                   ),
                 ),
-              if (state.comments.length >= 20)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: Center(
-                    child: Text(
-                      'Kéo xuống để tải thêm bình luận...',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                if (state.isFetchingMoreComments)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (state.hasMoreComments)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Center(
+                      child: Text(
+                        'Kéo xuống để tải thêm bình luận...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  )
+                else if (state.comments.length >= 20)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Center(
+                      child: Text(
+                        'Đã hết bình luận.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
-                ),
+              ],
             ],
           ),
         ),
@@ -1193,8 +1222,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           ),
                   ),
                   SizedBox(
-                    width:
-                        240, // Đảm bảo text không chiếm hết chiều ngang gây đẩy wrap
+                    width: 240,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1634,46 +1662,64 @@ class _RatingsSection extends StatefulWidget {
 }
 
 class _RatingsSectionState extends State<_RatingsSection> {
-  bool _isLoading = true;
+  bool _isLoading = false;
+  bool _isFetchingMore = false;
   String? _error;
   List<RateModel> _rates = [];
   int _selectedStarFilter = 0;
+  bool _hasMore = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadRates();
+        _loadRates(isInitial: true);
       }
     });
   }
 
-  Future<void> _loadRates() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _rates = [];
-    });
+  Future<void> _loadRates({bool isInitial = false}) async {
+    if (isInitial) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+        _rates = [];
+        _hasMore = true;
+      });
+    } else {
+      if (!_hasMore || _isFetchingMore) return;
+      setState(() {
+        _isFetchingMore = true;
+      });
+    }
+
     final repo = context.read<MarketplaceRepository>();
     try {
-      final rates = await repo.getRates(
+      final moreRates = await repo.getRates(
         userId: widget.sellerId,
         productId: widget.productId,
         level: _selectedStarFilter == 0 ? null : _selectedStarFilter,
-        index: 0,
+        index: isInitial ? 0 : _rates.length,
         count: 20,
       );
       if (!mounted) return;
       setState(() {
-        _rates = rates;
+        if (isInitial) {
+          _rates = moreRates;
+        } else {
+          _rates.addAll(moreRates);
+        }
+        _hasMore = moreRates.length >= 20;
         _isLoading = false;
+        _isFetchingMore = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
+        _isFetchingMore = false;
       });
     }
   }
@@ -1751,7 +1797,7 @@ class _RatingsSectionState extends State<_RatingsSection> {
             padding: EdgeInsets.symmetric(vertical: 8.0),
             child: Text('Chưa có đánh giá.'),
           )
-        else
+        else ...[
           ..._rates.map(
             (r) => Material(
               color: Colors.white,
@@ -1840,6 +1886,19 @@ class _RatingsSectionState extends State<_RatingsSection> {
               ),
             ),
           ),
+          if (_isFetchingMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_hasMore)
+            Center(
+              child: TextButton(
+                onPressed: () => _loadRates(isInitial: false),
+                child: const Text('Xem thêm đánh giá'),
+              ),
+            ),
+        ],
       ],
     );
   }

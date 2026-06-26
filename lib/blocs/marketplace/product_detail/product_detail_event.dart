@@ -38,3 +38,5 @@ class ProductReported extends ProductDetailEvent {
   @override
   List<Object?> get props => [subject, details];
 }
+
+class ProductCommentsLoadMoreRequested extends ProductDetailEvent {}

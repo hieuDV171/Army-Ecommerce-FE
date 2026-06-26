@@ -186,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
     });
     _pageController.animateToPage(
       newIndex,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOutCubic,
     );
     if (newIndex == 3 && widget.token.isNotEmpty) {

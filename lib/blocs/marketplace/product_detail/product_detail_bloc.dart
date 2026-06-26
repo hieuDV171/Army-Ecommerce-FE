@@ -14,6 +14,7 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     on<ProductLikeToggled>(_onLikeToggled);
     on<ProductCommentSent>(_onCommentSent);
     on<ProductReported>(_onReported);
+    on<ProductCommentsLoadMoreRequested>(_onCommentsLoadMoreRequested);
   }
 
   Future<void> _onRequested(
@@ -21,10 +22,10 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     Emitter<ProductDetailState> emit,
   ) async {
     _productId = event.productId;
-    emit(state.copyWith(isLoading: true, clearMessages: true));
+    emit(state.copyWith(isLoading: true, clearMessages: true, hasMoreComments: true));
     try {
       final productFuture = marketplaceRepository.getProductDetail(event.productId);
-      final commentsFuture = marketplaceRepository.getComments(event.productId);
+      final commentsFuture = marketplaceRepository.getComments(event.productId, index: 0, count: 20);
 
       final product = await productFuture;
       final comments = await commentsFuture;
@@ -46,6 +47,7 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
           comments: comments,
           isLoading: false,
           clearMessages: true,
+          hasMoreComments: comments.length >= 20,
         ),
       );
     } catch (error) {
@@ -126,6 +128,32 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
       );
     } catch (error) {
       emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onCommentsLoadMoreRequested(
+    ProductCommentsLoadMoreRequested event,
+    Emitter<ProductDetailState> emit,
+  ) async {
+    if (_productId == null || state.isFetchingMoreComments || !state.hasMoreComments) return;
+
+    emit(state.copyWith(isFetchingMoreComments: true));
+    try {
+      final moreComments = await marketplaceRepository.getComments(
+        _productId!,
+        index: state.comments.length,
+        count: 20,
+      );
+
+      emit(
+        state.copyWith(
+          comments: [...state.comments, ...moreComments],
+          isFetchingMoreComments: false,
+          hasMoreComments: moreComments.length >= 20,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isFetchingMoreComments: false, errorMessage: error.toString()));
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:army_ecommerce/models/address_model.dart';
 import 'package:army_ecommerce/models/order_model.dart';
+import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../repositories/marketplace_repository.dart';
@@ -18,6 +19,7 @@ import '../../util/widgets/section_header.dart';
 import '../../util/widgets/status_chip.dart';
 import 'widgets/order_card.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
+import '../product/product_detail_page.dart';
 
 class BuyerOrderDetailPage extends StatefulWidget {
   final String orderId;
@@ -609,77 +611,98 @@ class _OrderItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _OrderItemImage(imageUrl: item.imageUrl),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Giá:',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                  PriceText(
-                    price: item.price,
-                    suffix: 'xu/sản phẩm',
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'x',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                  Text(
-                    'SL: ${item.quantity} sản phẩm',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                child: Divider(height: 1, thickness: 1, color: AppColors.border),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Thành tiền:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
+    return InkWell(
+      splashColor: context.specialTheme.primaryColor.withValues(
+        alpha: 0.15,
+      ),
+      highlightColor: context.specialTheme.primaryColor.withValues(
+        alpha: 0.05,
+      ),
+      onTap: () {
+        final rawId = item.productId;
+        final cleanId = rawId.split('-').first;
+        if (cleanId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProductDetailPage(productId: cleanId),
+            ),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _OrderItemImage(imageUrl: item.imageUrl),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Giá:',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
-                  ),
-                  PriceText(
-                    price: item.subtotal,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ],
-              ),
-            ],
+                    PriceText(
+                      price: item.price,
+                      suffix: 'xu/sản phẩm',
+                      fontSize: 13,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'x SL:',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    Text(
+                      '${item.quantity} sản phẩm',
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Divider(height: 1, thickness: 1, color: AppColors.border),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Thành tiền:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    PriceText(
+                      price: item.subtotal,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
