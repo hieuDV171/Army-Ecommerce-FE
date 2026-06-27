@@ -122,6 +122,8 @@ class _AddressListView extends StatelessWidget {
             address: address,
             onEdit: () => _openForm(context, address: address),
             onDelete: () => _confirmDelete(context, address),
+            onSetDefault: () =>
+                context.read<AddressBloc>().add(AddressSetDefault(address)),
           );
         },
       ),
@@ -197,11 +199,13 @@ class _AddressCard extends StatelessWidget {
   final AddressModel address;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onSetDefault;
 
   const _AddressCard({
     required this.address,
     required this.onEdit,
     required this.onDelete,
+    required this.onSetDefault,
   });
 
   @override
@@ -298,53 +302,63 @@ class _AddressCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (address.address != null && address.address!.isNotEmpty && address.address != address.fullAddress)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
+              if (address.address != null &&
+                  address.address!.isNotEmpty &&
+                  address.address != address.fullAddress)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.specialTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Text(
+                      address.address!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      decoration: BoxDecoration(
-                        color: context.specialTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        address.address!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  else
-                    const SizedBox.shrink(),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: const Text('Sửa'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.specialTheme.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      TextButton.icon(
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete_outline, size: 16),
-                        label: const Text('Xóa'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.specialTheme.primaryColor,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ],
+                ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: AppSpacing.xs,
+                  children: [
+                    if (!address.isDefault)
+                      TextButton.icon(
+                        onPressed: onSetDefault,
+                        icon: const Icon(Icons.star_outline, size: 16),
+                        label: const Text('Đặt mặc định'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: context.specialTheme.primaryColor,
+                        ),
+                      ),
+                    TextButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: const Text('Sửa'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.specialTheme.primaryColor,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      label: const Text('Xóa'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.specialTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/models/address_model.dart';
 import '../../../repositories/marketplace_repository.dart';
 import 'address_event.dart';
 import 'address_state.dart';
@@ -11,6 +12,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     on<AddressAdded>(_onAdded);
     on<AddressUpdated>(_onUpdated);
     on<AddressDeleted>(_onDeleted);
+    on<AddressSetDefault>(_onSetDefault);
     on<ProvincesRequested>(_onProvincesRequested);
     on<WardsRequested>(_onWardsRequested);
   }
@@ -129,6 +131,56 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
       }
       emit(state.copyWith(isSubmitting: false, errorMessage: msg));
     }
+  }
+
+  Future<void> _onSetDefault(
+    AddressSetDefault event,
+    Emitter<AddressState> emit,
+  ) async {
+    if (event.address.isDefault) return; // đã là mặc định rồi
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      // Đặt địa chỉ này làm mặc định
+      await _patchDefault(event.address, true);
+      // Bỏ mặc định ở các địa chỉ khác (phòng khi BE không tự bỏ)
+      for (final a in state.addresses) {
+        if (a.id != event.address.id && a.isDefault) {
+          await _patchDefault(a, false);
+        }
+      }
+      final addresses = await marketplaceRepository.getAddresses();
+      emit(state.copyWith(
+        addresses: addresses,
+        isSubmitting: false,
+        successMessage: 'Đã đặt làm địa chỉ mặc định',
+      ));
+    } catch (error) {
+      var msg = error.toString();
+      if (msg.startsWith('Exception: ')) {
+        msg = msg.substring('Exception: '.length);
+      }
+      emit(state.copyWith(isSubmitting: false, errorMessage: msg));
+    }
+  }
+
+  Future<void> _patchDefault(AddressModel a, bool isDefault) async {
+    final data = <String, dynamic>{
+      'address': (a.address != null && a.address!.isNotEmpty)
+          ? a.address
+          : a.fullAddress,
+      'full_address': a.fullAddress,
+      'receiver_name': a.receiverName,
+      'phone': a.phone,
+      'is_default': isDefault,
+      'province': a.province ?? '',
+      'district': a.district ?? '',
+      'lat': double.tryParse(a.latitude ?? '') ?? 0.0,
+      'lng': double.tryParse(a.longitude ?? '') ?? 0.0,
+    };
+    if (a.addressDetail != null && a.addressDetail!.isNotEmpty) {
+      data['address_detail'] = a.addressDetail;
+    }
+    await marketplaceRepository.updateAddress(a.id, data);
   }
 
   Future<void> _onProvincesRequested(
