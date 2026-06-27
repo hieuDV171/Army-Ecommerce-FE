@@ -149,9 +149,18 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
-      final itemsData = event.items.map((item) => {
-        'product_id': int.parse(item.productId.split('-')[0]),
-        'quantity': item.quantity,
+      final itemsData = event.items.map((item) {
+        final parts = item.productId.split('-');
+        final prodId = int.parse(parts[0]);
+        final variantId = parts.length > 1 ? int.tryParse(parts[1]) : null;
+        final map = <String, dynamic>{
+          'product_id': prodId,
+          'quantity': item.quantity,
+        };
+        if (variantId != null) {
+          map['variant_id'] = variantId;
+        }
+        return map;
       }).toList();
 
       await marketplaceRepository.createOrder({

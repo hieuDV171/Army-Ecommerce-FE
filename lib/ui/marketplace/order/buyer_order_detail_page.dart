@@ -94,6 +94,10 @@ class _BuyerOrderDetailViewState extends State<_BuyerOrderDetailView> {
           if (state.successMessage != null) {
             _shouldRefreshOnPop = true;
             AppSnackBar.show(context, message: state.successMessage!);
+
+            final isConfirmReceived = state.successMessage == 'Đã xác nhận đã nhận hàng';
+            final orderToReview = state.orderDetail;
+
             // Refresh details & timeline
             context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
             SessionManager.isOrderEdited(widget.orderId).then((edited) {
@@ -103,6 +107,10 @@ class _BuyerOrderDetailViewState extends State<_BuyerOrderDetailView> {
                 });
               }
             });
+
+            if (isConfirmReceived && orderToReview != null) {
+              _showReviewDialog(orderToReview);
+            }
           } else if (state.errorMessage != null) {
             AppSnackBar.showError(context, message: state.errorMessage!);
           }
