@@ -15,6 +15,9 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     on<ProductCommentSent>(_onCommentSent);
     on<ProductReported>(_onReported);
     on<ProductCommentsLoadMoreRequested>(_onCommentsLoadMoreRequested);
+    on<ProductDeleted>(_onDeleted);
+    on<ProductRatesRequested>(_onRatesRequested);
+    on<ProductRatesLoadMoreRequested>(_onRatesLoadMoreRequested);
   }
 
   Future<void> _onRequested(
@@ -154,6 +157,98 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
       );
     } catch (error) {
       emit(state.copyWith(isFetchingMoreComments: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onDeleted(
+    ProductDeleted event,
+    Emitter<ProductDetailState> emit,
+  ) async {
+    final productId = _productId;
+    if (productId == null) return;
+
+    emit(state.copyWith(isSubmitting: true, clearMessages: true));
+    try {
+      await marketplaceRepository.deleteProduct(productId);
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          isDeleted: true,
+          successMessage: 'Xóa sản phẩm thành công',
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onRatesRequested(
+    ProductRatesRequested event,
+    Emitter<ProductDetailState> emit,
+  ) async {
+    final productId = _productId;
+    final product = state.product;
+    if (productId == null || product == null) return;
+
+    final sellerId = product.seller?.id;
+    final level = event.level ?? (state.selectedStarFilter == 0 ? null : state.selectedStarFilter);
+
+    emit(state.copyWith(
+      isLoadingRates: true,
+      selectedStarFilter: event.level ?? state.selectedStarFilter,
+      clearMessages: true,
+      rates: [],
+    ));
+
+    try {
+      final moreRates = await marketplaceRepository.getRates(
+        userId: sellerId,
+        productId: productId,
+        level: level,
+        index: 0,
+        count: 20,
+      );
+      emit(
+        state.copyWith(
+          rates: moreRates,
+          isLoadingRates: false,
+          hasMoreRates: moreRates.length >= 20,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isLoadingRates: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onRatesLoadMoreRequested(
+    ProductRatesLoadMoreRequested event,
+    Emitter<ProductDetailState> emit,
+  ) async {
+    final productId = _productId;
+    final product = state.product;
+    if (productId == null || product == null || state.isFetchingMoreRates || !state.hasMoreRates) return;
+
+    final sellerId = product.seller?.id;
+    final level = state.selectedStarFilter == 0 ? null : state.selectedStarFilter;
+
+    emit(state.copyWith(isFetchingMoreRates: true));
+    try {
+      final moreRates = await marketplaceRepository.getRates(
+        userId: sellerId,
+        productId: productId,
+        level: level,
+        index: state.rates.length,
+        count: 20,
+      );
+      emit(
+        state.copyWith(
+          rates: [...state.rates, ...moreRates],
+          isFetchingMoreRates: false,
+          hasMoreRates: moreRates.length >= 20,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isFetchingMoreRates: false, errorMessage: error.toString()));
     }
   }
 }

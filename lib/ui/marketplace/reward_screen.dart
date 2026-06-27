@@ -8,6 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/checkout_model.dart';
 import '../../repositories/marketplace_repository.dart';
 import '../util/widgets/app_snackbar.dart';
+import '../../blocs/marketplace/reward/reward_bloc.dart';
+import '../../blocs/marketplace/reward/reward_event.dart';
+import '../../blocs/marketplace/reward/reward_state.dart';
 
 import '../util/constants/app_colors.dart';
 import '../util/constants/app_spacing.dart';
@@ -48,28 +51,33 @@ class _RewardScreenState extends State<RewardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Điểm thưởng'),
-        bottom: TabBar(
+    return BlocProvider(
+      create: (context) => RewardBloc(
+        marketplaceRepository: context.read<MarketplaceRepository>(),
+      )..add(const RewardHistoryRequested(isRefresh: true)),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Điểm thưởng'),
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(icon: Icon(Icons.cloud_upload_outlined), text: 'Gửi chiến tích'),
+              Tab(icon: Icon(Icons.feedback_outlined), text: 'Khiếu nại'),
+              Tab(icon: Icon(Icons.history), text: 'Lịch sử'),
+            ],
+          ),
+        ),
+        body: TabBarView(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.cloud_upload_outlined), text: 'Gửi chiến tích'),
-            Tab(icon: Icon(Icons.feedback_outlined), text: 'Khiếu nại'),
-            Tab(icon: Icon(Icons.history), text: 'Lịch sử'),
+          children: [
+            _UploadVideoTab(picker: _picker),
+            _RewardAppealTab(rewardIdCtrl: _appealRewardIdCtrl),
+            _RewardHistoryTab(
+              tabController: _tabController,
+              appealRewardIdCtrl: _appealRewardIdCtrl,
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _UploadVideoTab(picker: _picker),
-          _RewardAppealTab(rewardIdCtrl: _appealRewardIdCtrl),
-          _RewardHistoryTab(
-            tabController: _tabController,
-            appealRewardIdCtrl: _appealRewardIdCtrl,
-          ),
-        ],
       ),
     );
   }
@@ -89,7 +97,6 @@ class _UploadVideoTab extends StatefulWidget {
 class _UploadVideoTabState extends State<_UploadVideoTab> {
   XFile? _mediaFile;
   bool _isImage = false;
-  bool _isLoading = false;
   final TextEditingController _descriptionCtrl = TextEditingController();
 
   @override
@@ -146,7 +153,7 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
     }
   }
 
-  Future<void> _submitProof() async {
+  void _submitProof() {
     final description = _descriptionCtrl.text.trim();
     if (description.isEmpty) {
       AppSnackBar.showError(context, message: 'Vui lòng nhập mô tả chiến công');
@@ -157,48 +164,13 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    try {
-      final repo = context.read<MarketplaceRepository>();
-
-      // 1. Upload file
-      final uploadedUrl = await repo.uploadFile(File(_mediaFile!.path));
-      if (uploadedUrl == null || uploadedUrl.isEmpty) {
-        throw Exception('Không thể tải tệp tin lên máy chủ');
-      }
-
-      // 2. Add reward proof
-      final result = await repo.addRewardProof(
-        description: description,
-        imageUrl: _isImage ? uploadedUrl : null,
-        videoUrl: !_isImage ? uploadedUrl : null,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _descriptionCtrl.clear();
-        _mediaFile = null;
-      });
-
-      if (result != null && result.containsKey('proof')) {
-        final proof = result['proof'] as Map<String, dynamic>?;
-        if (proof != null) {
-          final aiScore = proof['ai_score'] as num? ?? -1;
-          final rewardCoin = proof['reward_coin'] as num? ?? 0;
-          _showRewardResultDialog(context, aiScore, rewardCoin);
-        } else {
-          AppSnackBar.showSuccess(context, message: 'Gửi minh chứng chiến tích thành công');
-        }
-      } else {
-        AppSnackBar.showSuccess(context, message: 'Gửi minh chứng chiến tích thành công');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    context.read<RewardBloc>().add(
+          RewardProofSubmitted(
+            filePath: _mediaFile!.path,
+            description: description,
+            isImage: _isImage,
+          ),
+        );
   }
 
   void _showRewardResultDialog(BuildContext context, num aiScore, num rewardCoin) {
@@ -298,131 +270,161 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
   Widget build(BuildContext context) {
     final hasMedia = _mediaFile != null;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Banner thông tin
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.infoBlue.withValues(alpha: 0.12),
-                  AppColors.infoBlueDark.withValues(alpha: 0.05),
-                ],
+    return BlocConsumer<RewardBloc, RewardState>(
+      listener: (context, state) {
+        if (state.successMessage != null && state.proofResult != null && state.proofResult!.isNotEmpty) {
+          final proof = state.proofResult!['proof'] as Map<String, dynamic>?;
+          if (proof != null) {
+            final aiScore = proof['ai_score'] as num? ?? -1;
+            final rewardCoin = proof['reward_coin'] as num? ?? 0;
+            _showRewardResultDialog(context, aiScore, rewardCoin);
+          } else {
+            AppSnackBar.showSuccess(context, message: state.successMessage!);
+          }
+          _descriptionCtrl.clear();
+          setState(() {
+            _mediaFile = null;
+          });
+          context.read<RewardBloc>().add(const RewardHistoryRequested(isRefresh: true));
+        } else if (state.successMessage != null) {
+          AppSnackBar.showSuccess(context, message: state.successMessage!);
+          _descriptionCtrl.clear();
+          setState(() {
+            _mediaFile = null;
+          });
+          context.read<RewardBloc>().add(const RewardHistoryRequested(isRefresh: true));
+        } else if (state.errorMessage != null && state.isSubmittingProof) {
+          AppSnackBar.showError(context, message: state.errorMessage!);
+        }
+      },
+      builder: (context, state) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Banner thông tin
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.infoBlue.withValues(alpha: 0.12),
+                      AppColors.infoBlueDark.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(
+                    color: AppColors.infoBlue.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AppColors.infoBlue, size: 20),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Gửi minh chứng chiến tích (hình ảnh hoặc video) để nhận điểm thưởng quy đổi thành xu nội bộ.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.infoBlue,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: AppColors.infoBlue.withValues(alpha: 0.3),
+              const SizedBox(height: AppSpacing.xl),
+
+              // Tên/Mã điểm thưởng
+              AppTextField(
+                controller: _descriptionCtrl,
+                label: 'Mô tả chiến công *',
+                hint: 'Ví dụ: 1 người lính bị thương, 1 xe tăng bị phá hủy...',
               ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: AppColors.infoBlue, size: 20),
-                SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'Gửi minh chứng chiến tích (hình ảnh hoặc video) để nhận điểm thưởng quy đổi thành xu nội bộ.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.infoBlue,
-                      height: 1.4,
+              const SizedBox(height: AppSpacing.lg),
+
+              // Khu vực chọn minh chứng
+              const Text(
+                'Hình ảnh / Video minh chứng *',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              GestureDetector(
+                onTap: _showMediaSourceSheet,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: hasMedia ? Colors.black : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(
+                      color: hasMedia ? AppColors.primary : AppColors.border,
+                      width: hasMedia ? 2 : 1,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // Tên/Mã điểm thưởng
-          AppTextField(
-            controller: _descriptionCtrl,
-            label: 'Mô tả chiến công *',
-            hint: 'Ví dụ: 1 người lính bị thương, 1 xe tăng bị phá hủy...',
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          // Khu vực chọn minh chứng
-          const Text(
-            'Hình ảnh / Video minh chứng *',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-
-          GestureDetector(
-            onTap: _showMediaSourceSheet,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              height: 180,
-              decoration: BoxDecoration(
-                color: hasMedia ? Colors.black : AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(
-                  color: hasMedia ? AppColors.primary : AppColors.border,
-                  width: hasMedia ? 2 : 1,
+                  child: hasMedia
+                      ? (_isImage
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(AppRadius.lg - 2),
+                              child: Image.file(
+                                File(_mediaFile!.path),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                            )
+                          : _VideoPreview(file: File(_mediaFile!.path)))
+                      : const _MediaPlaceholder(),
                 ),
               ),
-              child: hasMedia
-                  ? (_isImage
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-                          child: Image.file(
-                            File(_mediaFile!.path),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                        )
-                      : _VideoPreview(file: File(_mediaFile!.path)))
-                  : const _MediaPlaceholder(),
-            ),
-          ),
 
-          if (hasMedia) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: AppColors.success,
-                  size: 16,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    _mediaFile!.name,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+              if (hasMedia) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: AppColors.success,
+                      size: 16,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => setState(() => _mediaFile = null),
-                  child: const Text(
-                    'Xóa',
-                    style: TextStyle(color: AppColors.danger),
-                  ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        _mediaFile!.name,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => setState(() => _mediaFile = null),
+                      child: const Text(
+                        'Xóa',
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
 
-          const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xl),
 
-          // Nút gửi
-          AppButton(
-            label: 'Gửi minh chứng',
-            icon: Icons.cloud_upload_outlined,
-            isLoading: _isLoading,
-            onPressed: _submitProof,
+              // Nút gửi
+              AppButton(
+                label: 'Gửi minh chứng',
+                icon: Icons.cloud_upload_outlined,
+                isLoading: state.isSubmittingProof,
+                onPressed: state.isSubmittingProof ? null : _submitProof,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -510,7 +512,6 @@ class _RewardAppealTab extends StatefulWidget {
 
 class _RewardAppealTabState extends State<_RewardAppealTab> {
   final TextEditingController _reasonCtrl = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -518,7 +519,7 @@ class _RewardAppealTabState extends State<_RewardAppealTab> {
     super.dispose();
   }
 
-  Future<void> _submitAppeal() async {
+  void _submitAppeal() {
     final rewardId = widget.rewardIdCtrl.text.trim();
     final reason = _reasonCtrl.text.trim();
 
@@ -527,98 +528,98 @@ class _RewardAppealTabState extends State<_RewardAppealTab> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    try {
-      final repo = context.read<MarketplaceRepository>();
-      final appeal = await repo.createRewardAppeal(
-        rewardId: rewardId,
-        reason: reason.isNotEmpty ? reason : null,
-      );
-
-      if (!mounted) return;
-      final apId = appeal.appealId ?? '';
-      final rwId = appeal.rewardId ?? rewardId;
-      AppSnackBar.showSuccess(
-        context,
-        message: 'Đã gửi khiếu nại thành công cho minh chứng #$rwId! Mã khiếu nại của bạn là #$apId.',
-      );
-      setState(() {
-        widget.rewardIdCtrl.clear();
-        _reasonCtrl.clear();
-      });
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+    context.read<RewardBloc>().add(
+          RewardAppealSubmitted(
+            rewardId: rewardId,
+            reason: reason.isNotEmpty ? reason : null,
+          ),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Banner thông tin
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.warning.withValues(alpha: 0.12),
-                  AppColors.warning.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: AppColors.warning.withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
-                SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'Gửi khiếu nại nếu bạn chưa nhận đúng số xu hoặc gặp lỗi khi hệ thống duyệt video chiến tích.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.warning,
-                      height: 1.4,
-                    ),
+    return BlocConsumer<RewardBloc, RewardState>(
+      listener: (context, state) {
+        if (state.successMessage != null && state.appealResult != null) {
+          final apId = state.appealResult!.appealId ?? '';
+          final rwId = state.appealResult!.rewardId ?? widget.rewardIdCtrl.text;
+          AppSnackBar.showSuccess(
+            context,
+            message: 'Đã gửi khiếu nại thành công cho minh chứng #$rwId! Mã khiếu nại của bạn là #$apId.',
+          );
+          widget.rewardIdCtrl.clear();
+          _reasonCtrl.clear();
+          context.read<RewardBloc>().add(const RewardHistoryRequested(isRefresh: true));
+        } else if (state.errorMessage != null && state.isSubmittingAppeal) {
+          AppSnackBar.showError(context, message: state.errorMessage!);
+        }
+      },
+      builder: (context, state) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Banner thông tin
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.warning.withValues(alpha: 0.12),
+                      AppColors.warning.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(
+                    color: AppColors.warning.withValues(alpha: 0.3),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
+                child: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+                    SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Gửi khiếu nại nếu bạn chưa nhận đúng số xu hoặc gặp lỗi khi hệ thống duyệt video chiến tích.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.warning,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
 
-          // Thông tin khiếu nại
-          AppTextField(
-            controller: widget.rewardIdCtrl,
-            label: 'Mã điểm thưởng (Reward ID) *',
-            hint: 'Nhập reward_id cần khiếu nại',
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          AppTextField(
-            controller: _reasonCtrl,
-            label: 'Lý do khiếu nại (tùy chọn)',
-            hint: 'Mô tả lý do bạn muốn khiếu nại...',
-          ),
-          const SizedBox(height: AppSpacing.xl),
+              // Thông tin khiếu nại
+              AppTextField(
+                controller: widget.rewardIdCtrl,
+                label: 'Mã điểm thưởng (Reward ID) *',
+                hint: 'Nhập reward_id cần khiếu nại',
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
+                controller: _reasonCtrl,
+                label: 'Lý do khiếu nại (tùy chọn)',
+                hint: 'Mô tả lý do bạn muốn khiếu nại...',
+              ),
+              const SizedBox(height: AppSpacing.xl),
 
-          // Nút gửi khiếu nại
-          AppButton(
-            label: 'Gửi khiếu nại',
-            icon: Icons.send_outlined,
-            isLoading: _isLoading,
-            onPressed: _submitAppeal,
+              // Nút gửi khiếu nại
+              AppButton(
+                label: 'Gửi khiếu nại',
+                icon: Icons.send_outlined,
+                isLoading: state.isSubmittingAppeal,
+                onPressed: state.isSubmittingAppeal ? null : _submitAppeal,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -640,18 +641,11 @@ class _RewardHistoryTab extends StatefulWidget {
 
 class _RewardHistoryTabState extends State<_RewardHistoryTab> {
   final ScrollController _scrollController = ScrollController();
-  List<RewardHistoryModel> _history = [];
-  int _currentPage = 1;
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
-  bool _hasReachedEnd = false;
-  String? _error;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _load();
   }
 
   @override
@@ -666,68 +660,14 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
     if (!_scrollController.hasClients) return;
     final threshold = _scrollController.position.maxScrollExtent - 240;
     if (_scrollController.position.pixels >= threshold) {
-      _loadMore();
-    }
-  }
-
-  Future<void> _load() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _history = [];
-      _currentPage = 1;
-      _hasReachedEnd = false;
-    });
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final list = await repository.getRewardHistory(
-        index: 1,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _history = list;
-        _currentPage = 2;
-        _hasReachedEnd = list.length < 20;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || _hasReachedEnd || _isLoading) return;
-    if (!mounted) return;
-    setState(() => _isLoadingMore = true);
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final list = await repository.getRewardHistory(
-        index: _currentPage,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _history = [..._history, ...list];
-        _currentPage++;
-        _hasReachedEnd = list.length < 20;
-        _isLoadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingMore = false;
-      });
+      context.read<RewardBloc>().add(const RewardLoadMoreHistoryRequested());
     }
   }
 
   Future<void> _refresh() async {
-    await _load();
+    final bloc = context.read<RewardBloc>();
+    bloc.add(const RewardHistoryRequested(isRefresh: true));
+    await bloc.stream.firstWhere((s) => !s.isLoadingHistory);
   }
 
   Future<void> _showDetail(RewardHistoryModel item) async {
@@ -736,23 +676,28 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
       return;
     }
 
-    // Hiển thị loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final proof = await repository.getRewardProof(item.rewardId!);
-      if (!mounted) return;
-      Navigator.pop(context); // Đóng loading
+    final bloc = context.read<RewardBloc>();
+    bloc.add(RewardProofDetailRequested(item.rewardId!));
 
-      _showProofDetailBottomSheet(proof);
+    try {
+      final state = await bloc.stream.firstWhere((s) => !s.isLoadingDetail);
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      if (state.proofDetail != null) {
+        _showProofDetailBottomSheet(state.proofDetail!);
+      } else if (state.errorMessage != null) {
+        AppSnackBar.showError(context, message: 'Không thể tải chi tiết: ${state.errorMessage}');
+      }
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // Đóng loading
+      Navigator.pop(context); // Close loading dialog
       AppSnackBar.showError(context, message: 'Không thể tải chi tiết: $e');
     }
   }
@@ -1126,88 +1071,91 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && _history.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return BlocBuilder<RewardBloc, RewardState>(
+      builder: (context, state) {
+        if (state.isLoadingHistory && state.history.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    if (_error != null && _history.isEmpty) {
-      final errStr = _error!;
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Lỗi: $errStr', textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.md),
-            ElevatedButton(
-              onPressed: _refresh,
-              child: const Text('Thử lại'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_history.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.history_toggle_off,
-              size: 72,
-              color: AppColors.textSecondary.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'Lịch sử sẽ hiển thị ở đây',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        itemCount: _history.length + (_isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, index) => const Divider(),
-        itemBuilder: (context, index) {
-          if (index == _history.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          final item = _history[index];
-          return ListTile(
-            onTap: () => _showDetail(item),
-            leading: CircleAvatar(
-              backgroundColor: AppColors.success.withValues(alpha: 0.12),
-              child: const Icon(Icons.monetization_on, color: AppColors.success),
-            ),
-            title: Text('Mã điểm thưởng: #${item.rewardId ?? "N/A"}'),
-            subtitle: Text('Số dư khả dụng: ${item.availableBalance} xu'),
-            trailing: Text(
-              '+${item.receivedCoin} xu',
-              style: const TextStyle(
-                color: AppColors.success,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
+        if (state.errorMessage != null && state.history.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Lỗi: ${state.errorMessage!}', textAlign: TextAlign.center),
+                const SizedBox(height: AppSpacing.md),
+                ElevatedButton(
+                  onPressed: _refresh,
+                  child: const Text('Thử lại'),
+                ),
+              ],
             ),
           );
-        },
-      ),
+        }
+
+        if (state.history.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.history_toggle_off,
+                  size: 72,
+                  color: AppColors.textSecondary.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const Text(
+                  'Lịch sử sẽ hiển thị ở đây',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          child: ListView.separated(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            itemCount: state.history.length + (state.isLoadingMoreHistory ? 1 : 0),
+            separatorBuilder: (_, index) => const Divider(),
+            itemBuilder: (context, index) {
+              if (index == state.history.length) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              final item = state.history[index];
+              return ListTile(
+                onTap: () => _showDetail(item),
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.success.withValues(alpha: 0.12),
+                  child: const Icon(Icons.monetization_on, color: AppColors.success),
+                ),
+                title: Text('Mã điểm thưởng: #${item.rewardId ?? "N/A"}'),
+                subtitle: Text('Số dư khả dụng: ${item.availableBalance} xu'),
+                trailing: Text(
+                  '+${item.receivedCoin} xu',
+                  style: const TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

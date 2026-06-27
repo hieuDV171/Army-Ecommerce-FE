@@ -7,6 +7,10 @@ class AddressState extends Equatable {
   final bool isSubmitting;
   final String? errorMessage;
   final String? successMessage;
+  final List<ProvinceModel> provinces;
+  final List<WardModel> wards;
+  final bool isLoadingProvinces;
+  final bool isLoadingWards;
 
   const AddressState({
     this.addresses = const [],
@@ -14,6 +18,10 @@ class AddressState extends Equatable {
     this.isSubmitting = false,
     this.errorMessage,
     this.successMessage,
+    this.provinces = const [],
+    this.wards = const [],
+    this.isLoadingProvinces = false,
+    this.isLoadingWards = false,
   });
 
   AddressState copyWith({
@@ -22,6 +30,10 @@ class AddressState extends Equatable {
     bool? isSubmitting,
     String? errorMessage,
     String? successMessage,
+    List<ProvinceModel>? provinces,
+    List<WardModel>? wards,
+    bool? isLoadingProvinces,
+    bool? isLoadingWards,
     bool clearMessages = false,
   }) {
     return AddressState(
@@ -30,15 +42,23 @@ class AddressState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
       successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      provinces: provinces ?? this.provinces,
+      wards: wards ?? this.wards,
+      isLoadingProvinces: isLoadingProvinces ?? this.isLoadingProvinces,
+      isLoadingWards: isLoadingWards ?? this.isLoadingWards,
     );
   }
 
   @override
   List<Object?> get props => [
-    addresses,
-    isLoading,
-    isSubmitting,
-    errorMessage,
-    successMessage,
-  ];
+        addresses,
+        isLoading,
+        isSubmitting,
+        errorMessage,
+        successMessage,
+        provinces,
+        wards,
+        isLoadingProvinces,
+        isLoadingWards,
+      ];
 }

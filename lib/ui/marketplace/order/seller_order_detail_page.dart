@@ -17,375 +17,345 @@ import 'widgets/order_card.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import '../product/product_detail_page.dart';
 
-class SellerOrderDetailPage extends StatefulWidget {
+import 'package:army_ecommerce/blocs/marketplace/order/order_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_state.dart';
+
+class SellerOrderDetailPage extends StatelessWidget {
   final String orderId;
 
   const SellerOrderDetailPage({super.key, required this.orderId});
 
   @override
-  State<SellerOrderDetailPage> createState() => _SellerOrderDetailPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => OrderBloc(
+        marketplaceRepository: context.read<MarketplaceRepository>(),
+      )..add(OrderDetailRequested(orderId)),
+      child: _SellerOrderDetailView(orderId: orderId),
+    );
+  }
 }
 
-class _SellerOrderDetailPageState extends State<SellerOrderDetailPage> {
-  Future<OrderModel?>? _detailFuture;
-  Future<List<OrderTimelineModel>>? _timelineFuture;
-  bool _isSubmitting = false;
+class _SellerOrderDetailView extends StatefulWidget {
+  final String orderId;
+
+  const _SellerOrderDetailView({required this.orderId});
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  State<_SellerOrderDetailView> createState() => _SellerOrderDetailViewState();
+}
 
-  void _load() {
-    final repository = context.read<MarketplaceRepository>();
-    _detailFuture = repository.getOrderDetail(widget.orderId);
-    _timelineFuture = repository.getOrderTimeline(widget.orderId);
-  }
+class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
+  bool _shouldRefreshOnPop = false;
 
-  Future<void> _refresh() async {
-    setState(_load);
-    await Future.wait([
-      _detailFuture ?? Future.value(null),
-      _timelineFuture ?? Future.value(const <OrderTimelineModel>[]),
-    ]);
-  }
-
-  Future<void> _submit(Future<void> Function() action, {String successMessage = 'Đã cập nhật đơn hàng'}) async {
-    setState(() => _isSubmitting = true);
-    try {
-      await action();
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: successMessage);
-      setState(_load);
-      await _refresh();
-    } catch (error) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: error.toString());
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
-
-  Future<void> _handleAccept(OrderModel order) async {
-    if (order.buyerId == null) {
-      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-      return;
-    }
-    await _submit(
-      () => context.read<MarketplaceRepository>().setAcceptBuyer(
-            order.id,
-            order.buyerId!,
-            true,
+  void _submitAction(OrderModel order, OrderActionType actionType) {
+    context.read<OrderBloc>().add(
+          OrderActionRequested(
+            order: order,
+            actionType: actionType,
           ),
-      successMessage: 'Đã chấp nhận đơn hàng',
-    );
-  }
-
-  Future<void> _handleReject(OrderModel order) async {
-    if (order.buyerId == null) {
-      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-      return;
-    }
-    await _submit(
-      () => context.read<MarketplaceRepository>().setAcceptBuyer(
-            order.id,
-            order.buyerId!,
-            false,
-          ),
-      successMessage: 'Đã từ chối đơn hàng',
-    );
-  }
-
-  Future<void> _handleMarkShipped(OrderModel order) async {
-    if (order.buyerId == null) {
-      AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-      return;
-    }
-    await _submit(
-      () => context.read<MarketplaceRepository>().sellerMarkAsShipped(
-            order.id,
-            buyerId: order.buyerId,
-          ),
-      successMessage: 'Đơn hàng đã được đánh dấu vận chuyển',
-    );
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<OrderModel?>(
-      future: _detailFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return BlocListener<OrderBloc, OrderState>(
+      listener: (context, state) {
+        if (state.successMessage != null) {
+          _shouldRefreshOnPop = true;
+          AppSnackBar.showSuccess(context, message: state.successMessage!);
+          context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+        } else if (state.errorMessage != null) {
+          AppSnackBar.showError(context, message: state.errorMessage!);
         }
+      },
+      child: BlocBuilder<OrderBloc, OrderState>(
+        builder: (context, state) {
+          if (state.isDetailLoading && state.orderDetail == null) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
 
-        if (snapshot.hasError) {
-          final errorMsg = snapshot.error.toString();
-          final isPermissionError = errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002');
-          return Scaffold(
-            appBar: AppBar(title: const Text('Chi tiết đơn bán')),
-            body: ErrorState(
-              message: isPermissionError
-                  ? 'Do giới hạn phân quyền phía server, thông tin chi tiết đơn bán chỉ có thể được xem bởi Người mua. Người bán vui lòng sử dụng tính năng "Thao tác thủ công" ở màn hình danh sách bên ngoài.'
-                  : errorMsg,
-              onRetry: _refresh,
-            ),
-          );
-        }
-
-        final order = snapshot.data;
-        if (order == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Chi tiết đơn bán')),
-            body: const EmptyState(
-              title: 'Không tìm thấy đơn hàng',
-              message: 'Đơn hàng không tồn tại hoặc bạn không có quyền xem.',
-            ),
-          );
-        }
-
-        return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, result) {
-            if (didPop) return;
-            Navigator.pop(context, true);
-          },
-          child: LoadingOverlay(
-            isLoading: _isSubmitting,
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text('Đơn bán #${order.id}'),
-                actions: [
-                  IconButton(
-                    tooltip: 'Làm mới',
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
+          if (state.errorMessage != null && state.orderDetail == null) {
+            final errorMsg = state.errorMessage!;
+            final isPermissionError = errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002');
+            return Scaffold(
+              appBar: AppBar(title: const Text('Chi tiết đơn bán')),
+              body: ErrorState(
+                message: isPermissionError
+                    ? 'Do giới hạn phân quyền phía server, thông tin chi tiết đơn bán chỉ có thể được xem bởi Người mua. Người bán vui lòng sử dụng tính năng "Thao tác thủ công" ở màn hình danh sách bên ngoài.'
+                    : errorMsg,
+                onRetry: () {
+                  context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+                },
               ),
-              body: RefreshIndicator(
-                onRefresh: _refresh,
-                child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  children: [
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                StatusChip(
-                                  label: statusLabel(order.status),
-                                  color: statusColor(order.status),
-                                  icon: statusIcon(order.status),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  order.id,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if ((order.createdAt ?? '').isNotEmpty) ...[
-                              const SizedBox(height: AppSpacing.sm),
-                              Text(
-                                'Tạo lúc: ${order.createdAt}',
-                                style: const TextStyle(color: AppColors.textSecondary),
-                              ),
-                            ],
-                            if ((order.buyerName ?? '').isNotEmpty) ...[
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                'Người mua: ${order.buyerName}',
-                                style: const TextStyle(color: AppColors.textSecondary),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
+            );
+          }
+
+          final order = state.orderDetail;
+          if (order == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Chi tiết đơn bán')),
+              body: const EmptyState(
+                title: 'Không tìm thấy đơn hàng',
+                message: 'Đơn hàng không tồn tại hoặc bạn không có quyền xem.',
+              ),
+            );
+          }
+
+          return PopScope(
+            canPop: false,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              Navigator.pop(context, _shouldRefreshOnPop);
+            },
+            child: LoadingOverlay(
+              isLoading: state.isActionInProgress,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text('Đơn bán #${order.id}'),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Làm mới',
+                      onPressed: () {
+                        context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+                      },
+                      icon: const Icon(Icons.refresh),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SectionHeader(title: 'Thông tin đơn hàng'),
-                            const SizedBox(height: AppSpacing.md),
-                            _InfoRow(label: 'Tổng tiền hàng', value: order.total),
-                            _InfoRow(label: 'Phí vận chuyển', value: order.shipFee),
-                            _InfoRow(
-                              label: 'Tổng cộng',
-                              value: order.finalPrice > 0 ? order.finalPrice : (order.total + order.shipFee),
-                            ),
-                            if ((order.buyerName ?? '').isNotEmpty)
-                              _TextInfoRow(label: 'Người nhận', value: order.buyerName!),
-                            if ((order.buyerPhone ?? '').isNotEmpty)
-                              _TextInfoRow(label: 'Số điện thoại', value: order.buyerPhone!),
-                            if ((order.buyerAddress ?? '').isNotEmpty)
-                              _TextInfoRow(label: 'Địa chỉ nhận', value: order.buyerAddress!),
-                            if ((order.note ?? '').isNotEmpty)
-                              _TextInfoRow(label: 'Ghi chú', value: order.note!),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SectionHeader(title: 'Sản phẩm trong đơn'),
-                            const SizedBox(height: AppSpacing.md),
-                            if (order.items.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                                child: Text('Không có dữ liệu sản phẩm.'),
-                              )
-                            else
-                              ...order.items.map(
-                                (item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                                  child: _OrderItemTile(item: item),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SectionHeader(title: 'Lịch sử đơn hàng'),
-                            const SizedBox(height: AppSpacing.md),
-                            FutureBuilder<List<OrderTimelineModel>>(
-                              future: _timelineFuture,
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                                    child: Center(child: CircularProgressIndicator()),
-                                  );
-                                }
-                                if (snapshot.hasError) {
-                                  return ErrorState(
-                                    message: snapshot.error.toString(),
-                                    onRetry: _refresh,
-                                  );
-                                }
-                                final timelines = snapshot.data ?? const <OrderTimelineModel>[];
-                                if (timelines.isEmpty) {
-                                  return const Text('Chưa có lịch sử thay đổi trạng thái.');
-                                }
-                                return Column(
-                                  children: timelines
-                                      .map(
-                                        (timeline) => _TimelineTile(
-                                          timeline: timeline,
-                                        ),
-                                      )
-                                      .toList(),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (order.status == 'pending' || order.status == 'confirmed') ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      Card(
-                        elevation: 1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          side: const BorderSide(color: AppColors.border),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const SectionHeader(title: 'Thao tác đơn hàng'),
-                              const SizedBox(height: AppSpacing.md),
-                              if (order.status == 'pending') ...[
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: () => _handleReject(order),
-                                        icon: const Icon(Icons.close),
-                                        label: const Text('Từ chối'),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: AppColors.danger,
-                                          side: const BorderSide(color: AppColors.danger),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppSpacing.md),
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        onPressed: () => _handleAccept(order),
-                                        icon: const Icon(Icons.check),
-                                        label: const Text('Chấp nhận'),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ] else if (order.status == 'confirmed') ...[
-                                AppButton(
-                                  label: 'Xác nhận gửi hàng',
-                                  icon: Icons.local_shipping_outlined,
-                                  onPressed: () => _handleMarkShipped(order),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.xl),
                   ],
+                ),
+                body: RefreshIndicator(
+                  onRefresh: () async {
+                    final bloc = context.read<OrderBloc>();
+                    bloc.add(OrderDetailRequested(widget.orderId));
+                    await bloc.stream.firstWhere((s) => !s.isDetailLoading);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    children: [
+                      _buildHeader(order),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildOverview(order),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildItems(order),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildTimeline(state),
+                      _buildActions(order),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
+  }
+
+  Widget _buildHeader(OrderModel order) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StatusChip(
+                  label: statusLabel(order.status),
+                  color: statusColor(order.status),
+                  icon: statusIcon(order.status),
+                ),
+                const Spacer(),
+                Text(
+                  order.id,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            if ((order.createdAt ?? '').isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Tạo lúc: ${order.createdAt}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+            if ((order.buyerName ?? '').isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Người mua: ${order.buyerName}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverview(OrderModel order) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(title: 'Thông tin đơn hàng'),
+            const SizedBox(height: AppSpacing.md),
+            _InfoRow(label: 'Tổng tiền hàng', value: order.total),
+            _InfoRow(label: 'Phí vận chuyển', value: order.shipFee),
+            _InfoRow(
+              label: 'Tổng cộng',
+              value: order.finalPrice > 0 ? order.finalPrice : (order.total + order.shipFee),
+            ),
+            if ((order.buyerName ?? '').isNotEmpty)
+              _TextInfoRow(label: 'Người nhận', value: order.buyerName!),
+            if ((order.buyerPhone ?? '').isNotEmpty)
+              _TextInfoRow(label: 'Số điện thoại', value: order.buyerPhone!),
+            if ((order.buyerAddress ?? '').isNotEmpty)
+              _TextInfoRow(label: 'Địa chỉ nhận', value: order.buyerAddress!),
+            if ((order.note ?? '').isNotEmpty)
+              _TextInfoRow(label: 'Ghi chú', value: order.note!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItems(OrderModel order) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(title: 'Sản phẩm trong đơn'),
+            const SizedBox(height: AppSpacing.md),
+            if (order.items.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: Text('Không có dữ liệu sản phẩm.'),
+              )
+            else
+              ...order.items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: _OrderItemTile(item: item),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeline(OrderState state) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(title: 'Lịch sử đơn hàng'),
+            const SizedBox(height: AppSpacing.md),
+            if (state.timeline.isEmpty)
+              const Text('Chưa có lịch sử thay đổi trạng thái.')
+            else
+              Column(
+                children: state.timeline
+                    .map(
+                      (timeline) => _TimelineTile(
+                        timeline: timeline,
+                      ),
+                    )
+                    .toList(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions(OrderModel order) {
+    if (order.status == 'pending' || order.status == 'confirmed') {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.lg),
+        child: Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SectionHeader(title: 'Thao tác đơn hàng'),
+                const SizedBox(height: AppSpacing.md),
+                if (order.status == 'pending') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _submitAction(order, OrderActionType.reject),
+                          icon: const Icon(Icons.close),
+                          label: const Text('Từ chối'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.danger,
+                            side: const BorderSide(color: AppColors.danger),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _submitAction(order, OrderActionType.accept),
+                          icon: const Icon(Icons.check),
+                          label: const Text('Chấp nhận'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (order.status == 'confirmed') ...[
+                  AppButton(
+                    label: 'Xác nhận gửi hàng',
+                    icon: Icons.local_shipping_outlined,
+                    onPressed: () => _submitAction(order, OrderActionType.ship),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 

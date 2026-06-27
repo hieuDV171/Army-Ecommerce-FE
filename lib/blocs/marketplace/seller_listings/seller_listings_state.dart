@@ -1,59 +1,43 @@
-import 'package:army_ecommerce/models/order_model.dart';
+import 'package:army_ecommerce/models/product_model.dart';
 import 'package:equatable/equatable.dart';
 
-class OrderState extends Equatable {
-  final List<OrderModel> orders;
-  final OrderModel? orderDetail;
-  final List<OrderTimelineModel> timeline;
+class SellerListingsState extends Equatable {
+  final List<ProductModel> products;
   final bool isLoading;
   final bool isLoadingMore;
   final bool hasReachedEnd;
-  final bool isDetailLoading;
-  final bool isActionInProgress;
   final String? errorMessage;
   final String? successMessage;
   final int index;
   final int count;
 
-  const OrderState({
-    this.orders = const [],
-    this.orderDetail,
-    this.timeline = const [],
+  const SellerListingsState({
+    this.products = const [],
     this.isLoading = false,
     this.isLoadingMore = false,
     this.hasReachedEnd = false,
-    this.isDetailLoading = false,
-    this.isActionInProgress = false,
     this.errorMessage,
     this.successMessage,
     this.index = 0,
     this.count = 20,
   });
 
-  OrderState copyWith({
-    List<OrderModel>? orders,
-    OrderModel? orderDetail,
-    List<OrderTimelineModel>? timeline,
+  SellerListingsState copyWith({
+    List<ProductModel>? products,
     bool? isLoading,
     bool? isLoadingMore,
     bool? hasReachedEnd,
-    bool? isDetailLoading,
-    bool? isActionInProgress,
     String? errorMessage,
     String? successMessage,
     int? index,
     int? count,
     bool clearMessages = false,
   }) {
-    return OrderState(
-      orders: orders ?? this.orders,
-      orderDetail: orderDetail ?? this.orderDetail,
-      timeline: timeline ?? this.timeline,
+    return SellerListingsState(
+      products: products ?? this.products,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
-      isDetailLoading: isDetailLoading ?? this.isDetailLoading,
-      isActionInProgress: isActionInProgress ?? this.isActionInProgress,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
       successMessage: clearMessages ? null : successMessage ?? this.successMessage,
       index: index ?? this.index,
@@ -63,14 +47,10 @@ class OrderState extends Equatable {
 
   @override
   List<Object?> get props => [
-        orders,
-        orderDetail,
-        timeline,
+        products,
         isLoading,
         isLoadingMore,
         hasReachedEnd,
-        isDetailLoading,
-        isActionInProgress,
         errorMessage,
         successMessage,
         index,

@@ -10,6 +10,9 @@ import 'package:army_ecommerce/ui/util/widgets/price_text.dart';
 import 'package:army_ecommerce/ui/util/widgets/status_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_state.dart';
 
 import 'widgets/order_card.dart';
 import 'seller_order_detail_page.dart';
@@ -59,24 +62,33 @@ class SellerOrdersPage extends StatelessWidget {
   }
 }
 
-class _SellerOrderList extends StatefulWidget {
+class _SellerOrderList extends StatelessWidget {
   final String? stateFilter;
 
   const _SellerOrderList({required this.stateFilter});
 
   @override
-  State<_SellerOrderList> createState() => _SellerOrderListState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => OrderBloc(
+        marketplaceRepository: context.read<MarketplaceRepository>(),
+      )..add(OrderListRequested(isSeller: true, stateFilter: stateFilter)),
+      child: _SellerOrderListView(stateFilter: stateFilter),
+    );
+  }
 }
 
-class _SellerOrderListState extends State<_SellerOrderList> {
+class _SellerOrderListView extends StatefulWidget {
+  final String? stateFilter;
+
+  const _SellerOrderListView({required this.stateFilter});
+
+  @override
+  State<_SellerOrderListView> createState() => _SellerOrderListViewState();
+}
+
+class _SellerOrderListViewState extends State<_SellerOrderListView> {
   final ScrollController _scrollController = ScrollController();
-  List<OrderModel> _orders = [];
-  int _currentIndex = 0;
-  bool _isLoading = false;
-  bool _isLoadingMore = false;
-  bool _hasReachedEnd = false;
-  String? _error;
-  bool _isActionInProgress = false;
   bool _isManualActionExpanded = false;
 
   late final TextEditingController _manualPurchaseIdController;
@@ -86,7 +98,6 @@ class _SellerOrderListState extends State<_SellerOrderList> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _load();
     _manualPurchaseIdController = TextEditingController();
     _manualBuyerIdController = TextEditingController();
   }
@@ -105,263 +116,47 @@ class _SellerOrderListState extends State<_SellerOrderList> {
     if (!_scrollController.hasClients) return;
     final threshold = _scrollController.position.maxScrollExtent - 240;
     if (_scrollController.position.pixels >= threshold) {
-      _loadMore();
-    }
-  }
-
-  Future<void> _load() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _orders = [];
-      _currentIndex = 0;
-      _hasReachedEnd = false;
-    });
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final list = await repository.getOrdersSeller(
-        state: widget.stateFilter,
-        index: 0,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _orders = list;
-        _currentIndex = list.length;
-        _hasReachedEnd = list.length < 20;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || _hasReachedEnd || _isLoading) return;
-    if (!mounted) return;
-    setState(() => _isLoadingMore = true);
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final list = await repository.getOrdersSeller(
-        state: widget.stateFilter,
-        index: _currentIndex,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _orders = [..._orders, ...list];
-        _currentIndex += list.length;
-        _hasReachedEnd = list.length < 20;
-        _isLoadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingMore = false;
-      });
-    }
-  }
-
-  Future<void> _refresh() async {
-    await _load();
-  }
-
-  Future<void> _handleAccept(OrderModel order) async {
-    final repository = context.read<MarketplaceRepository>();
-    setState(() => _isActionInProgress = true);
-    try {
-      String? buyerId = order.buyerId;
-      if (buyerId == null) {
-        final detail = await repository.getOrderDetail(order.id);
-        buyerId = detail?.buyerId;
-      }
-      if (buyerId == null) {
-        if (!mounted) return;
-        AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-        return;
-      }
-      await repository.setAcceptBuyer(
-            order.id,
-            buyerId,
-            true,
+      context.read<OrderBloc>().add(
+            OrderLoadMoreRequested(isSeller: true, stateFilter: widget.stateFilter),
           );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: 'Đã chấp nhận đơn hàng');
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      final errorMsg = e.toString();
-      if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
-        AppSnackBar.showError(
-          context,
-          message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
-        );
-      } else {
-        AppSnackBar.showError(context, message: 'Lỗi: $e');
-      }
-    } finally {
-      if (mounted) setState(() => _isActionInProgress = false);
     }
   }
 
-  Future<void> _handleReject(OrderModel order) async {
-    final repository = context.read<MarketplaceRepository>();
-    setState(() => _isActionInProgress = true);
-    try {
-      String? buyerId = order.buyerId;
-      if (buyerId == null) {
-        final detail = await repository.getOrderDetail(order.id);
-        buyerId = detail?.buyerId;
-      }
-      if (buyerId == null) {
-        if (!mounted) return;
-        AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-        return;
-      }
-      await repository.setAcceptBuyer(
-            order.id,
-            buyerId,
-            false,
-          );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: 'Đã từ chối đơn hàng');
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      final errorMsg = e.toString();
-      if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
-        AppSnackBar.showError(
-          context,
-          message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
+  void _handleAction(OrderModel order, OrderActionType actionType) {
+    context.read<OrderBloc>().add(
+          OrderActionRequested(
+            order: order,
+            actionType: actionType,
+          ),
         );
-      } else {
-        AppSnackBar.showError(context, message: 'Lỗi: $e');
-      }
-    } finally {
-      if (mounted) setState(() => _isActionInProgress = false);
-    }
   }
 
-  Future<void> _handleMarkShipped(OrderModel order) async {
-    final repository = context.read<MarketplaceRepository>();
-    setState(() => _isActionInProgress = true);
-    try {
-      String? buyerId = order.buyerId;
-      if (buyerId == null) {
-        final detail = await repository.getOrderDetail(order.id);
-        buyerId = detail?.buyerId;
-      }
-      if (buyerId == null) {
-        if (!mounted) return;
-        AppSnackBar.showError(context, message: 'Không tìm thấy ID người mua');
-        return;
-      }
-      await repository.sellerMarkAsShipped(
-            order.id,
+  void _handleManualAction(OrderActionType actionType) {
+    final purchaseId = _manualPurchaseIdController.text.trim();
+    final buyerId = _manualBuyerIdController.text.trim();
+    if (purchaseId.isEmpty || buyerId.isEmpty) {
+      AppSnackBar.showError(context, message: 'Vui lòng nhập đầy đủ mã đơn và mã người mua');
+      return;
+    }
+
+    final dummyOrder = OrderModel(
+      id: purchaseId,
+      buyerId: buyerId,
+      status: '',
+      total: 0,
+      shipFee: 0,
+      finalPrice: 0,
+      summary: '',
+      items: const [],
+    );
+
+    context.read<OrderBloc>().add(
+          OrderActionRequested(
+            order: dummyOrder,
+            actionType: actionType,
             buyerId: buyerId,
-          );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: 'Đơn hàng đã được đánh dấu vận chuyển');
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      final errorMsg = e.toString();
-      if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
-        AppSnackBar.showError(
-          context,
-          message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
+          ),
         );
-      } else {
-        AppSnackBar.showError(context, message: 'Lỗi: $e');
-      }
-    } finally {
-      if (mounted) setState(() => _isActionInProgress = false);
-    }
-  }
-
-  Future<void> _handleManualAccept() async {
-    final purchaseId = _manualPurchaseIdController.text.trim();
-    final buyerId = _manualBuyerIdController.text.trim();
-    if (purchaseId.isEmpty || buyerId.isEmpty) {
-      AppSnackBar.showError(context, message: 'Vui lòng nhập đầy đủ mã đơn và mã người mua');
-      return;
-    }
-    setState(() => _isActionInProgress = true);
-    try {
-      await context.read<MarketplaceRepository>().setAcceptBuyer(
-            purchaseId,
-            buyerId,
-            true,
-          );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: 'Đã chấp nhận đơn hàng $purchaseId');
-      _manualPurchaseIdController.clear();
-      _manualBuyerIdController.clear();
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
-    } finally {
-      if (mounted) setState(() => _isActionInProgress = false);
-    }
-  }
-
-  Future<void> _handleManualReject() async {
-    final purchaseId = _manualPurchaseIdController.text.trim();
-    final buyerId = _manualBuyerIdController.text.trim();
-    if (purchaseId.isEmpty || buyerId.isEmpty) {
-      AppSnackBar.showError(context, message: 'Vui lòng nhập đầy đủ mã đơn và mã người mua');
-      return;
-    }
-    setState(() => _isActionInProgress = true);
-    try {
-      await context.read<MarketplaceRepository>().setAcceptBuyer(
-            purchaseId,
-            buyerId,
-            false,
-          );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: 'Đã từ chối đơn hàng $purchaseId');
-      _manualPurchaseIdController.clear();
-      _manualBuyerIdController.clear();
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
-    } finally {
-      if (mounted) setState(() => _isActionInProgress = false);
-    }
-  }
-
-  Future<void> _handleManualMarkShipped() async {
-    final purchaseId = _manualPurchaseIdController.text.trim();
-    final buyerId = _manualBuyerIdController.text.trim();
-    if (purchaseId.isEmpty || buyerId.isEmpty) {
-      AppSnackBar.showError(context, message: 'Vui lòng nhập đầy đủ mã đơn và mã người mua');
-      return;
-    }
-    setState(() => _isActionInProgress = true);
-    try {
-      await context.read<MarketplaceRepository>().sellerMarkAsShipped(
-            purchaseId,
-            buyerId: buyerId,
-          );
-      if (!mounted) return;
-      AppSnackBar.showSuccess(context, message: 'Đơn hàng $purchaseId đã được đánh dấu vận chuyển');
-      _manualPurchaseIdController.clear();
-      _manualBuyerIdController.clear();
-      _refresh();
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: 'Lỗi: $e');
-    } finally {
-      if (mounted) setState(() => _isActionInProgress = false);
-    }
   }
 
   Widget _buildManualActionCard() {
@@ -430,7 +225,7 @@ class _SellerOrderListState extends State<_SellerOrderList> {
                 children: [
                   if (isPending) ...[
                     OutlinedButton(
-                      onPressed: _handleManualReject,
+                      onPressed: () => _handleManualAction(OrderActionType.reject),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.danger,
                         side: const BorderSide(color: AppColors.danger),
@@ -439,12 +234,12 @@ class _SellerOrderListState extends State<_SellerOrderList> {
                     ),
                     const SizedBox(width: AppSpacing.md),
                     ElevatedButton(
-                      onPressed: _handleManualAccept,
+                      onPressed: () => _handleManualAction(OrderActionType.accept),
                       child: const Text('Chấp nhận'),
                     ),
                   ] else ...[
                     ElevatedButton.icon(
-                      onPressed: _handleManualMarkShipped,
+                      onPressed: () => _handleManualAction(OrderActionType.ship),
                       icon: const Icon(Icons.local_shipping_outlined, size: 16),
                       label: const Text('Xác nhận gửi hàng'),
                     ),
@@ -462,181 +257,220 @@ class _SellerOrderListState extends State<_SellerOrderList> {
   Widget build(BuildContext context) {
     final showCard = widget.stateFilter == 'pending' || widget.stateFilter == 'confirmed';
 
-    Widget content;
-
-    if (_isLoading && _orders.isEmpty) {
-      content = const Center(child: CircularProgressIndicator());
-    } else if (_error != null && _orders.isEmpty) {
-      content = ErrorState(
-        message: _error!,
-        onRetry: _refresh,
-      );
-    } else if (_orders.isEmpty) {
-      content = const EmptyState(
-        title: 'Chưa có đơn hàng nào',
-        message: 'Các đơn hàng bạn bán sẽ hiển thị ở đây.',
-      );
-    } else {
-      content = RefreshIndicator(
-        onRefresh: _refresh,
-        child: ListView.separated(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          itemCount: _orders.length + (_isLoadingMore ? 1 : 0),
-          separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, index) {
-            if (index == _orders.length) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.md),
-                  child: CircularProgressIndicator(),
-                ),
+    return BlocListener<OrderBloc, OrderState>(
+      listener: (context, state) {
+        if (state.successMessage != null) {
+          AppSnackBar.showSuccess(context, message: state.successMessage!);
+          _manualPurchaseIdController.clear();
+          _manualBuyerIdController.clear();
+          context.read<OrderBloc>().add(
+                OrderListRequested(isSeller: true, stateFilter: widget.stateFilter, isRefresh: true),
               );
-            }
+        } else if (state.errorMessage != null) {
+          final errorMsg = state.errorMessage!;
+          if (errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002')) {
+            AppSnackBar.showError(
+              context,
+              message: 'Không thể tự động lấy mã người mua do giới hạn của server. Vui lòng dùng ô "Thao tác thủ công" ở đầu trang.',
+            );
+          } else {
+            AppSnackBar.showError(context, message: 'Lỗi: $errorMsg');
+          }
+        }
+      },
+      child: BlocBuilder<OrderBloc, OrderState>(
+        builder: (context, state) {
+          Widget content;
 
-            final order = _orders[index];
-            return Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              child: InkWell(
-                onTap: () async {
-                  final updated = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SellerOrderDetailPage(orderId: order.id),
-                    ),
-                  );
-                  if (updated == true) {
-                    _refresh();
+          if (state.isLoading && state.orders.isEmpty) {
+            content = const Center(child: CircularProgressIndicator());
+          } else if (state.errorMessage != null && state.orders.isEmpty) {
+            content = ErrorState(
+              message: state.errorMessage!,
+              onRetry: () {
+                context.read<OrderBloc>().add(
+                      OrderListRequested(isSeller: true, stateFilter: widget.stateFilter, isRefresh: true),
+                    );
+              },
+            );
+          } else if (state.orders.isEmpty) {
+            content = const EmptyState(
+              title: 'Chưa có đơn hàng nào',
+              message: 'Các đơn hàng bạn bán sẽ hiển thị ở đây.',
+            );
+          } else {
+            content = RefreshIndicator(
+              onRefresh: () async {
+                final bloc = context.read<OrderBloc>();
+                bloc.add(
+                  OrderListRequested(isSeller: true, stateFilter: widget.stateFilter, isRefresh: true),
+                );
+                await bloc.stream.firstWhere((s) => !s.isLoading);
+              },
+              child: ListView.separated(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                itemCount: state.orders.length + (state.isLoadingMore ? 1 : 0),
+                separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+                itemBuilder: (context, index) {
+                  if (index == state.orders.length) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppSpacing.md),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
                   }
-                },
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 22,
-                            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                            child: const Icon(Icons.storefront_outlined, color: AppColors.primary),
+
+                  final order = state.orders[index];
+                  return Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    child: InkWell(
+                      onTap: () async {
+                        final updated = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SellerOrderDetailPage(orderId: order.id),
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
+                        );
+                        if (updated == true && context.mounted) {
+                          context.read<OrderBloc>().add(
+                                OrderListRequested(isSeller: true, stateFilter: widget.stateFilter, isRefresh: true),
+                              );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  order.summary,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
+                                CircleAvatar(
+                                  radius: 22,
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                                  child: const Icon(Icons.storefront_outlined, color: AppColors.primary),
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        order.summary,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppSpacing.xs),
+                                      Text(
+                                        'Mã đơn: ${order.id}',
+                                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                      ),
+                                      if ((order.buyerName ?? '').isNotEmpty) ...[
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(
+                                          'Người mua: ${order.buyerName}',
+                                          style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                      if ((order.createdAt ?? '').isNotEmpty) ...[
+                                        const SizedBox(height: AppSpacing.xs),
+                                        Text(
+                                          order.createdAt!,
+                                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  'Mã đơn: ${order.id}',
-                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                const SizedBox(width: AppSpacing.sm),
+                                StatusChip(
+                                  label: statusLabel(order.status),
+                                  color: statusColor(order.status),
+                                  icon: statusIcon(order.status),
                                 ),
-                                if ((order.buyerName ?? '').isNotEmpty) ...[
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text(
-                                    'Người mua: ${order.buyerName}',
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                                if ((order.createdAt ?? '').isNotEmpty) ...[
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Text(
-                                    order.createdAt!,
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                  ),
-                                ],
                               ],
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          StatusChip(
-                            label: statusLabel(order.status),
-                            color: statusColor(order.status),
-                            icon: statusIcon(order.status),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              order.items.isEmpty
-                                  ? '0 sản phẩm'
-                                  : '${order.items.length} sản phẩm',
-                              style: const TextStyle(color: AppColors.textSecondary),
-                            ),
-                          ),
-                          PriceText(price: order.finalPrice > 0 ? order.finalPrice : order.total),
-                        ],
-                      ),
-                      if (order.status == 'pending' || order.status == 'confirmed') ...[
-                        const Divider(height: AppSpacing.lg),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (order.status == 'pending') ...[
-                              OutlinedButton(
-                                onPressed: () => _handleReject(order),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.danger,
-                                  side: const BorderSide(color: AppColors.danger),
+                            const SizedBox(height: AppSpacing.md),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    order.items.isEmpty ? '0 sản phẩm' : '${order.items.length} sản phẩm',
+                                    style: const TextStyle(color: AppColors.textSecondary),
+                                  ),
                                 ),
-                                child: const Text('Từ chối'),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              ElevatedButton(
-                                onPressed: () => _handleAccept(order),
-                                child: const Text('Chấp nhận'),
-                              ),
-                            ] else if (order.status == 'confirmed') ...[
-                              ElevatedButton.icon(
-                                onPressed: () => _handleMarkShipped(order),
-                                icon: const Icon(Icons.local_shipping_outlined, size: 16),
-                                label: const Text('Xác nhận gửi hàng'),
+                                PriceText(price: order.finalPrice > 0 ? order.finalPrice : order.total),
+                              ],
+                            ),
+                            if (order.status == 'pending' || order.status == 'confirmed') ...[
+                              const Divider(height: AppSpacing.lg),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (order.status == 'pending') ...[
+                                    OutlinedButton(
+                                      onPressed: () => _handleAction(order, OrderActionType.reject),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.danger,
+                                        side: const BorderSide(color: AppColors.danger),
+                                      ),
+                                      child: const Text('Từ chối'),
+                                    ),
+                                    const SizedBox(width: AppSpacing.md),
+                                    ElevatedButton(
+                                      onPressed: () => _handleAction(order, OrderActionType.accept),
+                                      child: const Text('Chấp nhận'),
+                                    ),
+                                  ] else if (order.status == 'confirmed') ...[
+                                    ElevatedButton.icon(
+                                      onPressed: () => _handleAction(order, OrderActionType.ship),
+                                      icon: const Icon(Icons.local_shipping_outlined, size: 16),
+                                      label: const Text('Xác nhận gửi hàng'),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ],
                         ),
-                      ],
-                    ],
-                  ),
-                ),
+                      ),
+                    ),
+                  );
+                },
               ),
             );
-          },
-        ),
-      );
-    }
+          }
 
-    if (showCard) {
-      content = Column(
-        children: [
-          _buildManualActionCard(),
-          Expanded(child: content),
-        ],
-      );
-    }
+          if (showCard) {
+            content = Column(
+              children: [
+                _buildManualActionCard(),
+                Expanded(child: content),
+              ],
+            );
+          }
 
-    return LoadingOverlay(
-      isLoading: _isActionInProgress,
-      child: content,
+          return LoadingOverlay(
+            isLoading: state.isActionInProgress,
+            child: content,
+          );
+        },
+      ),
     );
   }
 }

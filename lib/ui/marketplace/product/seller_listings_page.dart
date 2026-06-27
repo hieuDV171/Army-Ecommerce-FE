@@ -1,6 +1,9 @@
 import 'package:army_ecommerce/models/product_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/seller_listings/seller_listings_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/seller_listings/seller_listings_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/seller_listings/seller_listings_state.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
 import 'package:army_ecommerce/blocs/auth/auth_bloc.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
@@ -38,31 +41,38 @@ import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import '../../util/widgets/avatar_with_frame.dart';
 import '../../util/widgets/status_bubble.dart';
 
-class SellerListingsPage extends StatefulWidget {
+class SellerListingsPage extends StatelessWidget {
   final String userId;
 
   const SellerListingsPage({super.key, required this.userId});
 
   @override
-  State<SellerListingsPage> createState() => _SellerListingsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => SellerListingsBloc(
+        marketplaceRepository: context.read<MarketplaceRepository>(),
+      )..add(SellerListingsRequested(userId)),
+      child: _SellerListingsView(userId: userId),
+    );
+  }
 }
 
-class _SellerListingsPageState extends State<SellerListingsPage> {
-  late final MarketplaceRepository _repository;
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
-  String? _error;
-  List<ProductModel> _products = [];
-  int _currentIndex = 0;
-  bool _hasReachedEnd = false;
+class _SellerListingsView extends StatefulWidget {
+  final String userId;
+
+  const _SellerListingsView({required this.userId});
+
+  @override
+  State<_SellerListingsView> createState() => _SellerListingsViewState();
+}
+
+class _SellerListingsViewState extends State<_SellerListingsView> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _repository = context.read<MarketplaceRepository>();
     _scrollController.addListener(_onScroll);
-    _loadProducts();
   }
 
   @override
@@ -77,100 +87,16 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
     if (!_scrollController.hasClients) return;
     final threshold = _scrollController.position.maxScrollExtent - 360;
     if (_scrollController.position.pixels >= threshold) {
-      _loadMore();
+      context.read<SellerListingsBloc>().add(SellerListingsLoadMoreRequested(widget.userId));
     }
   }
 
-  Future<void> _loadProducts() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _products = [];
-      _currentIndex = 0;
-      _hasReachedEnd = false;
-    });
-
-    try {
-      final products = await _repository.getUserListings(
-        userId: widget.userId,
-        index: 0,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _products = products;
-        _currentIndex = 1;
-        _hasReachedEnd = products.length < 20;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+  void _loadProducts() {
+    context.read<SellerListingsBloc>().add(SellerListingsRequested(widget.userId, isRefresh: true));
   }
 
-  Future<void> _toggleLikeProduct(ProductModel product) async {
-    final originalIsLiked = product.isLiked;
-    final originalLikeCount = product.likeCount;
-
-    setState(() {
-      final index = _products.indexWhere((p) => p.id == product.id);
-      if (index != -1) {
-        final newIsLiked = !originalIsLiked;
-        final newLikeCount = newIsLiked
-            ? originalLikeCount + 1
-            : (originalLikeCount - 1).clamp(0, 999999).toInt();
-        _products[index] = _products[index].copyWith(
-          isLiked: newIsLiked,
-          likeCount: newLikeCount,
-        );
-      }
-    });
-
-    try {
-      await _repository.likeProduct(product.id);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        final index = _products.indexWhere((p) => p.id == product.id);
-        if (index != -1) {
-          _products[index] = _products[index].copyWith(
-            isLiked: originalIsLiked,
-            likeCount: originalLikeCount,
-          );
-        }
-      });
-      AppSnackBar.showError(context, message: e.toString());
-    }
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || _hasReachedEnd || _isLoading) return;
-
-    setState(() => _isLoadingMore = true);
-    try {
-      final products = await _repository.getUserListings(
-        userId: widget.userId,
-        index: _currentIndex,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        _products = [..._products, ...products];
-        _currentIndex += 1;
-        _hasReachedEnd = products.length < 20;
-        _isLoadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _isLoadingMore = false;
-      });
-    }
+  void _toggleLikeProduct(ProductModel product) {
+    context.read<SellerListingsBloc>().add(SellerListingsLikeToggled(product));
   }
 
   @override
@@ -181,78 +107,85 @@ class _SellerListingsPageState extends State<SellerListingsPage> {
         currentUserId.isNotEmpty &&
         currentUserId.toString() == widget.userId.toString();
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sản phẩm người bán')),
-      floatingActionButton: isOwnListings
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProductFormPage()),
-                );
-                if (result == true) {
-                  _loadProducts();
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Thêm sản phẩm'),
-              backgroundColor: context.specialTheme.primaryColor,
-              foregroundColor: Colors.white,
-            )
-          : null,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null && _products.isEmpty
-          ? ErrorState(message: _error!, onRetry: _loadProducts)
-          : _products.isEmpty
-          ? const EmptyState(title: 'Chưa có sản phẩm')
-          : RefreshIndicator(
-              onRefresh: () async => _loadProducts(),
-              child: CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                      AppSpacing.lg,
-                    ),
-                    sliver: SliverGrid.builder(
-                      itemCount: _products.length + (_isLoadingMore ? 1 : 0),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: AppSpacing.md,
-                            crossAxisSpacing: AppSpacing.md,
-                            childAspectRatio: 0.51,
-                          ),
-                      itemBuilder: (context, index) {
-                        if (index >= _products.length) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        final product = _products[index];
-                        return ProductCard(
-                          product: productCardDataFromModel(product),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailPage(
-                                productId: product.id,
-                                isStock: product.isStock,
+    return BlocConsumer<SellerListingsBloc, SellerListingsState>(
+      listener: (context, state) {
+        if (state.errorMessage != null) {
+          AppSnackBar.showError(context, message: state.errorMessage!);
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Sản phẩm người bán')),
+          floatingActionButton: isOwnListings
+              ? FloatingActionButton.extended(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProductFormPage()),
+                    );
+                    if (result == true) {
+                      _loadProducts();
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Thêm sản phẩm'),
+                  backgroundColor: context.specialTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                )
+              : null,
+          body: state.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : state.errorMessage != null && state.products.isEmpty
+              ? ErrorState(message: state.errorMessage!, onRetry: _loadProducts)
+              : state.products.isEmpty
+              ? const EmptyState(title: 'Chưa có sản phẩm')
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    _loadProducts();
+                    await context.read<SellerListingsBloc>().stream.firstWhere((s) => !s.isLoading);
+                  },
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        sliver: SliverGrid.builder(
+                          itemCount: state.products.length + (state.isLoadingMore ? 1 : 0),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: AppSpacing.md,
+                                crossAxisSpacing: AppSpacing.md,
+                                childAspectRatio: 0.51,
                               ),
-                            ),
-                          ).then((_) => _loadProducts()),
-                          onLikeTap: () => _toggleLikeProduct(product),
-                        );
-                      },
-                    ),
+                          itemBuilder: (context, index) {
+                            if (index >= state.products.length) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            final product = state.products[index];
+                            return ProductCard(
+                              product: productCardDataFromModel(product),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProductDetailPage(
+                                    productId: product.id,
+                                    isStock: product.isStock,
+                                  ),
+                                ),
+                              ).then((_) => _loadProducts()),
+                              onLikeTap: () => _toggleLikeProduct(product),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+        );
+      },
     );
   }
 }

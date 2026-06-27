@@ -18,6 +18,8 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     on<ProductSearchProductLikeToggled>(_onProductLikeToggled);
     on<ProductSearchSavedSearchesRequested>(_onSavedSearchesRequested);
     on<ProductSearchDelSavedSearchRequested>(_onDelSavedSearchRequested);
+    on<ProductSearchCategoriesRequested>(_onCategoriesRequested);
+    on<ProductSearchCategoriesLoadMoreRequested>(_onCategoriesLoadMoreRequested);
   }
 
   Future<void> _onRequested(
@@ -265,6 +267,69 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
       emit(state.copyWith(savedSearches: updatedList));
     } catch (error) {
       emit(state.copyWith(errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onCategoriesRequested(
+    ProductSearchCategoriesRequested event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    emit(state.copyWith(
+      isCategoriesLoading: true,
+      categoriesIndex: 0,
+      hasReachedEndCategories: false,
+      clearError: true,
+    ));
+    try {
+      final categories = await marketplaceRepository.getCategories(
+        parentId: 0,
+        index: 0,
+        count: state.categoriesCount,
+      );
+      emit(
+        state.copyWith(
+          categories: categories,
+          isCategoriesLoading: false,
+          hasReachedEndCategories: categories.length < state.categoriesCount,
+          categoriesIndex: categories.length,
+          clearError: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isCategoriesLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onCategoriesLoadMoreRequested(
+    ProductSearchCategoriesLoadMoreRequested event,
+    Emitter<ProductSearchState> emit,
+  ) async {
+    if (state.isCategoriesLoadingMore || state.hasReachedEndCategories) return;
+    emit(state.copyWith(isCategoriesLoadingMore: true, clearError: true));
+    try {
+      final more = await marketplaceRepository.getCategories(
+        parentId: 0,
+        index: state.categoriesIndex,
+        count: state.categoriesCount,
+      );
+      final updatedCategories = [...state.categories];
+      final existingIds = updatedCategories.map((c) => c.id).toSet();
+      for (final c in more) {
+        if (!existingIds.contains(c.id)) {
+          updatedCategories.add(c);
+        }
+      }
+      emit(
+        state.copyWith(
+          categories: updatedCategories,
+          isCategoriesLoadingMore: false,
+          hasReachedEndCategories: more.length < state.categoriesCount,
+          categoriesIndex: updatedCategories.length,
+          clearError: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isCategoriesLoadingMore: false, errorMessage: error.toString()));
     }
   }
 }

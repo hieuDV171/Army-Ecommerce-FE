@@ -69,6 +69,16 @@ class ProvinceModel {
       name: readString(json, ['name'], fallback: ''),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProvinceModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class WardModel {
@@ -89,4 +99,14 @@ class WardModel {
       provinceId: readInt(json, ['province_id', 'provinces_id']) ?? 0,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WardModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

@@ -11,6 +11,13 @@ class ProductDetailState extends Equatable {
   final String? errorMessage;
   final String? successMessage;
 
+  final List<RateModel> rates;
+  final bool isLoadingRates;
+  final bool isFetchingMoreRates;
+  final bool hasMoreRates;
+  final int selectedStarFilter;
+  final bool isDeleted;
+
   const ProductDetailState({
     this.product,
     this.comments = const [],
@@ -20,6 +27,12 @@ class ProductDetailState extends Equatable {
     this.hasMoreComments = true,
     this.errorMessage,
     this.successMessage,
+    this.rates = const [],
+    this.isLoadingRates = false,
+    this.isFetchingMoreRates = false,
+    this.hasMoreRates = true,
+    this.selectedStarFilter = 0,
+    this.isDeleted = false,
   });
 
   ProductDetailState copyWith({
@@ -31,6 +44,12 @@ class ProductDetailState extends Equatable {
     bool? hasMoreComments,
     String? errorMessage,
     String? successMessage,
+    List<RateModel>? rates,
+    bool? isLoadingRates,
+    bool? isFetchingMoreRates,
+    bool? hasMoreRates,
+    int? selectedStarFilter,
+    bool? isDeleted,
     bool clearMessages = false,
   }) {
     return ProductDetailState(
@@ -42,18 +61,30 @@ class ProductDetailState extends Equatable {
       hasMoreComments: hasMoreComments ?? this.hasMoreComments,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
       successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      rates: rates ?? this.rates,
+      isLoadingRates: isLoadingRates ?? this.isLoadingRates,
+      isFetchingMoreRates: isFetchingMoreRates ?? this.isFetchingMoreRates,
+      hasMoreRates: hasMoreRates ?? this.hasMoreRates,
+      selectedStarFilter: selectedStarFilter ?? this.selectedStarFilter,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
   @override
   List<Object?> get props => [
-    product,
-    comments,
-    isLoading,
-    isSubmitting,
-    isFetchingMoreComments,
-    hasMoreComments,
-    errorMessage,
-    successMessage,
-  ];
+        product,
+        comments,
+        isLoading,
+        isSubmitting,
+        isFetchingMoreComments,
+        hasMoreComments,
+        errorMessage,
+        successMessage,
+        rates,
+        isLoadingRates,
+        isFetchingMoreRates,
+        hasMoreRates,
+        selectedStarFilter,
+        isDeleted,
+      ];
 }

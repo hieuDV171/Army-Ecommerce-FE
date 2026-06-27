@@ -5,7 +5,6 @@ import 'package:army_ecommerce/models/address_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../repositories/marketplace_repository.dart';
 import '../../util/constants/app_colors.dart';
 import '../../util/constants/app_radius.dart';
 import '../../util/constants/app_spacing.dart';
@@ -37,12 +36,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
   bool _isSubmitting = false;
   String? _selectedTag;
 
-  List<ProvinceModel> _provinces = [];
-  List<WardModel> _wards = [];
   ProvinceModel? _selectedProvinceModel;
   WardModel? _selectedWardModel;
-  bool _isLoadingProvinces = false;
-  bool _isLoadingWards = false;
 
   final List<Map<String, dynamic>> _presetLocations = const [
     {'name': 'Hồ Hoàn Kiếm, Hà Nội', 'lat': 21.0285, 'lng': 105.8542},
@@ -103,65 +98,12 @@ class _AddressFormPageState extends State<AddressFormPage> {
     super.dispose();
   }
 
-  Future<void> _loadProvinces() async {
-    if (!mounted) return;
-    setState(() => _isLoadingProvinces = true);
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final provinces = await repository.getProvinces();
-      if (!mounted) return;
-      setState(() {
-        _provinces = provinces;
-        _isLoadingProvinces = false;
-
-        if (_isEditMode && widget.address?.province != null) {
-          final matched = provinces.firstWhere(
-            (p) => p.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase(),
-            orElse: () => provinces.first,
-          );
-          _selectedProvinceModel = matched;
-        } else if (provinces.isNotEmpty) {
-          _selectedProvinceModel = provinces.first;
-        }
-      });
-      if (_selectedProvinceModel != null) {
-        await _loadWards(_selectedProvinceModel!.id);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingProvinces = false);
-      AppSnackBar.showError(context, message: 'Lỗi tải danh mục tỉnh/thành phố: $e');
-    }
+  void _loadProvinces() {
+    context.read<AddressBloc>().add(ProvincesRequested());
   }
 
-  Future<void> _loadWards(int provinceId) async {
-    if (!mounted) return;
-    setState(() => _isLoadingWards = true);
-    try {
-      final repository = context.read<MarketplaceRepository>();
-      final wards = await repository.getWards(provinceId);
-      if (!mounted) return;
-      setState(() {
-        _wards = wards;
-        _isLoadingWards = false;
-
-        if (_isEditMode && widget.address?.district != null && _selectedProvinceModel != null && _selectedProvinceModel!.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase()) {
-          final matched = wards.firstWhere(
-            (w) => w.name.trim().toLowerCase() == widget.address!.district!.trim().toLowerCase(),
-            orElse: () => wards.first,
-          );
-          _selectedWardModel = matched;
-        } else if (wards.isNotEmpty) {
-          _selectedWardModel = wards.first;
-        } else {
-          _selectedWardModel = null;
-        }
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingWards = false);
-      AppSnackBar.showError(context, message: 'Lỗi tải danh mục phường/xã: $e');
-    }
+  void _loadWards(int provinceId) {
+    context.read<AddressBloc>().add(WardsRequested(provinceId));
   }
 
   void _showLocationPicker(BuildContext context) {
@@ -313,232 +255,268 @@ class _AddressFormPageState extends State<AddressFormPage> {
         } else if (state.errorMessage != null) {
           AppSnackBar.show(context, message: state.errorMessage!, backgroundColor: AppColors.danger);
         }
+
+        // Handle provinces loaded
+        if (state.provinces.isNotEmpty && _selectedProvinceModel == null) {
+          setState(() {
+            if (_isEditMode && widget.address?.province != null) {
+              final matched = state.provinces.firstWhere(
+                (p) => p.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase(),
+                orElse: () => state.provinces.first,
+              );
+              _selectedProvinceModel = matched;
+            } else {
+              _selectedProvinceModel = state.provinces.first;
+            }
+          });
+          if (_selectedProvinceModel != null) {
+            _loadWards(_selectedProvinceModel!.id);
+          }
+        }
+
+        // Handle wards loaded
+        if (state.wards.isNotEmpty && _selectedWardModel == null) {
+          setState(() {
+            if (_isEditMode && widget.address?.district != null && _selectedProvinceModel != null && _selectedProvinceModel!.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase()) {
+              final matched = state.wards.firstWhere(
+                (w) => w.name.trim().toLowerCase() == widget.address!.district!.trim().toLowerCase(),
+                orElse: () => state.wards.first,
+              );
+              _selectedWardModel = matched;
+            } else {
+              _selectedWardModel = state.wards.first;
+            }
+          });
+        }
       },
-      child: LoadingOverlay(
-        isLoading: _isSubmitting,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(_isEditMode ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới'),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Tên địa chỉ (Tùy chọn)',
-                  style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  children: ['Nhà riêng', 'Văn phòng', 'Trường học', 'Khác'].map((tag) {
-                    final isSelected = _selectedTag == tag;
-                    return ChoiceChip(
-                      label: Text(tag),
-                      selected: isSelected,
-                      selectedColor: context.specialTheme.primaryColor.withValues(alpha: 0.2),
-                      checkmarkColor: context.specialTheme.primaryColor,
-                      labelStyle: TextStyle(
-                        color: isSelected ? context.specialTheme.primaryColor : AppColors.textSecondary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedTag = tag;
-                            if (tag != 'Khác') {
-                              _addressCtrl.text = tag;
-                            } else {
-                              _addressCtrl.text = '';
-                            }
-                          } else {
-                            _selectedTag = null;
-                            _addressCtrl.text = '';
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                if (_selectedTag == 'Khác') ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  AppTextField(
-                    controller: _addressCtrl,
-                    label: 'Tên địa chỉ khác',
-                    hint: 'VD: Nhà bạn gái, Kho hàng...',
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(
-                  controller: _receiverNameCtrl,
-                  label: 'Tên người nhận *',
-                  hint: 'VD: Nguyễn Văn A',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(
-                  controller: _phoneCtrl,
-                  label: 'Số điện thoại *',
-                  hint: 'VD: 0912345678',
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                // Province dropdown
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: DropdownButton<ProvinceModel>(
-                    isExpanded: true,
-                    underline: const SizedBox(),
-                    value: _selectedProvinceModel,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    items: _provinces.map((province) {
-                      return DropdownMenuItem(
-                        value: province,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                          ),
-                          child: Text(province.name),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: _isLoadingProvinces ? null : (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedProvinceModel = value;
-                          _selectedWardModel = null;
-                          _wards = [];
-                        });
-                        _loadWards(value.id);
-                      }
-                    },
-                    hint: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(_isLoadingProvinces ? 'Đang tải tỉnh/thành phố...' : 'Chọn Tỉnh/Thành phố *'),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                // District dropdown
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.border),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: DropdownButton<WardModel>(
-                    isExpanded: true,
-                    underline: const SizedBox(),
-                    value: _selectedWardModel,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    items: _wards.map((ward) {
-                      return DropdownMenuItem(
-                        value: ward,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                          ),
-                          child: Text(ward.name),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: _isLoadingWards ? null : (value) {
-                      if (value != null) {
-                        setState(() => _selectedWardModel = value);
-                      }
-                    },
-                    hint: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(_isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn Phường/Xã *'),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(
-                  controller: _fullAddressCtrl,
-                  label: 'Địa chỉ đầy đủ *',
-                  hint: 'VD: 123 Đường ABC, Phường XYZ, Quận 1, TP.HCM',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(
-                  controller: _addressDetailCtrl,
-                  label: 'Chi tiết thêm *',
-                  hint: 'VD: Tầng 3, phòng 301',
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: BlocBuilder<AddressBloc, AddressState>(
+        builder: (context, state) {
+          return LoadingOverlay(
+            isLoading: _isSubmitting,
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(_isEditMode ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới'),
+              ),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text(
-                      'Tọa độ GPS *',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    Text(
+                      'Tên địa chỉ (Tùy chọn)',
+                      style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                     ),
-                    Row(
-                      children: [
-                        TextButton.icon(
-                          onPressed: () => _openMapPicker(context),
-                          icon: const Icon(Icons.map, size: 16),
-                          label: const Text('Chọn từ bản đồ'),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: context.specialTheme.primaryColor,
+                    const SizedBox(height: AppSpacing.xs),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      children: ['Nhà riêng', 'Văn phòng', 'Trường học', 'Khác'].map((tag) {
+                        final isSelected = _selectedTag == tag;
+                        return ChoiceChip(
+                          label: Text(tag),
+                          selected: isSelected,
+                          selectedColor: context.specialTheme.primaryColor.withValues(alpha: 0.2),
+                          checkmarkColor: context.specialTheme.primaryColor,
+                          labelStyle: TextStyle(
+                            color: isSelected ? context.specialTheme.primaryColor : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           ),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedTag = tag;
+                                if (tag != 'Khác') {
+                                  _addressCtrl.text = tag;
+                                } else {
+                                  _addressCtrl.text = '';
+                                }
+                              } else {
+                                _selectedTag = null;
+                                _addressCtrl.text = '';
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    if (_selectedTag == 'Khác') ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      AppTextField(
+                        controller: _addressCtrl,
+                        label: 'Tên địa chỉ khác',
+                        hint: 'VD: Nhà bạn gái, Kho hàng...',
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
+                      controller: _receiverNameCtrl,
+                      label: 'Tên người nhận *',
+                      hint: 'VD: Nguyễn Văn A',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
+                      controller: _phoneCtrl,
+                      label: 'Số điện thoại *',
+                      hint: 'VD: 0912345678',
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    // Province dropdown
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: DropdownButton<ProvinceModel>(
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        value: state.provinces.contains(_selectedProvinceModel) ? _selectedProvinceModel : null,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        items: state.provinces.map((province) {
+                          return DropdownMenuItem(
+                            value: province,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                              ),
+                              child: Text(province.name),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: state.isLoadingProvinces ? null : (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedProvinceModel = value;
+                              _selectedWardModel = null;
+                            });
+                            _loadWards(value.id);
+                          }
+                        },
+                        hint: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: Text(state.isLoadingProvinces ? 'Đang tải tỉnh/thành phố...' : 'Chọn Tỉnh/Thành phố *'),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        TextButton.icon(
-                          onPressed: () => _showLocationPicker(context),
-                          icon: const Icon(Icons.list, size: 16),
-                          label: const Text('Chọn nhanh'),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: AppColors.textSecondary,
-                          ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    // District dropdown (using wards)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: DropdownButton<WardModel>(
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        value: state.wards.contains(_selectedWardModel) ? _selectedWardModel : null,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        items: state.wards.map((ward) {
+                          return DropdownMenuItem(
+                            value: ward,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.md,
+                              ),
+                              child: Text(ward.name),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: state.isLoadingWards ? null : (value) {
+                          if (value != null) {
+                            setState(() => _selectedWardModel = value);
+                          }
+                        },
+                        hint: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: Text(state.isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn Phường/Xã *'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
+                      controller: _fullAddressCtrl,
+                      label: 'Địa chỉ đầy đủ *',
+                      hint: 'VD: 123 Đường ABC, Phường XYZ, Quận 1, TP.HCM',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
+                      controller: _addressDetailCtrl,
+                      label: 'Chi tiết thêm *',
+                      hint: 'VD: Tầng 3, phòng 301',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Tọa độ GPS *',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Row(
+                          children: [
+                            TextButton.icon(
+                              onPressed: () => _openMapPicker(context),
+                              icon: const Icon(Icons.map, size: 16),
+                              label: const Text('Chọn từ bản đồ'),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                foregroundColor: context.specialTheme.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            TextButton.icon(
+                              onPressed: () => _showLocationPicker(context),
+                              icon: const Icon(Icons.list, size: 16),
+                              label: const Text('Chọn nhanh'),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                foregroundColor: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.xs),
+                    AppTextField(
+                      controller: _latitudeCtrl,
+                      label: 'Vĩ độ (Latitude) *',
+                      hint: 'VD: 10.7769',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
+                      controller: _longitudeCtrl,
+                      label: 'Kinh độ (Longitude) *',
+                      hint: 'VD: 106.7009',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    SwitchListTile(
+                      value: _isDefault,
+                      onChanged: (value) => setState(() => _isDefault = value),
+                      title: const Text('Đặt làm địa chỉ mặc định'),
+                      subtitle: const Text('Tự động chọn khi đặt hàng'),
+                      activeThumbColor: context.specialTheme.primaryColor,
+                      activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    AppButton(
+                      label: _isEditMode ? 'Cập nhật địa chỉ' : 'Lưu địa chỉ',
+                      icon: Icons.save_outlined,
+                      isLoading: _isSubmitting,
+                      onPressed: _isSubmitting ? null : _onSubmit,
+                    ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                AppTextField(
-                  controller: _latitudeCtrl,
-                  label: 'Vĩ độ (Latitude) *',
-                  hint: 'VD: 10.7769',
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppTextField(
-                  controller: _longitudeCtrl,
-                  label: 'Kinh độ (Longitude) *',
-                  hint: 'VD: 106.7009',
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                SwitchListTile(
-                  value: _isDefault,
-                  onChanged: (value) => setState(() => _isDefault = value),
-                  title: const Text('Đặt làm địa chỉ mặc định'),
-                  subtitle: const Text('Tự động chọn khi đặt hàng'),
-                  activeThumbColor: context.specialTheme.primaryColor,
-                  activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                AppButton(
-                  label: _isEditMode ? 'Cập nhật địa chỉ' : 'Lưu địa chỉ',
-                  icon: Icons.save_outlined,
-                  isLoading: _isSubmitting,
-                  onPressed: _isSubmitting ? null : _onSubmit,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

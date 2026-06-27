@@ -21,40 +21,42 @@ import 'widgets/order_card.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 import '../product/product_detail_page.dart';
 
-class BuyerOrderDetailPage extends StatefulWidget {
+import 'package:army_ecommerce/blocs/marketplace/order/order_bloc.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_event.dart';
+import 'package:army_ecommerce/blocs/marketplace/order/order_state.dart';
+
+class BuyerOrderDetailPage extends StatelessWidget {
   final String orderId;
 
   const BuyerOrderDetailPage({super.key, required this.orderId});
 
   @override
-  State<BuyerOrderDetailPage> createState() => _BuyerOrderDetailPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => OrderBloc(
+        marketplaceRepository: context.read<MarketplaceRepository>(),
+      )..add(OrderDetailRequested(orderId)),
+      child: _BuyerOrderDetailView(orderId: orderId),
+    );
+  }
 }
 
-class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
-  Future<OrderModel?>? _detailFuture;
-  Future<List<OrderTimelineModel>>? _timelineFuture;
-  OrderModel? _orderDetail;
-  bool _isSubmitting = false;
+class _BuyerOrderDetailView extends StatefulWidget {
+  final String orderId;
+
+  const _BuyerOrderDetailView({required this.orderId});
+
+  @override
+  State<_BuyerOrderDetailView> createState() => _BuyerOrderDetailViewState();
+}
+
+class _BuyerOrderDetailViewState extends State<_BuyerOrderDetailView> {
   bool _isAlreadyEdited = false;
   bool _shouldRefreshOnPop = false;
 
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  void _load() {
-    final repository = context.read<MarketplaceRepository>();
-    _detailFuture = repository.getOrderDetail(widget.orderId).then((order) {
-      if (mounted) {
-        setState(() {
-          _orderDetail = order;
-        });
-      }
-      return order;
-    });
-    _timelineFuture = repository.getOrderTimeline(widget.orderId);
     SessionManager.isOrderEdited(widget.orderId).then((edited) {
       if (mounted) {
         setState(() {
@@ -64,35 +66,18 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     });
   }
 
-  Future<void> _refresh() async {
-    setState(_load);
-    await Future.wait([
-      _detailFuture ?? Future.value(null),
-      _timelineFuture ?? Future.value(const <OrderTimelineModel>[]),
-    ]);
-  }
-
-  Future<void> _submit(
-    Future<void> Function() action, {
-    String successMessage = 'Đã cập nhật đơn hàng',
-    bool skipReload = false,
-  }) async {
-    setState(() => _isSubmitting = true);
-    try {
-      await action();
-      if (!mounted) return;
-      _shouldRefreshOnPop = true;
-      AppSnackBar.show(context, message: successMessage);
-      if (!skipReload) {
-        setState(_load);
-        await _refresh();
-      }
-    } catch (error) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, message: error.toString());
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
+  void _submitAction(
+    OrderModel order,
+    OrderActionType actionType, {
+    String? reason,
+  }) {
+    context.read<OrderBloc>().add(
+      OrderActionRequested(
+        order: order,
+        actionType: actionType,
+        reason: reason,
+      ),
+    );
   }
 
   @override
@@ -101,78 +86,109 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop && _shouldRefreshOnPop && result != true) {
-          // This ensures that if they use the system back button, we still try to signal a refresh
-          // Note: In newer Flutter versions, result might be immutable here depending on how it's called.
+          // Refresh callback handled on pop
         }
       },
-      child: FutureBuilder<OrderModel?>(
-        future: _detailFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+      child: BlocListener<OrderBloc, OrderState>(
+        listener: (context, state) {
+          if (state.successMessage != null) {
+            _shouldRefreshOnPop = true;
+            AppSnackBar.show(context, message: state.successMessage!);
+            // Refresh details & timeline
+            context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+            SessionManager.isOrderEdited(widget.orderId).then((edited) {
+              if (mounted) {
+                setState(() {
+                  _isAlreadyEdited = edited;
+                });
+              }
+            });
+          } else if (state.errorMessage != null) {
+            AppSnackBar.showError(context, message: state.errorMessage!);
           }
+        },
+        child: BlocBuilder<OrderBloc, OrderState>(
+          builder: (context, state) {
+            if (state.isDetailLoading && state.orderDetail == null) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-          if (snapshot.hasError) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
-              body: ErrorState(
-                message: snapshot.error.toString(),
-                onRetry: _refresh,
-              ),
-            );
-          }
-
-          final order = snapshot.data;
-          if (order == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
-              body: const EmptyState(
-                title: 'Không tìm thấy đơn hàng',
-                message: 'Đơn hàng không tồn tại hoặc bạn không có quyền xem.',
-              ),
-            );
-          }
-
-          return LoadingOverlay(
-            isLoading: _isSubmitting,
-            child: Scaffold(
-              appBar: AppBar(
-                title: Text('Đơn #${order.id}'),
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.pop(context, _shouldRefreshOnPop),
+            if (state.errorMessage != null && state.orderDetail == null) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
+                body: ErrorState(
+                  message: state.errorMessage!,
+                  onRetry: () {
+                    context.read<OrderBloc>().add(
+                      OrderDetailRequested(widget.orderId),
+                    );
+                  },
                 ),
-                actions: [
-                  IconButton(
-                    tooltip: 'Làm mới',
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh),
+              );
+            }
+
+            final order = state.orderDetail;
+            if (order == null) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Chi tiết đơn hàng')),
+                body: const EmptyState(
+                  title: 'Không tìm thấy đơn hàng',
+                  message:
+                      'Đơn hàng không tồn tại hoặc bạn không có quyền xem.',
+                ),
+              );
+            }
+
+            return LoadingOverlay(
+              isLoading: state.isActionInProgress,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text('Đơn #${order.id}'),
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () =>
+                        Navigator.pop(context, _shouldRefreshOnPop),
                   ),
-                ],
-              ),
-              body: RefreshIndicator(
-                onRefresh: _refresh,
-                child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  children: [
-                    _buildHeader(order),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildOverview(order),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildItems(order),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildTimeline(),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildActions(order),
-                    const SizedBox(height: AppSpacing.xl),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Làm mới',
+                      onPressed: () {
+                        context.read<OrderBloc>().add(
+                          OrderDetailRequested(widget.orderId),
+                        );
+                      },
+                      icon: const Icon(Icons.refresh),
+                    ),
                   ],
                 ),
+                body: RefreshIndicator(
+                  onRefresh: () async {
+                    final bloc = context.read<OrderBloc>();
+                    bloc.add(OrderDetailRequested(widget.orderId));
+                    await bloc.stream.firstWhere((s) => !s.isDetailLoading);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    children: [
+                      _buildHeader(order),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildOverview(order),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildItems(order),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildTimeline(state),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildActions(order),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -294,7 +310,7 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     );
   }
 
-  Widget _buildTimeline() {
+  Widget _buildTimeline(OrderState state) {
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -308,32 +324,14 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
           children: [
             const SectionHeader(title: 'Lịch sử đơn hàng'),
             const SizedBox(height: AppSpacing.md),
-            FutureBuilder<List<OrderTimelineModel>>(
-              future: _timelineFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (snapshot.hasError) {
-                  return ErrorState(
-                    message: snapshot.error.toString(),
-                    onRetry: _refresh,
-                  );
-                }
-                final timelines = snapshot.data ?? const <OrderTimelineModel>[];
-                if (timelines.isEmpty) {
-                  return const Text('Chưa có lịch sử thay đổi trạng thái.');
-                }
-                return Column(
-                  children: timelines
-                      .map((timeline) => _TimelineTile(timeline: timeline))
-                      .toList(),
-                );
-              },
-            ),
+            if (state.timeline.isEmpty)
+              const Text('Chưa có lịch sử thay đổi trạng thái.')
+            else
+              Column(
+                children: state.timeline
+                    .map((timeline) => _TimelineTile(timeline: timeline))
+                    .toList(),
+              ),
           ],
         ),
       ),
@@ -499,13 +497,7 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
 
     if (confirmed != true) return;
 
-    await _submit(
-      () => context.read<MarketplaceRepository>().confirmReceived(order.id),
-      successMessage: 'Đã xác nhận đã nhận hàng',
-    );
-    if (mounted) {
-      _showReviewDialog(order);
-    }
+    _submitAction(order, OrderActionType.confirmReceived);
   }
 
   Future<void> _showReviewDialog(OrderModel order) async {
@@ -514,8 +506,8 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
       barrierDismissible: false,
       builder: (dialogContext) => _ReviewDialog(order: order),
     );
-    if (result == true) {
-      _refresh();
+    if (result == true && mounted) {
+      context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
     }
   }
 
@@ -527,12 +519,10 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
 
     if (reason == null) return;
 
-    await _submit(
-      () => context.read<MarketplaceRepository>().refundOrder(
-        order.id,
-        reason: reason.isEmpty ? null : reason,
-      ),
-      successMessage: 'Đã gửi yêu cầu hoàn tiền / hoàn hàng',
+    _submitAction(
+      order,
+      OrderActionType.refund,
+      reason: reason.isEmpty ? null : reason,
     );
   }
 
@@ -544,12 +534,10 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
 
     if (reason == null) return;
 
-    await _submit(
-      () => context.read<MarketplaceRepository>().cancelOrder(
-        order.id,
-        reason: reason.isEmpty ? null : reason,
-      ),
-      successMessage: 'Đã hủy đơn hàng',
+    _submitAction(
+      order,
+      OrderActionType.cancel,
+      reason: reason.isEmpty ? null : reason,
     );
   }
 
@@ -559,7 +547,10 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
     if (!mounted) return;
 
     if (addresses.isEmpty) {
-      AppSnackBar.show(context, message: 'Bạn cần có ít nhất 1 địa chỉ để chỉnh sửa đơn hàng');
+      AppSnackBar.show(
+        context,
+        message: 'Bạn cần có ít nhất 1 địa chỉ để chỉnh sửa đơn hàng',
+      );
       return;
     }
 
@@ -573,33 +564,9 @@ class _BuyerOrderDetailPageState extends State<BuyerOrderDetailPage> {
 
     if (result == null) return;
 
-    await _submit(
-      () async {
-        final updatedData = await repository.editOrder(order.id, result);
-        if (order.status == 'confirmed') {
-          await SessionManager.setOrderEdited(order.id, true);
-        }
-        if (mounted) {
-          setState(() {
-            if (order.status == 'confirmed') {
-              _isAlreadyEdited = true;
-            }
-            final currentDetail = _orderDetail ?? order;
-            final updatedNote =
-                updatedData['note']?.toString() ?? currentDetail.note;
-            final updatedAddress =
-                updatedData['address']?.toString() ??
-                currentDetail.buyerAddress;
-            _orderDetail = currentDetail.copyWith(
-              note: updatedNote,
-              buyerAddress: updatedAddress,
-            );
-            _detailFuture = Future.value(_orderDetail);
-          });
-        }
-      },
-      successMessage: 'Đã cập nhật địa chỉ / ghi chú',
-      skipReload: true,
+    if (!mounted) return;
+    context.read<OrderBloc>().add(
+      OrderEditRequested(orderId: order.id, data: result),
     );
   }
 }
@@ -612,12 +579,8 @@ class _OrderItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      splashColor: context.specialTheme.primaryColor.withValues(
-        alpha: 0.15,
-      ),
-      highlightColor: context.specialTheme.primaryColor.withValues(
-        alpha: 0.05,
-      ),
+      splashColor: context.specialTheme.primaryColor.withValues(alpha: 0.15),
+      highlightColor: context.specialTheme.primaryColor.withValues(alpha: 0.05),
       onTap: () {
         final rawId = item.productId;
         final cleanId = rawId.split('-').first;
@@ -652,7 +615,10 @@ class _OrderItemTile extends StatelessWidget {
                   children: [
                     const Text(
                       'Giá:',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     PriceText(
                       price: item.price,
@@ -668,17 +634,27 @@ class _OrderItemTile extends StatelessWidget {
                   children: [
                     const Text(
                       'x SL:',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
                       '${item.quantity} sản phẩm',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Divider(height: 1, thickness: 1, color: AppColors.border),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.border,
+                  ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1089,7 +1065,12 @@ class _ReviewDialogState extends State<_ReviewDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      contentPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.md),
+      contentPadding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1120,10 +1101,7 @@ class _ReviewDialogState extends State<_ReviewDialog> {
             const SizedBox(height: AppSpacing.xs),
             const Text(
               'Hãy viết đánh giá đến người bán nhé!',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -1173,13 +1151,20 @@ class _ReviewDialogState extends State<_ReviewDialog> {
           ],
         ),
       ),
-      actionsPadding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+      actionsPadding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
       actions: [
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: _isSubmitting ? null : () => Navigator.pop(context, false),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => Navigator.pop(context, false),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(
@@ -1217,11 +1202,17 @@ class _ReviewDialogState extends State<_ReviewDialog> {
                       purchaseId: widget.order.id,
                     );
                     if (!context.mounted) return;
-                    AppSnackBar.showSuccess(context, message: 'Đã gửi đánh giá thành công');
+                    AppSnackBar.showSuccess(
+                      context,
+                      message: 'Đã gửi đánh giá thành công',
+                    );
                     Navigator.pop(context, true);
                   } catch (e) {
                     if (!context.mounted) return;
-                    AppSnackBar.showError(context, message: 'Lỗi gửi đánh giá: $e');
+                    AppSnackBar.showError(
+                      context,
+                      message: 'Lỗi gửi đánh giá: $e',
+                    );
                   } finally {
                     if (mounted) setState(() => _isSubmitting = false);
                   }

@@ -40,3 +40,18 @@ class ProductReported extends ProductDetailEvent {
 }
 
 class ProductCommentsLoadMoreRequested extends ProductDetailEvent {}
+
+class ProductDeleted extends ProductDetailEvent {}
+
+class ProductRatesRequested extends ProductDetailEvent {
+  final int? level;
+  final bool isRefresh;
+
+  ProductRatesRequested({this.level, this.isRefresh = false});
+
+  @override
+  List<Object?> get props => [level, isRefresh];
+}
+
+class ProductRatesLoadMoreRequested extends ProductDetailEvent {}
+

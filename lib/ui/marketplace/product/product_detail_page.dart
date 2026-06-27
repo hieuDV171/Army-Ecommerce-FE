@@ -278,6 +278,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   Widget build(BuildContext context) {
     return BlocConsumer<ProductDetailBloc, ProductDetailState>(
       listener: (context, state) {
+        if (state.isDeleted) {
+          AppSnackBar.show(context, message: state.successMessage ?? 'Đã xóa sản phẩm');
+          Navigator.pop(context, true);
+          return;
+        }
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
           AppSnackBar.show(context, message: message);
@@ -1595,27 +1600,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
 
     if (!context.mounted) return;
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      await context.read<MarketplaceRepository>().deleteProduct(productId);
-      if (!context.mounted) return;
-      Navigator.pop(context); // Pop loading dialog
-      AppSnackBar.showSuccess(context, message: 'Xóa sản phẩm thành công');
-      Navigator.pop(
-        context,
-        true,
-      ); // Pop detail page back to listings, with refresh indicator
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.pop(context); // Pop loading dialog
-      AppSnackBar.show(context, message: e.toString());
-    }
+    context.read<ProductDetailBloc>().add(ProductDeleted());
   }
 }
 
@@ -1662,244 +1647,201 @@ class _RatingsSection extends StatefulWidget {
 }
 
 class _RatingsSectionState extends State<_RatingsSection> {
-  bool _isLoading = false;
-  bool _isFetchingMore = false;
-  String? _error;
-  List<RateModel> _rates = [];
-  int _selectedStarFilter = 0;
-  bool _hasMore = true;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadRates(isInitial: true);
+        context.read<ProductDetailBloc>().add(ProductRatesRequested(level: 0));
       }
     });
   }
 
-  Future<void> _loadRates({bool isInitial = false}) async {
+  void _loadRates({bool isInitial = true}) {
     if (isInitial) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-        _rates = [];
-        _hasMore = true;
-      });
+      context.read<ProductDetailBloc>().add(ProductRatesRequested());
     } else {
-      if (!_hasMore || _isFetchingMore) return;
-      setState(() {
-        _isFetchingMore = true;
-      });
-    }
-
-    final repo = context.read<MarketplaceRepository>();
-    try {
-      final moreRates = await repo.getRates(
-        userId: widget.sellerId,
-        productId: widget.productId,
-        level: _selectedStarFilter == 0 ? null : _selectedStarFilter,
-        index: isInitial ? 0 : _rates.length,
-        count: 20,
-      );
-      if (!mounted) return;
-      setState(() {
-        if (isInitial) {
-          _rates = moreRates;
-        } else {
-          _rates.addAll(moreRates);
-        }
-        _hasMore = moreRates.length >= 20;
-        _isLoading = false;
-        _isFetchingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-        _isFetchingMore = false;
-      });
+      context.read<ProductDetailBloc>().add(ProductRatesLoadMoreRequested());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_error != null) {
-      return const SizedBox.shrink();
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return BlocBuilder<ProductDetailBloc, ProductDetailState>(
+      builder: (context, state) {
+        if (state.errorMessage != null && state.rates.isEmpty) {
+          return Center(
+            child: Text(state.errorMessage!),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Expanded(child: SectionHeader(title: 'Đánh giá')),
-            PopupMenuButton<int>(
-              initialValue: _selectedStarFilter,
-              onSelected: (star) {
-                setState(() {
-                  _selectedStarFilter = star;
-                });
-                _loadRates();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 0, child: Text('Tất cả đánh giá')),
-                ...List.generate(5, (index) {
-                  final star = 5 - index;
-                  return PopupMenuItem(
-                    value: star,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Expanded(child: SectionHeader(title: 'Đánh giá')),
+                PopupMenuButton<int>(
+                  initialValue: state.selectedStarFilter,
+                  onSelected: (star) {
+                    context.read<ProductDetailBloc>().add(ProductRatesRequested(level: star));
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 0, child: Text('Tất cả đánh giá')),
+                    ...List.generate(5, (index) {
+                      final star = 5 - index;
+                      return PopupMenuItem(
+                        value: star,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('$star'),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('$star'),
+                        Text(
+                          state.selectedStarFilter == 0
+                              ? 'Số sao'
+                              : '${state.selectedStarFilter} sao',
+                        ),
                         const SizedBox(width: 4),
                         const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const Icon(Icons.arrow_drop_down, size: 16),
                       ],
                     ),
-                  );
-                }),
+                  ),
+                ),
               ],
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _selectedStarFilter == 0
-                          ? 'Số sao'
-                          : '$_selectedStarFilter sao',
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.star, color: Colors.amber, size: 16),
-                    const Icon(Icons.arrow_drop_down, size: 16),
-                  ],
-                ),
-              ),
             ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (_isLoading)
-          const Center(child: CircularProgressIndicator())
-        else if (_error != null)
-          ErrorState(message: _error!, onRetry: _loadRates)
-        else if (_rates.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('Chưa có đánh giá.'),
-          )
-        else ...[
-          ..._rates.map(
-            (r) => Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
+            const SizedBox(height: AppSpacing.sm),
+            if (state.isLoadingRates)
+              const Center(child: CircularProgressIndicator())
+            else if (state.rates.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: Text('Chưa có đánh giá.'),
+              )
+            else ...[
+              ...state.rates.map(
+                (r) => Material(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  splashColor: context.specialTheme.primaryColor.withValues(
-                    alpha: 0.15,
-                  ),
-                  highlightColor: context.specialTheme.primaryColor.withValues(
-                    alpha: 0.05,
-                  ),
-                  onTap: () {
-                    final authState = context.read<AuthBloc>().state;
-                    final token = authState.currentUser?.token ?? '';
-                    if (!checkLogin(context, token: token)) {
-                      return;
-                    }
-                    if (r.authorId == null || r.authorId!.isEmpty) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SellerInfoPage(
-                          userId: r.authorId!,
-                          sellerName: r.author,
-                          avatarUrl: r.avatar,
-                        ),
-                      ),
-                    );
-                  },
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    leading: AvatarWithFrame(
-                      radius: 24,
-                      avatarImage: (r.avatar != null && r.avatar!.isNotEmpty)
-                          ? SessionManager.getImageProvider(r.avatar!)
-                          : null,
-                      frameUrl: r.coverImageWeb,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: Colors.grey.shade200),
                     ),
-                    title: Text(r.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            RatingStars(rating: r.level.toDouble()),
-                            const Spacer(),
-                            if (r.createdAt != null && r.createdAt!.isNotEmpty)
-                              Text(
-                                _formatDateTime(r.createdAt),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                          ],
-                        ),
-                        if (r.purchaseId != null &&
-                            r.purchaseId!.isNotEmpty &&
-                            r.purchaseId != '0') ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Mã đơn: #${r.purchaseId}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      splashColor: context.specialTheme.primaryColor.withValues(
+                        alpha: 0.15,
+                      ),
+                      highlightColor: context.specialTheme.primaryColor.withValues(
+                        alpha: 0.05,
+                      ),
+                      onTap: () {
+                        final authState = context.read<AuthBloc>().state;
+                        final token = authState.currentUser?.token ?? '';
+                        if (!checkLogin(context, token: token)) {
+                          return;
+                        }
+                        if (r.authorId == null || r.authorId!.isEmpty) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SellerInfoPage(
+                              userId: r.authorId!,
+                              sellerName: r.author,
+                              avatarUrl: r.avatar,
                             ),
                           ),
-                        ],
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          r.content,
-                          style: const TextStyle(color: Colors.black87),
+                        );
+                      },
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        leading: AvatarWithFrame(
+                          radius: 24,
+                          avatarImage: (r.avatar != null && r.avatar!.isNotEmpty)
+                              ? SessionManager.getImageProvider(r.avatar!)
+                              : null,
+                          frameUrl: r.coverImageWeb,
                         ),
-                      ],
+                        title: Text(r.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                RatingStars(rating: r.level.toDouble()),
+                                const Spacer(),
+                                if (r.createdAt != null && r.createdAt!.isNotEmpty)
+                                  Text(
+                                    _formatDateTime(r.createdAt),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (r.purchaseId != null &&
+                                r.purchaseId!.isNotEmpty &&
+                                r.purchaseId != '0') ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Mã đơn: #${r.purchaseId}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              r.content,
+                              style: const TextStyle(color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          if (_isFetchingMore)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_hasMore)
-            Center(
-              child: TextButton(
-                onPressed: () => _loadRates(isInitial: false),
-                child: const Text('Xem thêm đánh giá'),
-              ),
-            ),
-        ],
-      ],
+              if (state.isFetchingMoreRates)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state.hasMoreRates)
+                Center(
+                  child: TextButton(
+                    onPressed: () => _loadRates(isInitial: false),
+                    child: const Text('Xem thêm đánh giá'),
+                  ),
+                ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

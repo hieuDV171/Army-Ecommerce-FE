@@ -11,6 +11,8 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     on<AddressAdded>(_onAdded);
     on<AddressUpdated>(_onUpdated);
     on<AddressDeleted>(_onDeleted);
+    on<ProvincesRequested>(_onProvincesRequested);
+    on<WardsRequested>(_onWardsRequested);
   }
 
   Future<void> _onListRequested(
@@ -121,6 +123,42 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
       );
     } catch (error) {
       emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onProvincesRequested(
+    ProvincesRequested event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isLoadingProvinces: true, clearMessages: true));
+    try {
+      final provinces = await marketplaceRepository.getProvinces();
+      emit(
+        state.copyWith(
+          provinces: provinces,
+          isLoadingProvinces: false,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isLoadingProvinces: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onWardsRequested(
+    WardsRequested event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(state.copyWith(isLoadingWards: true, clearMessages: true));
+    try {
+      final wards = await marketplaceRepository.getWards(event.provinceId);
+      emit(
+        state.copyWith(
+          wards: wards,
+          isLoadingWards: false,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(isLoadingWards: false, errorMessage: error.toString()));
     }
   }
 }

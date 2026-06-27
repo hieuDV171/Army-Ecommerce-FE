@@ -104,3 +104,15 @@ class AddressDeleted extends AddressEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class ProvincesRequested extends AddressEvent {}
+
+class WardsRequested extends AddressEvent {
+  final int provinceId;
+
+  WardsRequested(this.provinceId);
+
+  @override
+  List<Object?> get props => [provinceId];
+}
+

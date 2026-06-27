@@ -76,3 +76,15 @@ class ProductSearchDelSavedSearchRequested extends ProductSearchEvent {
   @override
   List<Object?> get props => [searchId, keyword];
 }
+
+class ProductSearchCategoriesRequested extends ProductSearchEvent {
+  final bool isRefresh;
+
+  ProductSearchCategoriesRequested({this.isRefresh = false});
+
+  @override
+  List<Object?> get props => [isRefresh];
+}
+
+class ProductSearchCategoriesLoadMoreRequested extends ProductSearchEvent {}
+
