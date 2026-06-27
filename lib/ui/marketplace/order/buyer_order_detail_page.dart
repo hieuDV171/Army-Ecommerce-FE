@@ -27,8 +27,9 @@ import 'package:army_ecommerce/blocs/marketplace/order/order_state.dart';
 
 class BuyerOrderDetailPage extends StatelessWidget {
   final String orderId;
+  final VoidCallback? onRefresh;
 
-  const BuyerOrderDetailPage({super.key, required this.orderId});
+  const BuyerOrderDetailPage({super.key, required this.orderId, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -36,15 +37,16 @@ class BuyerOrderDetailPage extends StatelessWidget {
       create: (context) => OrderBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
       )..add(OrderDetailRequested(orderId)),
-      child: _BuyerOrderDetailView(orderId: orderId),
+      child: _BuyerOrderDetailView(orderId: orderId, onRefresh: onRefresh),
     );
   }
 }
 
 class _BuyerOrderDetailView extends StatefulWidget {
   final String orderId;
+  final VoidCallback? onRefresh;
 
-  const _BuyerOrderDetailView({required this.orderId});
+  const _BuyerOrderDetailView({required this.orderId, this.onRefresh});
 
   @override
   State<_BuyerOrderDetailView> createState() => _BuyerOrderDetailViewState();
@@ -100,6 +102,7 @@ class _BuyerOrderDetailViewState extends State<_BuyerOrderDetailView> {
 
             // Refresh details & timeline
             context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+            widget.onRefresh?.call();
             SessionManager.isOrderEdited(widget.orderId).then((edited) {
               if (mounted) {
                 setState(() {

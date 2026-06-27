@@ -169,7 +169,20 @@ class _BuyerOrderListViewState extends State<_BuyerOrderListView> {
                   final result = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => BuyerOrderDetailPage(orderId: order.id),
+                      builder: (_) => BuyerOrderDetailPage(
+                        orderId: order.id,
+                        onRefresh: () {
+                          if (context.mounted) {
+                            context.read<OrderBloc>().add(
+                                  OrderListRequested(
+                                    isSeller: false,
+                                    stateFilter: widget.stateFilter,
+                                    isRefresh: true,
+                                  ),
+                                );
+                          }
+                        },
+                      ),
                     ),
                   );
                   if (result == true && context.mounted) {
