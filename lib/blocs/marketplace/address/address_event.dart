@@ -64,6 +64,7 @@ class AddressUpdated extends AddressEvent {
   final String latitude;
   final String longitude;
   final List<int>? addressId;
+  final AddressModel? originalAddress;
 
   AddressUpdated({
     required this.id,
@@ -78,6 +79,7 @@ class AddressUpdated extends AddressEvent {
     required this.latitude,
     required this.longitude,
     this.addressId,
+    this.originalAddress,
   });
 
   @override
@@ -93,7 +95,8 @@ class AddressUpdated extends AddressEvent {
         district,
         latitude,
         longitude,
-        addressId
+        addressId,
+        originalAddress,
       ];
 }
 

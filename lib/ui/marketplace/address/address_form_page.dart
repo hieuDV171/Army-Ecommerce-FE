@@ -14,6 +14,7 @@ import '../../util/widgets/loading_overlay.dart';
 import '../../util/theme/special_app_theme.dart';
 import '../map_picker_screen.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_dialog.dart';
 
 class AddressFormPage extends StatefulWidget {
   final AddressModel? address;
@@ -201,13 +202,33 @@ class _AddressFormPageState extends State<AddressFormPage> {
     }
 
     if (latitude.isEmpty || longitude.isEmpty) {
-      AppSnackBar.show(context, message: 'Vui lòng nhập Độ rộng (Lat) và Độ dài (Lng)', backgroundColor: AppColors.danger);
+      AppSnackBar.show(context, message: 'Vui lòng chọn vị trí (Kinh Độ và Vĩ độ)', backgroundColor: AppColors.danger);
       return;
     }
 
     final bloc = context.read<AddressBloc>();
 
     if (_isEditMode) {
+      final orig = widget.address!;
+      final hasChanged = receiverName != orig.receiverName ||
+          phone != orig.phone ||
+          (address.isEmpty ? fullAddress : address) != orig.address ||
+          fullAddress != orig.fullAddress ||
+          addressDetail != (orig.addressDetail ?? '') ||
+          _isDefault != orig.isDefault ||
+          latitude != (orig.latitude ?? '') ||
+          longitude != (orig.longitude ?? '');
+
+      if (!hasChanged) {
+        AppDialog.showError(
+          context,
+          title: 'Thông báo',
+          message: 'Bạn chưa thay đổi thông tin nào.',
+          confirmLabel: 'Đã hiểu',
+        );
+        return;
+      }
+
       bloc.add(
         AddressUpdated(
           id: widget.address!.id,
@@ -222,6 +243,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
           latitude: latitude,
           longitude: longitude,
           addressId: [_selectedWardModel!.id, _selectedProvinceModel!.id],
+          originalAddress: orig,
         ),
       );
     } else {
@@ -250,10 +272,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
         setState(() => _isSubmitting = state.isSubmitting);
 
         if (state.successMessage != null) {
-          AppSnackBar.show(context, message: state.successMessage!, backgroundColor: AppColors.success);
-          Navigator.pop(context, true);
+          AppDialog.showSuccess(context, message: state.successMessage!).then((_) {
+            if (context.mounted) {
+              Navigator.pop(context, true);
+            }
+          });
         } else if (state.errorMessage != null) {
-          AppSnackBar.show(context, message: state.errorMessage!, backgroundColor: AppColors.danger);
+          AppDialog.showError(context, message: state.errorMessage!);
         }
 
         // Handle provinces loaded
@@ -495,16 +520,18 @@ class _AddressFormPageState extends State<AddressFormPage> {
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    SwitchListTile(
-                      value: _isDefault,
-                      onChanged: (value) => setState(() => _isDefault = value),
-                      title: const Text('Đặt làm địa chỉ mặc định'),
-                      subtitle: const Text('Tự động chọn khi đặt hàng'),
-                      activeThumbColor: context.specialTheme.primaryColor,
-                      activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
+                    if (!_isEditMode) ...[
+                      SwitchListTile(
+                        value: _isDefault,
+                        onChanged: (value) => setState(() => _isDefault = value),
+                        title: const Text('Đặt làm địa chỉ mặc định'),
+                        subtitle: const Text('Tự động chọn khi đặt hàng'),
+                        activeThumbColor: context.specialTheme.primaryColor,
+                        activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
                     AppButton(
                       label: _isEditMode ? 'Cập nhật địa chỉ' : 'Lưu địa chỉ',
                       icon: Icons.save_outlined,

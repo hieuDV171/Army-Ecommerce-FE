@@ -3,6 +3,7 @@ import 'package:army_ecommerce/blocs/auth/auth_event.dart';
 import 'package:army_ecommerce/blocs/auth/auth_state.dart';
 import 'package:army_ecommerce/ui/auth/forgot_password_screen.dart';
 import 'package:army_ecommerce/ui/auth/signup_screen.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/core/config/app_config.dart';
@@ -15,7 +16,6 @@ import '../util/widgets/app_button.dart';
 import '../util/widgets/app_text_field.dart';
 
 import '../util/theme/special_app_theme.dart';
-import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -154,16 +154,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     if (context.mounted) {
                       Navigator.pop(context);
-                      AppSnackBar.showSuccess(
+                      AppDialog.showSuccess(
                         context,
                         message: 'Đã cập nhật BASE_URL thành công:\n$newUrl',
+                        autoCloseDuration: const Duration(seconds: 2),
+                        confirmLabel: null,
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      AppSnackBar.showError(
+                      AppDialog.showError(
                         context,
                         message: 'Lỗi khi lưu cấu hình: $e',
+                        autoCloseDuration: const Duration(seconds: 2),
+                        confirmLabel: null,
                       );
                     }
                   }
@@ -183,7 +187,12 @@ class _LoginScreenState extends State<LoginScreen> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
-            AppSnackBar.showSuccess(context, message: 'Đăng nhập thành công');
+            AppDialog.showSuccess(
+              context,
+              message: 'Đăng nhập thành công',
+              autoCloseDuration: const Duration(seconds: 2),
+              confirmLabel: null,
+            );
             // Không thực hiện Navigator.push/pushReplacement nữa.
             // main.dart lắng nghe AuthSuccess ở root và tự động điều hướng.
           } else if (state is AuthFailure) {
@@ -198,7 +207,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 _passwordError = 'Thông tin đăng nhập hoặc mật khẩu không đúng';
               });
             } else {
-              AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+              AppDialog.showError(
+                context,
+                message: state.error,
+                autoCloseDuration: const Duration(seconds: 2),
+                confirmLabel: null,
+              );
             }
           }
         },

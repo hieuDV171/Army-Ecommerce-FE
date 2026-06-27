@@ -333,21 +333,25 @@ class _ProductFormViewState extends State<_ProductFormView> {
         }
 
         // Update brands when loaded
-        if (!state.isLoadingBrands && state.brands.isNotEmpty) {
-          setState(() {
-            _brands = List.from(state.brands);
-            _isBrandsLoading = false;
+        if (!state.isLoadingBrands) {
+          final isDifferent = _brands.length != state.brands.length ||
+              _brands.asMap().entries.any((entry) => entry.value != state.brands[entry.key]);
+          if (isDifferent) {
+            setState(() {
+              _brands = List.from(state.brands);
+              _isBrandsLoading = false;
 
-            if (_isEditMode && widget.product!.brand != null && _selectedBrand == null) {
-              _selectedBrand = _brands.firstWhere(
-                (b) => b.id.toString() == widget.product!.brand!.id.toString(),
-                orElse: () => _brands.isNotEmpty ? _brands.first : const BrandModel(id: '', name: ''),
-              );
-            }
-            if (_selectedBrand != null && !_brands.any((b) => b.id.toString() == _selectedBrand!.id.toString())) {
-              _selectedBrand = null;
-            }
-          });
+              if (_isEditMode && widget.product!.brand != null && _selectedBrand == null) {
+                _selectedBrand = _brands.firstWhere(
+                  (b) => b.id.toString() == widget.product!.brand!.id.toString(),
+                  orElse: () => _brands.isNotEmpty ? _brands.first : const BrandModel(id: '', name: ''),
+                );
+              }
+              if (_selectedBrand != null && !_brands.any((b) => b.id.toString() == _selectedBrand!.id.toString())) {
+                _selectedBrand = null;
+              }
+            });
+          }
         }
 
         // Handle loader state sync

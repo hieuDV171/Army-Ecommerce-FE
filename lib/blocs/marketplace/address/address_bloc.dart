@@ -77,23 +77,59 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
   ) async {
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
-      final data = <String, dynamic>{
-        'address': event.address,
-        'full_address': event.fullAddress,
-        'receiver_name': event.receiverName,
-        'phone': event.phone,
-        'is_default': event.isDefault,
-        'province': event.province,
-        'district': event.district,
-        'lat': double.tryParse(event.latitude) ?? 0.0,
-        'lng': double.tryParse(event.longitude) ?? 0.0,
-      };
-      if (event.addressId != null) {
-        data['address_id'] = event.addressId;
+      final data = <String, dynamic>{};
+      final orig = event.originalAddress;
+
+      if (orig == null) {
+        data.addAll({
+          'address': event.address,
+          'full_address': event.fullAddress,
+          'receiver_name': event.receiverName,
+          'phone': event.phone,
+          'is_default': event.isDefault,
+          'province': event.province,
+          'district': event.district,
+          'lat': double.tryParse(event.latitude) ?? 0.0,
+          'lng': double.tryParse(event.longitude) ?? 0.0,
+        });
+        if (event.addressId != null) {
+          data['address_id'] = event.addressId;
+        }
+        if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
+          data['address_detail'] = event.addressDetail;
+        }
+      } else {
+        if (event.receiverName != orig.receiverName) {
+          data['receiver_name'] = event.receiverName;
+        }
+        if (event.phone != orig.phone) {
+          data['phone'] = event.phone;
+        }
+        if (event.address != orig.address) {
+          data['address'] = event.address;
+        }
+        if (event.fullAddress != orig.fullAddress) {
+          data['full_address'] = event.fullAddress;
+        }
+        if (event.addressDetail != orig.addressDetail) {
+          data['address_detail'] = event.addressDetail ?? '';
+        }
+        if (event.isDefault != orig.isDefault) {
+          data['is_default'] = event.isDefault;
+        }
+
+        final doubleNewLat = double.tryParse(event.latitude) ?? 0.0;
+        final doubleOrigLat = double.tryParse(orig.latitude ?? '') ?? 0.0;
+        if (doubleNewLat != doubleOrigLat) {
+          data['lat'] = doubleNewLat;
+        }
+        final doubleNewLng = double.tryParse(event.longitude) ?? 0.0;
+        final doubleOrigLng = double.tryParse(orig.longitude ?? '') ?? 0.0;
+        if (doubleNewLng != doubleOrigLng) {
+          data['lng'] = doubleNewLng;
+        }
       }
-      if (event.addressDetail != null && event.addressDetail!.isNotEmpty) {
-        data['address_detail'] = event.addressDetail;
-      }
+
       await marketplaceRepository.updateAddress(event.id, data);
       final addresses = await marketplaceRepository.getAddresses();
       emit(
@@ -142,12 +178,12 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     try {
       // Đặt địa chỉ này làm mặc định
       await _patchDefault(event.address, true);
-      // Bỏ mặc định ở các địa chỉ khác (phòng khi BE không tự bỏ)
-      for (final a in state.addresses) {
-        if (a.id != event.address.id && a.isDefault) {
-          await _patchDefault(a, false);
-        }
-      }
+      // // Bỏ mặc định ở các địa chỉ khác (phòng khi BE không tự bỏ)
+      // for (final a in state.addresses) {
+      //   if (a.id != event.address.id && a.isDefault) {
+      //     await _patchDefault(a, false);
+      //   }
+      // }
       final addresses = await marketplaceRepository.getAddresses();
       emit(state.copyWith(
         addresses: addresses,

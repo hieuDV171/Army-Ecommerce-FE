@@ -463,6 +463,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   final TextEditingController _maxPriceController = TextEditingController();
 
   String? _selectedCategoryId;
+  bool _priceError = false;
 
   @override
   void initState() {
@@ -495,6 +496,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     final newValue = current + 100000;
     setState(() {
       _minPriceController.text = newValue.toInt().toString();
+      _priceError = false;
     });
   }
 
@@ -504,6 +506,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     final newValue = (current - 100000).clamp(0.0, double.infinity);
     setState(() {
       _minPriceController.text = newValue.toInt().toString();
+      _priceError = false;
     });
   }
 
@@ -513,6 +516,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     final newValue = current + 100000;
     setState(() {
       _maxPriceController.text = newValue.toInt().toString();
+      _priceError = false;
     });
   }
 
@@ -522,6 +526,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     final newValue = (current - 100000).clamp(0.0, double.infinity);
     setState(() {
       _maxPriceController.text = newValue.toInt().toString();
+      _priceError = false;
     });
   }
 
@@ -539,6 +544,13 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   void _applyFilter() {
     final minPriceVal = double.tryParse(_minPriceController.text.trim())?.round();
     final maxPriceVal = double.tryParse(_maxPriceController.text.trim())?.round();
+
+    if (minPriceVal != null && maxPriceVal != null && maxPriceVal < minPriceVal) {
+      setState(() {
+        _priceError = true;
+      });
+      return;
+    }
 
     context.read<ProductSearchBloc>().add(
           ProductSearchFiltered(
@@ -570,7 +582,7 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     final specialTheme = context.specialTheme;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: _priceError ? Colors.red : AppColors.border),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
@@ -579,7 +591,15 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
             child: TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              onChanged: (val) => setState(() {}),
+              onChanged: (val) {
+                if (_priceError) {
+                  setState(() {
+                    _priceError = false;
+                  });
+                } else {
+                  setState(() {});
+                }
+              },
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),

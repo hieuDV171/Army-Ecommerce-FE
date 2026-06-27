@@ -1,11 +1,11 @@
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
-import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -62,7 +62,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   void _onVerifyOldPass() {
     final oldP = _oldPassController.text.trim();
     setState(() {
-      _oldPassError = oldP.isEmpty ? 'Mật khẩu hiện tại không được để trống' : null;
+      _oldPassError = oldP.isEmpty
+          ? 'Mật khẩu hiện tại không được để trống'
+          : null;
     });
 
     if (_oldPassError != null) return;
@@ -111,15 +113,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       listener: (context, state) {
         if (state is OldPasswordVerifySuccess) {
           setState(() => _isStep2 = true); // NHẢY SANG BƯỚC 2
-          AppSnackBar.showSuccess(
+          AppDialog.showSuccess(
             context,
             message: 'Xác minh thành công! Hãy nhập mật khẩu mới',
+            autoCloseDuration: const Duration(seconds: 2),
+            confirmLabel: null,
           );
         } else if (state is ChangePasswordSuccess) {
-          AppSnackBar.showSuccess(context, message: 'Đổi mật khẩu thành công!');
+          AppDialog.showSuccess(
+            context,
+            message: 'Đổi mật khẩu thành công!',
+            autoCloseDuration: const Duration(seconds: 2),
+            confirmLabel: null,
+          );
           Navigator.pop(context); // Quay lại trang cá nhân
         } else if (state is AuthFailure) {
-          AppSnackBar.showError(context, message: state.error);
+          AppDialog.showError(
+            context,
+            message: state.error,
+            autoCloseDuration: const Duration(seconds: 2),
+            confirmLabel: null,
+          );
         }
       },
       child: Scaffold(

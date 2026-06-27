@@ -12,4 +12,14 @@ class BrandModel {
       name: readString(json, ['name', 'title', 'brand_name'], fallback: 'Thương hiệu'),
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BrandModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

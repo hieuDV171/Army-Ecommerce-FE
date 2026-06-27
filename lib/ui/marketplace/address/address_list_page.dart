@@ -47,7 +47,9 @@ class _AddressListView extends StatelessWidget {
           isLoading: state.isSubmitting,
           child: Scaffold(
             appBar: AppBar(
-              backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+              backgroundColor: specialTheme.useGradient
+                  ? Colors.transparent
+                  : specialTheme.primaryDarkColor,
               flexibleSpace: specialTheme.useGradient
                   ? Container(
                       decoration: BoxDecoration(
@@ -56,7 +58,10 @@ class _AddressListView extends StatelessWidget {
                     )
                   : null,
               iconTheme: const IconThemeData(color: Colors.white),
-              title: const Text('Địa chỉ giao hàng', style: TextStyle(color: Colors.white, fontSize: 16)),
+              title: const Text(
+                'Địa chỉ giao hàng',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () => _openForm(context),
@@ -147,17 +152,15 @@ class _AddressListView extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, AddressModel address) {
-    final addresses = context.read<AddressBloc>().state.addresses;
     // TIP-06: nhiều BE không cho xóa địa chỉ mặc định. Nếu đây là địa chỉ
-    // mặc định và vẫn còn địa chỉ khác, hướng dẫn đổi mặc định trước khi xóa.
-    if (address.isDefault && addresses.length > 1) {
+    // mặc định, hướng dẫn đổi mặc định trước khi xóa.
+    if (address.isDefault) {
       showDialog(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: const Text('Không thể xóa địa chỉ mặc định'),
           content: const Text(
-            'Đây đang là địa chỉ mặc định. Vui lòng mở một địa chỉ khác, bật '
-            '"Đặt làm địa chỉ mặc định", rồi quay lại xóa địa chỉ này.',
+            'Đây đang là địa chỉ mặc định. Vui lòng đặt địa chỉ khác làm mặc định, rồi quay lại xóa địa chỉ này.',
           ),
           actions: [
             TextButton(
@@ -186,7 +189,9 @@ class _AddressListView extends StatelessWidget {
               Navigator.pop(dialogContext);
               context.read<AddressBloc>().add(AddressDeleted(address.id));
             },
-            style: TextButton.styleFrom(foregroundColor: context.specialTheme.primaryColor),
+            style: TextButton.styleFrom(
+              foregroundColor: context.specialTheme.primaryColor,
+            ),
             child: const Text('Xóa'),
           ),
         ],
@@ -251,7 +256,9 @@ class _AddressCard extends StatelessWidget {
                         vertical: AppSpacing.xs,
                       ),
                       decoration: BoxDecoration(
-                        color: context.specialTheme.primaryColor.withValues(alpha: 0.1),
+                        color: context.specialTheme.primaryColor.withValues(
+                          alpha: 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Text(

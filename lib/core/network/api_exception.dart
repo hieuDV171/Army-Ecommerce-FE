@@ -110,9 +110,9 @@ class ApiException implements Exception {
 
       return ApiException(
         code: code,
-        message: message?.isNotEmpty == true
-            ? message!
-            : _messageFor(responseCode, fallbackMessage),
+        message: responseCode != ResponseCode.unhandled
+            ? responseCode.message
+            : (message?.isNotEmpty == true ? message! : _messageFor(responseCode, fallbackMessage)),
         statusCode: statusCode,
       );
     }

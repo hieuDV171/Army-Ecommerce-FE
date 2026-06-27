@@ -285,7 +285,13 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
         }
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          AppSnackBar.show(context, message: message);
+          final isTokenInvalidMsg = message.toLowerCase().contains('token is invalid') ||
+              message.toLowerCase().contains('token_invalid') ||
+              message.toLowerCase().contains('token is required');
+          final isGuest = (context.read<AuthBloc>().state.currentUser?.token ?? '').isEmpty;
+          if (!isGuest || !isTokenInvalidMsg) {
+            AppSnackBar.show(context, message: message);
+          }
         }
         if (state.product != null &&
             widget.scrollToComments &&
@@ -1045,13 +1051,27 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   ),
                 ),
               ],
-              const Divider(height: 32),
-              SizedBox(
-                key: _commentSectionKey,
-                child: _RatingsSection(
-                  productId: product.id,
-                  sellerId: product.seller?.id,
-                ),
+              Builder(
+                builder: (context) {
+                  final authState = context.watch<AuthBloc>().state;
+                  final token = authState.currentUser?.token ?? '';
+                  if (token.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(height: 32),
+                      SizedBox(
+                        key: _commentSectionKey,
+                        child: _RatingsSection(
+                          productId: product.id,
+                          sellerId: product.seller?.id,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.lg),
               SectionHeader(
