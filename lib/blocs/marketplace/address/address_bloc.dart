@@ -122,7 +122,12 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));
+      // TIP-06: bỏ tiền tố "Exception: " để hiện message của BE gọn gàng
+      var msg = error.toString();
+      if (msg.startsWith('Exception: ')) {
+        msg = msg.substring('Exception: '.length);
+      }
+      emit(state.copyWith(isSubmitting: false, errorMessage: msg));
     }
   }
 

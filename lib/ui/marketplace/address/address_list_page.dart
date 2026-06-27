@@ -145,6 +145,28 @@ class _AddressListView extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, AddressModel address) {
+    final addresses = context.read<AddressBloc>().state.addresses;
+    // TIP-06: nhiều BE không cho xóa địa chỉ mặc định. Nếu đây là địa chỉ
+    // mặc định và vẫn còn địa chỉ khác, hướng dẫn đổi mặc định trước khi xóa.
+    if (address.isDefault && addresses.length > 1) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Không thể xóa địa chỉ mặc định'),
+          content: const Text(
+            'Đây đang là địa chỉ mặc định. Vui lòng mở một địa chỉ khác, bật '
+            '"Đặt làm địa chỉ mặc định", rồi quay lại xóa địa chỉ này.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
