@@ -129,3 +129,4 @@ class WardsRequested extends AddressEvent {
   List<Object?> get props => [provinceId];
 }
 
+class AddressClearMessages extends AddressEvent {}

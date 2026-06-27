@@ -3,6 +3,7 @@ import 'package:army_ecommerce/blocs/marketplace/address/address_event.dart';
 import 'package:army_ecommerce/blocs/marketplace/address/address_state.dart';
 import 'package:army_ecommerce/models/address_model.dart';
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
+import 'package:army_ecommerce/ui/util/widgets/app_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../util/constants/app_colors.dart';
@@ -12,7 +13,6 @@ import '../../util/widgets/app_button.dart';
 import '../../util/widgets/loading_overlay.dart';
 import '../../util/theme/special_app_theme.dart';
 import 'address_form_page.dart';
-import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
 class AddressListPage extends StatelessWidget {
   const AddressListPage({super.key});
@@ -36,9 +36,15 @@ class _AddressListView extends StatelessWidget {
     return BlocConsumer<AddressBloc, AddressState>(
       listener: (context, state) {
         if (state.successMessage != null) {
-          AppSnackBar.showSuccess(context, message: state.successMessage!);
+          final msg = state.successMessage!;
+          if (msg != 'Đã cập nhật địa chỉ' && msg != 'Đã thêm địa chỉ') {
+            context.read<AddressBloc>().add(AddressClearMessages());
+            AppDialog.showSuccess(context, message: msg);
+          }
         } else if (state.errorMessage != null) {
-          AppSnackBar.showError(context, message: state.errorMessage!);
+          final msg = state.errorMessage!;
+          context.read<AddressBloc>().add(AddressClearMessages());
+          AppDialog.showError(context, message: msg);
         }
       },
       builder: (context, state) {
@@ -147,6 +153,10 @@ class _AddressListView extends StatelessWidget {
       ),
     );
     if (result == true && context.mounted) {
+      AppDialog.showSuccess(
+        context,
+        message: address == null ? 'Đã thêm địa chỉ thành công' : 'Đã cập nhật địa chỉ thành công',
+      );
       bloc.add(AddressListRequested());
     }
   }

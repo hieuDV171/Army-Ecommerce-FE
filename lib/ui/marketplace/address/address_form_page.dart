@@ -196,6 +196,16 @@ class _AddressFormPageState extends State<AddressFormPage> {
       return;
     }
 
+    if (!RegExp(r'^(?:\+84|84|0)[0-9]{9}$').hasMatch(phone)) {
+      AppDialog.showError(
+        context,
+        title: 'Thông báo',
+        message: 'Số điện thoại không hợp lệ.',
+        confirmLabel: 'Đã hiểu',
+      );
+      return;
+    }
+
     if (_selectedProvinceModel == null || _selectedWardModel == null) {
       AppSnackBar.show(context, message: 'Vui lòng chọn Tỉnh/Thành phố và Phường/Xã', backgroundColor: AppColors.danger);
       return;
@@ -272,13 +282,12 @@ class _AddressFormPageState extends State<AddressFormPage> {
         setState(() => _isSubmitting = state.isSubmitting);
 
         if (state.successMessage != null) {
-          AppDialog.showSuccess(context, message: state.successMessage!).then((_) {
-            if (context.mounted) {
-              Navigator.pop(context, true);
-            }
-          });
+          context.read<AddressBloc>().add(AddressClearMessages());
+          Navigator.pop(context, true);
         } else if (state.errorMessage != null) {
-          AppDialog.showError(context, message: state.errorMessage!);
+          final msg = state.errorMessage!;
+          context.read<AddressBloc>().add(AddressClearMessages());
+          AppDialog.showError(context, message: msg);
         }
 
         // Handle provinces loaded

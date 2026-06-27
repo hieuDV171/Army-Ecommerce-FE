@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/models/address_model.dart';
 import '../../../repositories/marketplace_repository.dart';
@@ -15,6 +16,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     on<AddressSetDefault>(_onSetDefault);
     on<ProvincesRequested>(_onProvincesRequested);
     on<WardsRequested>(_onWardsRequested);
+    on<AddressClearMessages>((event, emit) => emit(state.copyWith(clearMessages: true)));
   }
 
   Future<void> _onListRequested(
@@ -114,7 +116,9 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         if (event.addressDetail != orig.addressDetail) {
           data['address_detail'] = event.addressDetail ?? '';
         }
-        if (event.isDefault != orig.isDefault) {
+        if (orig.isDefault) {
+          data['is_default'] = true;
+        } else if (event.isDefault != orig.isDefault) {
           data['is_default'] = event.isDefault;
         }
 
@@ -130,6 +134,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         }
       }
 
+      debugPrint('AddressBloc _onUpdated payload data: $data');
       await marketplaceRepository.updateAddress(event.id, data);
       final addresses = await marketplaceRepository.getAddresses();
       emit(
