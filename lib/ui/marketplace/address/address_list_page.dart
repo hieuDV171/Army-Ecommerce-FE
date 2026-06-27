@@ -122,6 +122,8 @@ class _AddressListView extends StatelessWidget {
             address: address,
             onEdit: () => _openForm(context, address: address),
             onDelete: () => _confirmDelete(context, address),
+            onSetDefault: () =>
+                context.read<AddressBloc>().add(AddressSetDefault(address)),
           );
         },
       ),
@@ -145,6 +147,28 @@ class _AddressListView extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, AddressModel address) {
+    final addresses = context.read<AddressBloc>().state.addresses;
+    // TIP-06: nhiều BE không cho xóa địa chỉ mặc định. Nếu đây là địa chỉ
+    // mặc định và vẫn còn địa chỉ khác, hướng dẫn đổi mặc định trước khi xóa.
+    if (address.isDefault && addresses.length > 1) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Không thể xóa địa chỉ mặc định'),
+          content: const Text(
+            'Đây đang là địa chỉ mặc định. Vui lòng mở một địa chỉ khác, bật '
+            '"Đặt làm địa chỉ mặc định", rồi quay lại xóa địa chỉ này.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -175,11 +199,13 @@ class _AddressCard extends StatelessWidget {
   final AddressModel address;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onSetDefault;
 
   const _AddressCard({
     required this.address,
     required this.onEdit,
     required this.onDelete,
+    required this.onSetDefault,
   });
 
   @override
@@ -276,53 +302,63 @@ class _AddressCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (address.address != null && address.address!.isNotEmpty && address.address != address.fullAddress)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
+              if (address.address != null &&
+                  address.address!.isNotEmpty &&
+                  address.address != address.fullAddress)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.specialTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Text(
+                      address.address!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      decoration: BoxDecoration(
-                        color: context.specialTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        address.address!,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  else
-                    const SizedBox.shrink(),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton.icon(
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: const Text('Sửa'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.specialTheme.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      TextButton.icon(
-                        onPressed: onDelete,
-                        icon: const Icon(Icons.delete_outline, size: 16),
-                        label: const Text('Xóa'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.specialTheme.primaryColor,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ],
+                ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: AppSpacing.xs,
+                  children: [
+                    if (!address.isDefault)
+                      TextButton.icon(
+                        onPressed: onSetDefault,
+                        icon: const Icon(Icons.star_outline, size: 16),
+                        label: const Text('Đặt mặc định'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: context.specialTheme.primaryColor,
+                        ),
+                      ),
+                    TextButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 16),
+                      label: const Text('Sửa'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.specialTheme.primaryColor,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      label: const Text('Xóa'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: context.specialTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

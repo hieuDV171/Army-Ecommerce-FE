@@ -5,6 +5,8 @@ import '../constants/app_radius.dart';
 import '../constants/app_spacing.dart';
 import 'app_text_styles.dart';
 import 'special_app_theme.dart';
+import 'package:flutter/cupertino.dart'
+    show CupertinoPageTransitionsBuilder;
 
 class AppTheme {
   static ThemeData get light => getTheme(AppThemeMode.orange);

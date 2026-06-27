@@ -1,3 +1,4 @@
+import 'package:army_ecommerce/models/address_model.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class AddressEvent extends Equatable {
@@ -103,6 +104,15 @@ class AddressDeleted extends AddressEvent {
 
   @override
   List<Object?> get props => [id];
+}
+
+class AddressSetDefault extends AddressEvent {
+  final AddressModel address;
+
+  AddressSetDefault(this.address);
+
+  @override
+  List<Object?> get props => [address];
 }
 
 class ProvincesRequested extends AddressEvent {}
