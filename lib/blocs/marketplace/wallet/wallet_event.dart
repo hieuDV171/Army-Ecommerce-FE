@@ -6,3 +6,5 @@ abstract class WalletEvent extends Equatable {
 }
 
 class WalletRequested extends WalletEvent {}
+
+class WalletLoadMoreRequested extends WalletEvent {}

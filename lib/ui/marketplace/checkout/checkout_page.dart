@@ -5,6 +5,7 @@ import 'package:army_ecommerce/core/services/cart_manager.dart';
 import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../util/constants/app_colors.dart';
 import '../../util/constants/app_spacing.dart';
 import '../../util/widgets/app_button.dart';
@@ -27,7 +28,9 @@ class CheckoutPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstItemId = items.isNotEmpty ? int.tryParse(items.first.productId.split('-')[0]) : null;
+    final firstItemId = items.isNotEmpty
+        ? int.tryParse(items.first.productId.split('-')[0])
+        : null;
     return BlocProvider(
       create: (context) => CheckoutBloc(
         marketplaceRepository: context.read<MarketplaceRepository>(),
@@ -52,7 +55,8 @@ class _CheckoutView extends StatefulWidget {
 
 class _CheckoutViewState extends State<_CheckoutView> {
   void _showProductNotExistedDialog(BuildContext context) {
-    final firstItemTitle = widget.items.isNotEmpty ? widget.items.first.title : '';
+    final firstItemTitle =
+        widget.items.isNotEmpty ? widget.items.first.title : '';
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -74,14 +78,72 @@ class _CheckoutViewState extends State<_CheckoutView> {
     );
   }
 
+  void _showOutOfStockDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Sản phẩm đã hết hàng'),
+          content: const Text(
+            'Rất tiếc, sản phẩm này đã hết hàng nên không thể đặt. Vui lòng quay lại sau.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.pop(context);
+              },
+              child: const Text('Quay lại'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showInsufficientBalanceDialog(BuildContext context, num? available) {
+    final balanceText = available != null
+        ? '${NumberFormat.decimalPattern('vi_VN').format(available)} xu'
+        : null;
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Số dư ví không đủ'),
+          content: Text(
+            balanceText != null
+                ? 'Số dư ví hiện tại của bạn là $balanceText, không đủ để thanh toán đơn hàng này. Vui lòng nạp thêm xu rồi thử lại.'
+                : 'Số dư ví của bạn không đủ để thanh toán đơn hàng này. Vui lòng nạp thêm xu rồi thử lại.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Đã hiểu'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final subtotal = widget.items.fold<num>(0, (sum, item) => sum + item.price * item.quantity);
+    final subtotal = widget.items
+        .fold<num>(0, (sum, item) => sum + item.price * item.quantity);
 
     return BlocConsumer<CheckoutBloc, CheckoutState>(
       listener: (context, state) {
         if (state.isProductNotExisted) {
           _showProductNotExistedDialog(context);
+          return;
+        }
+        if (state.isOutOfStock) {
+          _showOutOfStockDialog(context);
+          return;
+        }
+        if (state.isInsufficientBalance) {
+          _showInsufficientBalanceDialog(context, state.availableBalance);
           return;
         }
         final message = state.errorMessage ?? state.successMessage;
@@ -125,15 +187,20 @@ class _CheckoutViewState extends State<_CheckoutView> {
     );
   }
 
-  Widget _buildBody(BuildContext context, CheckoutState state, num subtotal, num total) {
+  Widget _buildBody(
+      BuildContext context, CheckoutState state, num subtotal, num total) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (state.errorMessage != null && state.addresses.isEmpty) {
-      final firstItemId = widget.items.isNotEmpty ? int.tryParse(widget.items.first.productId) : null;
+      final firstItemId = widget.items.isNotEmpty
+          ? int.tryParse(widget.items.first.productId)
+          : null;
       return ErrorState(
         message: state.errorMessage!,
-        onRetry: () => context.read<CheckoutBloc>().add(CheckoutRequested(productId: firstItemId)),
+        onRetry: () => context
+            .read<CheckoutBloc>()
+            .add(CheckoutRequested(productId: firstItemId)),
       );
     }
 
@@ -151,7 +218,9 @@ class _CheckoutViewState extends State<_CheckoutView> {
           ...state.addresses.map(
             (address) => ListTile(
               onTap: () {
-                context.read<CheckoutBloc>().add(CheckoutAddressSelected(address));
+                context
+                    .read<CheckoutBloc>()
+                    .add(CheckoutAddressSelected(address));
               },
               title: Text(address.title),
               subtitle: Text(address.subtitle),
@@ -231,7 +300,8 @@ class _CheckoutItemTile extends StatelessWidget {
       ),
       title: Text(item.title),
       subtitle: PriceText(price: item.price),
-      trailing: Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
+      trailing:
+          Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
     );
   }
 }

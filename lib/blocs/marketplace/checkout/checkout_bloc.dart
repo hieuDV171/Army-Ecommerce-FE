@@ -7,7 +7,8 @@ import 'checkout_state.dart';
 class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   final MarketplaceRepository marketplaceRepository;
 
-  CheckoutBloc({required this.marketplaceRepository}) : super(const CheckoutState()) {
+  CheckoutBloc({required this.marketplaceRepository})
+      : super(const CheckoutState()) {
     on<CheckoutRequested>(_onRequested);
     on<CheckoutAddressSelected>(_onAddressSelected);
     on<CheckoutShipFeeRequested>(_onShipFeeRequested);
@@ -18,10 +19,12 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     CheckoutRequested event,
     Emitter<CheckoutState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true, productId: event.productId, clearMessages: true));
+    emit(state.copyWith(
+        isLoading: true, productId: event.productId, clearMessages: true));
     try {
       final addresses = await marketplaceRepository.getAddresses();
-      final addressItems = addresses.map((address) => address.toItem()).toList();
+      final addressItems =
+          addresses.map((address) => address.toItem()).toList();
       final defaultAddress = addressItems.isEmpty ? null : addressItems.first;
 
       num shipFee = 0;
@@ -86,7 +89,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
           emit(state.copyWith(isLoading: false));
         }
       } catch (error) {
-        emit(state.copyWith(isLoading: false, errorMessage: 'Không tính được phí ship: $error'));
+        emit(state.copyWith(
+            isLoading: false, errorMessage: 'Không tính được phí ship: $error'));
       }
     }
   }
@@ -113,7 +117,8 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         emit(state.copyWith(isLoading: false));
       }
     } catch (error) {
-      emit(state.copyWith(isLoading: false, errorMessage: 'Không tính được phí ship: $error'));
+      emit(state.copyWith(
+          isLoading: false, errorMessage: 'Không tính được phí ship: $error'));
     }
   }
 
@@ -140,14 +145,40 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
     if (event.items.isNotEmpty) {
       final firstSellerId = event.items.first.sellerId;
-      final isSameSeller = event.items.every((item) => item.sellerId == firstSellerId);
+      final isSameSeller =
+          event.items.every((item) => item.sellerId == firstSellerId);
       if (!isSameSeller) {
-        emit(state.copyWith(errorMessage: 'Các sản phẩm trong đơn hàng phải thuộc cùng một người bán'));
+        emit(state.copyWith(
+            errorMessage:
+                'Các sản phẩm trong đơn hàng phải thuộc cùng một người bán'));
         return;
       }
     }
 
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
+
+    // TIP-04: kiểm tra số dư ví trước khi tạo đơn (nếu lấy được số dư)
+    try {
+      final subtotal = event.items.fold<num>(
+        0,
+        (sum, item) => sum + item.price * item.quantity,
+      );
+      final total = subtotal + state.shippingFee;
+      final balance = await marketplaceRepository.getCurrentBalance();
+      if (balance.available < total) {
+        emit(
+          state.copyWith(
+            isSubmitting: false,
+            isInsufficientBalance: true,
+            availableBalance: balance.available,
+          ),
+        );
+        return;
+      }
+    } catch (_) {
+      // Không lấy được số dư -> bỏ qua kiểm tra chủ động, để BE quyết định
+    }
+
     try {
       final itemsData = event.items.map((item) {
         final parts = item.productId.split('-');
@@ -178,10 +209,17 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       );
     } catch (error) {
       final errorStr = error.toString();
-      final isProductNotExisted = (error is ApiException && error.code == '9992') ||
-                                  errorStr.contains('Product is not existed');
+      final isProductNotExisted =
+          (error is ApiException && error.code == '9992') ||
+              errorStr.contains('Product is not existed');
+      // TIP-03: BE báo sản phẩm đã bán hết / hết hàng (mã 1011 productSold)
+      final isOutOfStock = (error is ApiException && error.code == '1011') ||
+          errorStr.toLowerCase().contains('sold') ||
+          errorStr.contains('hết hàng');
       if (isProductNotExisted) {
         emit(state.copyWith(isSubmitting: false, isProductNotExisted: true));
+      } else if (isOutOfStock) {
+        emit(state.copyWith(isSubmitting: false, isOutOfStock: true));
       } else {
         emit(state.copyWith(isSubmitting: false, errorMessage: errorStr));
       }

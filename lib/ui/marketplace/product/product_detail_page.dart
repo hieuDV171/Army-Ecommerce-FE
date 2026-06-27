@@ -1177,12 +1177,35 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     );
   }
 
+  void _showOutOfStockDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sản phẩm đã hết hàng'),
+        content: const Text(
+          'Rất tiếc, sản phẩm này hiện đã hết hàng. Vui lòng quay lại sau.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showVariantSelectionSheet(
     BuildContext context,
     ProductModel product, {
     required bool isBuyNow,
     ProductSizeModel? preselectedSize,
   }) {
+    // TIP-03: sản phẩm đã hết hàng -> báo ngay, không mở sheet chọn mua
+    if (!product.isStock) {
+      _showOutOfStockDialog(context);
+      return;
+    }
     ProductSizeModel? selectedSize = preselectedSize;
     int quantity = 1;
     String? errorMessage;
@@ -1261,13 +1284,18 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                   runSpacing: AppSpacing.xs,
                   children: product.sizes.map((size) {
                     final isSelected = selectedSize?.id == size.id;
+                    final isSoldOut = size.stock != null && size.stock! <= 0;
                     return ChoiceChip(
                       label: Text(
-                        _formatSimpleVariantName(size),
+                        isSoldOut
+                            ? '${_formatSimpleVariantName(size)} (Hết)'
+                            : _formatSimpleVariantName(size),
                         style: TextStyle(
-                          color: isSelected
-                              ? context.specialTheme.primaryDarkColor
-                              : Colors.black87,
+                          color: isSoldOut
+                              ? Colors.grey
+                              : (isSelected
+                                  ? context.specialTheme.primaryDarkColor
+                                  : Colors.black87),
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -1276,12 +1304,19 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       selected: isSelected,
                       selectedColor: context.specialTheme.primaryColor
                           .withValues(alpha: 0.2),
-                      onSelected: (selected) {
-                        setState(() {
-                          selectedSize = selected ? size : null;
-                          errorMessage = null; // Clear error on select
-                        });
-                      },
+                      onSelected: isSoldOut
+                          ? null
+                          : (selected) {
+                              setState(() {
+                                selectedSize = selected ? size : null;
+                                errorMessage = null; // Clear error on select
+                                // TIP-02: kẹp số lượng theo tồn kho variant
+                                final st = selectedSize?.stock;
+                                if (st != null && st > 0 && quantity > st) {
+                                  quantity = st;
+                                }
+                              });
+                            },
                     );
                   }).toList(),
                 ),
@@ -1321,7 +1356,11 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => setState(() => quantity++),
+                        // TIP-02: chặn tăng vượt tồn kho của variant đã chọn
+                        onPressed: (selectedSize?.stock != null &&
+                                quantity >= selectedSize!.stock!)
+                            ? null
+                            : () => setState(() => quantity++),
                         icon: const Icon(Icons.add_circle_outline),
                       ),
                     ],
@@ -1371,6 +1410,20 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       if (product.sizes.isNotEmpty && selectedSize == null) {
                         setState(() {
                           errorMessage = 'Vui lòng chọn phân loại / kích thước';
+                        });
+                        return;
+                      }
+                      // TIP-02/03: kiểm tra tồn kho của variant đã chọn
+                      final stock = selectedSize?.stock;
+                      if (stock != null && stock <= 0) {
+                        setState(() {
+                          errorMessage = 'Phân loại này đã hết hàng';
+                        });
+                        return;
+                      }
+                      if (stock != null && quantity > stock) {
+                        setState(() {
+                          errorMessage = 'Chỉ còn $stock sản phẩm cho phân loại này';
                         });
                         return;
                       }

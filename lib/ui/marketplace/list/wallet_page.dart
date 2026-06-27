@@ -218,80 +218,115 @@ class _WalletView extends StatelessWidget {
                   onRetry: () =>
                       context.read<WalletBloc>().add(WalletRequested()),
                 )
-              : ListView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        gradient: context.specialTheme.useGradient
-                            ? context.specialTheme.primaryGradient
-                            : LinearGradient(
-                                colors: [
-                                  AppColors.tactical,
-                                  context.specialTheme.primaryColor
-                                ],
+              : NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification.metrics.pixels >=
+                            notification.metrics.maxScrollExtent - 200 &&
+                        state.hasMore &&
+                        !state.isLoadingMore) {
+                      context
+                          .read<WalletBloc>()
+                          .add(WalletLoadMoreRequested());
+                    }
+                    return false;
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          gradient: context.specialTheme.useGradient
+                              ? context.specialTheme.primaryGradient
+                              : LinearGradient(
+                                  colors: [
+                                    AppColors.tactical,
+                                    context.specialTheme.primaryColor
+                                  ],
+                                ),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Số dư khả dụng',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            PriceText(
+                              price: state.balance?.available ?? 0,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'Đang chờ: ${state.balance?.pending ?? 0}',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      const SectionHeader(title: 'Lịch sử số dư'),
+                      ...state.history.map((item) {
+                        final isPositive = _isPositiveTransaction(item);
+                        final absBalance = item.balance.abs();
+                        final formattedBalance = NumberFormat.decimalPattern(
+                          'vi_VN',
+                        ).format(absBalance);
+                        final balanceText =
+                            '${isPositive ? "+" : "-"}$formattedBalance xu';
+                        final balanceColor = isPositive
+                            ? AppColors.success
+                            : AppColors.danger;
+
+                        String displayDate = item.date;
+                        try {
+                          final dt = DateTime.parse(item.date);
+                          displayDate = DateFormat(
+                            'dd/MM/yyyy HH:mm:ss',
+                          ).format(dt.toLocal());
+                        } catch (_) {}
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(item.title),
+                          subtitle: Text(displayDate),
+                          trailing: Text(
+                            balanceText,
+                            style: TextStyle(
+                              color: balanceColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          onTap: () => _showTransactionDetails(context, item),
+                        );
+                      }),
+                      if (state.isLoadingMore)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      if (!state.hasMore && state.history.isNotEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.lg,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Đã hiển thị tất cả giao dịch',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
                               ),
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Số dư khả dụng',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          PriceText(
-                            price: state.balance?.available ?? 0,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'Đang chờ: ${state.balance?.pending ?? 0}',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    const SectionHeader(title: 'Lịch sử số dư'),
-                    ...state.history.map((item) {
-                      final isPositive = _isPositiveTransaction(item);
-                      final absBalance = item.balance.abs();
-                      final formattedBalance = NumberFormat.decimalPattern(
-                        'vi_VN',
-                      ).format(absBalance);
-                      final balanceText =
-                          '${isPositive ? "+" : "-"}$formattedBalance xu';
-                      final balanceColor = isPositive
-                          ? AppColors.success
-                          : AppColors.danger;
-
-                      String displayDate = item.date;
-                      try {
-                        final dt = DateTime.parse(item.date);
-                        displayDate = DateFormat(
-                          'dd/MM/yyyy HH:mm:ss',
-                        ).format(dt.toLocal());
-                      } catch (_) {}
-
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(item.title),
-                        subtitle: Text(displayDate),
-                        trailing: Text(
-                          balanceText,
-                          style: TextStyle(
-                            color: balanceColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            ),
                           ),
                         ),
-                        onTap: () => _showTransactionDetails(context, item),
-                      );
-                    }),
-                  ],
+                    ],
+                  ),
                 ),
         );
       },

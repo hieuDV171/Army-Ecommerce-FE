@@ -12,6 +12,9 @@ class CheckoutState extends Equatable {
   final int? leatime;
   final int? productId;
   final bool isProductNotExisted;
+  final bool isOutOfStock;
+  final bool isInsufficientBalance;
+  final num? availableBalance;
 
   const CheckoutState({
     this.addresses = const [],
@@ -24,6 +27,9 @@ class CheckoutState extends Equatable {
     this.leatime,
     this.productId,
     this.isProductNotExisted = false,
+    this.isOutOfStock = false,
+    this.isInsufficientBalance = false,
+    this.availableBalance,
   });
 
   CheckoutState copyWith({
@@ -37,6 +43,9 @@ class CheckoutState extends Equatable {
     int? leatime,
     int? productId,
     bool? isProductNotExisted,
+    bool? isOutOfStock,
+    bool? isInsufficientBalance,
+    num? availableBalance,
     bool clearMessages = false,
   }) {
     return CheckoutState(
@@ -45,11 +54,18 @@ class CheckoutState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage:
+          clearMessages ? null : successMessage ?? this.successMessage,
       shippingFee: shippingFee ?? this.shippingFee,
       leatime: leatime ?? this.leatime,
       productId: productId ?? this.productId,
       isProductNotExisted: isProductNotExisted ?? this.isProductNotExisted,
+      isOutOfStock:
+          clearMessages ? false : (isOutOfStock ?? this.isOutOfStock),
+      isInsufficientBalance: clearMessages
+          ? false
+          : (isInsufficientBalance ?? this.isInsufficientBalance),
+      availableBalance: availableBalance ?? this.availableBalance,
     );
   }
 
@@ -65,5 +81,8 @@ class CheckoutState extends Equatable {
     leatime,
     productId,
     isProductNotExisted,
+    isOutOfStock,
+    isInsufficientBalance,
+    availableBalance,
   ];
 }
