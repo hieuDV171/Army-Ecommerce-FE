@@ -32,7 +32,7 @@ class _WalletView extends StatelessWidget {
   const _WalletView();
 
   void _showTransactionDetails(BuildContext context, WalletHistoryModel item) {
-    final isPositive = item.type == 'income' || item.balance >= 0;
+    final isPositive = _isPositiveTransaction(item);
     final absBalance = item.balance.abs();
     final formattedBalance = NumberFormat.decimalPattern(
       'vi_VN',
@@ -161,6 +161,19 @@ class _WalletView extends StatelessWidget {
     );
   }
 
+  /// Xác định giao dịch là cộng (+) hay trừ (-) xu.
+  /// Ưu tiên theo `type` từ BE; chỉ fallback theo dấu số dư khi type rỗng/lạ.
+  static bool _isPositiveTransaction(WalletHistoryModel item) {
+    switch (item.type) {
+      case 'income':
+        return true;
+      case 'expense':
+        return false;
+      default:
+        return item.balance >= 0;
+    }
+  }
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -244,8 +257,7 @@ class _WalletView extends StatelessWidget {
                     const SizedBox(height: AppSpacing.lg),
                     const SectionHeader(title: 'Lịch sử số dư'),
                     ...state.history.map((item) {
-                      final isPositive =
-                          item.type == 'income' || item.balance >= 0;
+                      final isPositive = _isPositiveTransaction(item);
                       final absBalance = item.balance.abs();
                       final formattedBalance = NumberFormat.decimalPattern(
                         'vi_VN',
