@@ -195,10 +195,16 @@ class SessionManager {
     return userId;
   }
 
-  // Xóa sạch khi đăng xuất
+  // Xóa sạch khi đăng xuất (chỉ xóa session, giữ lại cache, custom_base_url và theme)
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    logger.i('SessionManager: cleared session');
+    await prefs.remove(_keyToken);
+    await prefs.remove(_keyUsername);
+    await prefs.remove(_keyPhoneNumber);
+    await prefs.remove(_keyAvatar);
+    await prefs.remove(_keyCoverImage);
+    await prefs.remove(_keyCoverImageWeb);
+    await prefs.remove(_keyUserId);
+    logger.i('SessionManager: cleared session keys');
   }
 }
