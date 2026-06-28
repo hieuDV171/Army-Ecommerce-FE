@@ -104,7 +104,8 @@ class AppDialog extends StatefulWidget {
   State<AppDialog> createState() => _AppDialogState();
 }
 
-class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMixin {
+class _AppDialogState extends State<AppDialog>
+    with SingleTickerProviderStateMixin {
   Timer? _timer;
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
@@ -141,7 +142,7 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final specialTheme = context.specialTheme;
-    
+
     // Lấy màu sắc chủ đạo và icon của dạng dialog
     Color themeColor;
     IconData iconData;
@@ -171,7 +172,7 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                   color: Colors.black26,
                   blurRadius: 20,
                   offset: Offset(0, 10),
-                )
+                ),
               ],
             ),
             child: Column(
@@ -189,11 +190,7 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                     ),
                   ),
                   child: Center(
-                    child: Icon(
-                      iconData,
-                      size: 44,
-                      color: themeColor,
-                    ),
+                    child: Icon(iconData, size: 44, color: themeColor),
                   ),
                 ),
                 Padding(
@@ -222,7 +219,7 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      
+
                       // Khu vực nút bấm
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -234,9 +231,13 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                                   foregroundColor: Colors.black54,
                                   side: const BorderSide(color: Colors.black12),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                 ),
                                 onPressed: () {
                                   widget.onCancel?.call();
@@ -244,7 +245,9 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                                 },
                                 child: Text(
                                   widget.cancelLabel!,
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -257,9 +260,13 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                                   backgroundColor: themeColor,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   elevation: 0,
                                 ),
                                 onPressed: () {
@@ -268,7 +275,9 @@ class _AppDialogState extends State<AppDialog> with SingleTickerProviderStateMix
                                 },
                                 child: Text(
                                   widget.confirmLabel!,
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),

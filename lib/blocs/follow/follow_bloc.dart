@@ -42,39 +42,55 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
       if (responseCode == ResponseCode.ok && response.data != null) {
         // Dùng event.action thay vì response.data.isFollowed vì API có thể không trả về đúng
         final newIsFollowed = event.action == 'follow';
-        emit(FollowActionSuccess(
-          followeeId: response.data!.followeeId,
-          username: event.username,
-          isFollowed: newIsFollowed,
-          followerCount: response.data!.followerCount,
-          followingCount: response.data!.followingCount,
-        ));
+        emit(
+          FollowActionSuccess(
+            followeeId: response.data!.followeeId,
+            username: event.username,
+            isFollowed: newIsFollowed,
+            followerCount: response.data!.followerCount,
+            followingCount: response.data!.followingCount,
+          ),
+        );
         if (previousState is FollowingLoaded) {
           final updatedList = previousState.following.map((user) {
             return user.id == event.followeeId
                 ? user.copyWith(isFollowed: newIsFollowed)
                 : user;
           }).toList();
-          emit(FollowingLoaded(following: updatedList, hasMore: previousState.hasMore));
+          emit(
+            FollowingLoaded(
+              following: updatedList,
+              hasMore: previousState.hasMore,
+            ),
+          );
         } else if (previousState is FollowersLoaded) {
           final updatedList = previousState.followers.map((user) {
             return user.id == event.followeeId
                 ? user.copyWith(isFollowed: newIsFollowed)
                 : user;
           }).toList();
-          emit(FollowersLoaded(followers: updatedList, hasMore: previousState.hasMore));
+          emit(
+            FollowersLoaded(
+              followers: updatedList,
+              hasMore: previousState.hasMore,
+            ),
+          );
         }
       } else {
         // Mã 1010: đã thực hiện hành động trước đó - không cần báo lỗi ra UI
         if (responseCode == ResponseCode.actionDone) {
-          logger.w('FollowBloc: action already done for followeeId=${event.followeeId}');
+          logger.w(
+            'FollowBloc: action already done for followeeId=${event.followeeId}',
+          );
           return;
         }
         logger.w('FollowBloc: follow action failed code=${response.code}');
         emit(FollowFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(FollowFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        FollowFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 
@@ -98,13 +114,17 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
         _followersIndex += 1;
-        emit(FollowersLoaded(followers: list, hasMore: list.length == _pageSize));
+        emit(
+          FollowersLoaded(followers: list, hasMore: list.length == _pageSize),
+        );
       } else {
         logger.w('FollowBloc: getListFollowed failed code=${response.code}');
         emit(FollowFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(FollowFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        FollowFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 
@@ -132,18 +152,27 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
         final newItems = response.data ?? [];
         _followersIndex += 1;
         final updatedList = [...currentState.followers, ...newItems];
-        emit(FollowersLoaded(followers: updatedList, hasMore: newItems.length == _pageSize));
+        emit(
+          FollowersLoaded(
+            followers: updatedList,
+            hasMore: newItems.length == _pageSize,
+          ),
+        );
       } else {
         // Khi hết dữ liệu (9994), giữ nguyên list, tắt cờ hasMore
         if (ResponseCode.fromCode(response.code) == ResponseCode.noData) {
-          emit(FollowersLoaded(followers: currentState.followers, hasMore: false));
+          emit(
+            FollowersLoaded(followers: currentState.followers, hasMore: false),
+          );
           return;
         }
         logger.w('FollowBloc: loadMore followers failed code=${response.code}');
         emit(FollowFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(FollowFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        FollowFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 
@@ -167,13 +196,17 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
         _followingIndex += 1;
-        emit(FollowingLoaded(following: list, hasMore: list.length == _pageSize));
+        emit(
+          FollowingLoaded(following: list, hasMore: list.length == _pageSize),
+        );
       } else {
         logger.w('FollowBloc: getListFollowing failed code=${response.code}');
         emit(FollowFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(FollowFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        FollowFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 
@@ -200,17 +233,26 @@ class FollowBloc extends Bloc<FollowEvent, FollowState> {
         final newItems = response.data ?? [];
         _followingIndex += 1;
         final updatedList = [...currentState.following, ...newItems];
-        emit(FollowingLoaded(following: updatedList, hasMore: newItems.length == _pageSize));
+        emit(
+          FollowingLoaded(
+            following: updatedList,
+            hasMore: newItems.length == _pageSize,
+          ),
+        );
       } else {
         if (ResponseCode.fromCode(response.code) == ResponseCode.noData) {
-          emit(FollowingLoaded(following: currentState.following, hasMore: false));
+          emit(
+            FollowingLoaded(following: currentState.following, hasMore: false),
+          );
           return;
         }
         logger.w('FollowBloc: loadMore following failed code=${response.code}');
         emit(FollowFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(FollowFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        FollowFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 }

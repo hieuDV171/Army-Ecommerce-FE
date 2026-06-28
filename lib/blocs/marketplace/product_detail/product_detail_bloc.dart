@@ -9,7 +9,7 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
   String? _productId;
 
   ProductDetailBloc({required this.marketplaceRepository})
-      : super(const ProductDetailState()) {
+    : super(const ProductDetailState()) {
     on<ProductDetailRequested>(_onRequested);
     on<ProductLikeToggled>(_onLikeToggled);
     on<ProductCommentSent>(_onCommentSent);
@@ -25,10 +25,22 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     Emitter<ProductDetailState> emit,
   ) async {
     _productId = event.productId;
-    emit(state.copyWith(isLoading: true, clearMessages: true, hasMoreComments: true));
+    emit(
+      state.copyWith(
+        isLoading: true,
+        clearMessages: true,
+        hasMoreComments: true,
+      ),
+    );
     try {
-      final productFuture = marketplaceRepository.getProductDetail(event.productId);
-      final commentsFuture = marketplaceRepository.getComments(event.productId, index: 0, count: 20);
+      final productFuture = marketplaceRepository.getProductDetail(
+        event.productId,
+      );
+      final commentsFuture = marketplaceRepository.getComments(
+        event.productId,
+        index: 0,
+        count: 20,
+      );
 
       final product = await productFuture;
       final comments = await commentsFuture;
@@ -39,7 +51,9 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
         if (event.isStock != null) {
           resolvedIsStock = event.isStock!;
         } else {
-          resolvedIsStock = product.sizes.isEmpty || product.sizes.any((v) => (v.stock ?? 0) > 0);
+          resolvedIsStock =
+              product.sizes.isEmpty ||
+              product.sizes.any((v) => (v.stock ?? 0) > 0);
         }
         updatedProduct = product.copyWith(isStock: resolvedIsStock);
       }
@@ -88,7 +102,7 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
       await marketplaceRepository.sendComment(productId, event.content.trim());
-      
+
       // Sau khi gửi thành công, tải lại danh sách bình luận
       final comments = await marketplaceRepository.getComments(productId);
 
@@ -122,7 +136,11 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
 
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
-      await marketplaceRepository.reportProduct(productId, event.subject, event.details);
+      await marketplaceRepository.reportProduct(
+        productId,
+        event.subject,
+        event.details,
+      );
       emit(
         state.copyWith(
           isSubmitting: false,
@@ -138,7 +156,10 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     ProductCommentsLoadMoreRequested event,
     Emitter<ProductDetailState> emit,
   ) async {
-    if (_productId == null || state.isFetchingMoreComments || !state.hasMoreComments) return;
+    if (_productId == null ||
+        state.isFetchingMoreComments ||
+        !state.hasMoreComments)
+      return;
 
     emit(state.copyWith(isFetchingMoreComments: true));
     try {
@@ -156,7 +177,12 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isFetchingMoreComments: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isFetchingMoreComments: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -191,14 +217,18 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     if (productId == null || product == null) return;
 
     final sellerId = product.seller?.id;
-    final level = event.level ?? (state.selectedStarFilter == 0 ? null : state.selectedStarFilter);
+    final level =
+        event.level ??
+        (state.selectedStarFilter == 0 ? null : state.selectedStarFilter);
 
-    emit(state.copyWith(
-      isLoadingRates: true,
-      selectedStarFilter: event.level ?? state.selectedStarFilter,
-      clearMessages: true,
-      rates: [],
-    ));
+    emit(
+      state.copyWith(
+        isLoadingRates: true,
+        selectedStarFilter: event.level ?? state.selectedStarFilter,
+        clearMessages: true,
+        rates: [],
+      ),
+    );
 
     try {
       final moreRates = await marketplaceRepository.getRates(
@@ -216,7 +246,9 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingRates: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingRates: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -226,10 +258,16 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
   ) async {
     final productId = _productId;
     final product = state.product;
-    if (productId == null || product == null || state.isFetchingMoreRates || !state.hasMoreRates) return;
+    if (productId == null ||
+        product == null ||
+        state.isFetchingMoreRates ||
+        !state.hasMoreRates)
+      return;
 
     final sellerId = product.seller?.id;
-    final level = state.selectedStarFilter == 0 ? null : state.selectedStarFilter;
+    final level = state.selectedStarFilter == 0
+        ? null
+        : state.selectedStarFilter;
 
     emit(state.copyWith(isFetchingMoreRates: true));
     try {
@@ -248,7 +286,12 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isFetchingMoreRates: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isFetchingMoreRates: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 }

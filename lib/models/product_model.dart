@@ -31,7 +31,9 @@ class ProductVideoModel {
   const ProductVideoModel({required this.url});
 
   factory ProductVideoModel.fromJson(Map<String, dynamic> json) {
-    return ProductVideoModel(url: readString(json, ['url', 'video_url'], fallback: ''));
+    return ProductVideoModel(
+      url: readString(json, ['url', 'video_url'], fallback: ''),
+    );
   }
 }
 
@@ -257,10 +259,9 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final sellerJson = readMap(json, ['seller']);
     final rawBrandId = readOptionalString(json, ['brand_id', 'brandId']);
-    final brandJson = readMap(json, ['brand']) ?? (rawBrandId != null ? {
-      'id': rawBrandId,
-      'name': '',
-    } : null);
+    final brandJson =
+        readMap(json, ['brand']) ??
+        (rawBrandId != null ? {'id': rawBrandId, 'name': ''} : null);
     final categoryJson = readMap(json, ['category']);
 
     final parsedImages = _readProductImageList(json, ['image', 'images']);
@@ -306,7 +307,11 @@ class ProductModel {
       }
     }
 
-    final parsedSizes = _readProductSizeList(json, ['size', 'sizes', 'variants']);
+    final parsedSizes = _readProductSizeList(json, [
+      'size',
+      'sizes',
+      'variants',
+    ]);
     final likeText = readOptionalString(json, ['like', 'like_count', 'likes']);
 
     return ProductModel(
@@ -315,27 +320,63 @@ class ProductModel {
       price: readNum(json, ['price', 'price_discount']),
       priceNew: readOptionalString(json, ['price_new']),
       priceDiscount: readOptionalString(json, ['price_discount']),
-      described: readString(json, ['described', 'description', 'details'], fallback: ''),
+      described: readString(json, [
+        'described',
+        'description',
+        'details',
+      ], fallback: ''),
       imageUrls: cleanImageUrls,
       images: cleanImages,
       videos: parsedVideos,
       sizes: parsedSizes,
       brand: brandJson == null ? null : ProductBrandInfo.fromJson(brandJson),
-      seller: sellerJson == null ? null : ProductSellerInfo.fromJson(sellerJson),
-      category: categoryJson == null ? null : ProductCategoryInfo.fromJson(categoryJson),
+      seller: sellerJson == null
+          ? null
+          : ProductSellerInfo.fromJson(sellerJson),
+      category: categoryJson == null
+          ? null
+          : ProductCategoryInfo.fromJson(categoryJson),
       shipsFrom: readOptionalString(json, ['ships_from']),
       shipsFromId: readOptionalString(json, ['ships_from_id']),
       condition: readOptionalString(json, ['condition']),
       created: readOptionalString(json, ['created', 'created_at']),
       like: likeText,
       comment: readOptionalString(json, ['comment', 'comment_count']),
-      sellerName: readOptionalString(sellerJson ?? json, ['name', 'username', 'seller_name', 'seller']),
-      sellerLocation: readOptionalString(json, ['location', 'seller_location', 'city', 'ships_from']),
-      rating: readDouble(sellerJson ?? json, ['score', 'rating', 'rate', 'avg_rate']),
-      soldCount: readInt(sellerJson ?? json, ['listing', 'sold', 'sold_count', 'total_sold']),
+      sellerName: readOptionalString(sellerJson ?? json, [
+        'name',
+        'username',
+        'seller_name',
+        'seller',
+      ]),
+      sellerLocation: readOptionalString(json, [
+        'location',
+        'seller_location',
+        'city',
+        'ships_from',
+      ]),
+      rating: readDouble(sellerJson ?? json, [
+        'score',
+        'rating',
+        'rate',
+        'avg_rate',
+      ]),
+      soldCount: readInt(sellerJson ?? json, [
+        'listing',
+        'sold',
+        'sold_count',
+        'total_sold',
+      ]),
       bestOffers: readOptionalString(json, ['best_offers']),
-      likeCount: readInt(json, ['like_count', 'likes', 'like']) ?? int.tryParse(likeText ?? '') ?? 0,
-      commentCount: readInt(json, ['comment_count', 'comments', 'comment']) ?? int.tryParse(readOptionalString(json, ['comment', 'comment_count']) ?? '') ?? 0,
+      likeCount:
+          readInt(json, ['like_count', 'likes', 'like']) ??
+          int.tryParse(likeText ?? '') ??
+          0,
+      commentCount:
+          readInt(json, ['comment_count', 'comments', 'comment']) ??
+          int.tryParse(
+            readOptionalString(json, ['comment', 'comment_count']) ?? '',
+          ) ??
+          0,
       isLiked: readBool(json, ['is_liked', 'liked']) ?? false,
       isStock: readBool(json, ['is_stock', 'isStock']) ?? true,
       state: readOptionalString(json, ['state']),
@@ -357,12 +398,16 @@ class ProductListResult {
   ProductListResult({required this.products, this.lastId});
 }
 
-List<ProductImageModel> _readProductImageList(Map<String, dynamic> json, List<String> keys) {
+List<ProductImageModel> _readProductImageList(
+  Map<String, dynamic> json,
+  List<String> keys,
+) {
   for (final key in keys) {
     final value = json[key];
     if (value is List) {
       return value.map((item) {
-        if (item is Map) return ProductImageModel.fromJson(Map<String, dynamic>.from(item));
+        if (item is Map)
+          return ProductImageModel.fromJson(Map<String, dynamic>.from(item));
         return ProductImageModel(id: '', url: item?.toString() ?? '');
       }).toList();
     }
@@ -370,12 +415,16 @@ List<ProductImageModel> _readProductImageList(Map<String, dynamic> json, List<St
   return const [];
 }
 
-List<ProductVideoModel> _readProductVideoList(Map<String, dynamic> json, List<String> keys) {
+List<ProductVideoModel> _readProductVideoList(
+  Map<String, dynamic> json,
+  List<String> keys,
+) {
   for (final key in keys) {
     final value = json[key];
     if (value is List) {
       return value.map((item) {
-        if (item is Map) return ProductVideoModel.fromJson(Map<String, dynamic>.from(item));
+        if (item is Map)
+          return ProductVideoModel.fromJson(Map<String, dynamic>.from(item));
         return ProductVideoModel(url: item?.toString() ?? '');
       }).toList();
     }
@@ -383,12 +432,16 @@ List<ProductVideoModel> _readProductVideoList(Map<String, dynamic> json, List<St
   return const [];
 }
 
-List<ProductSizeModel> _readProductSizeList(Map<String, dynamic> json, List<String> keys) {
+List<ProductSizeModel> _readProductSizeList(
+  Map<String, dynamic> json,
+  List<String> keys,
+) {
   for (final key in keys) {
     final value = json[key];
     if (value is List) {
       return value.map((item) {
-        if (item is Map) return ProductSizeModel.fromJson(Map<String, dynamic>.from(item));
+        if (item is Map)
+          return ProductSizeModel.fromJson(Map<String, dynamic>.from(item));
         return ProductSizeModel(id: '', name: item?.toString() ?? '');
       }).toList();
     }
@@ -434,12 +487,20 @@ class CommentModel {
   factory CommentModel.fromJson(Map<String, dynamic> json) {
     return CommentModel(
       id: readString(json, ['id', 'comment_id']),
-      authorName: readString(json, ['username', 'author', 'user_name', 'name'], fallback: 'Người dùng'),
+      authorName: readString(json, [
+        'username',
+        'author',
+        'user_name',
+        'name',
+      ], fallback: 'Người dùng'),
       authorId: readString(json, ['user_id', 'author_id', 'id'], fallback: ''),
       content: readString(json, ['content', 'message'], fallback: ''),
       createdAt: readOptionalString(json, ['created_at', 'createdAt']),
       avatar: readOptionalString(json, ['avatar', 'image', 'user_avatar']),
-      coverImageWeb: readOptionalString(json, ['cover_image_web', 'avatar_frame']),
+      coverImageWeb: readOptionalString(json, [
+        'cover_image_web',
+        'avatar_frame',
+      ]),
     );
   }
 }
@@ -472,14 +533,31 @@ class RateModel {
   factory RateModel.fromJson(Map<String, dynamic> json) {
     return RateModel(
       id: readString(json, ['id', 'rate_id']),
-      author: readString(json, ['username', 'author', 'user_name'], fallback: 'Người dùng'),
-      authorId: readOptionalString(json, ['reviewer_id', 'author_id', 'user_id', 'userId']),
+      author: readString(json, [
+        'username',
+        'author',
+        'user_name',
+      ], fallback: 'Người dùng'),
+      authorId: readOptionalString(json, [
+        'reviewer_id',
+        'author_id',
+        'user_id',
+        'userId',
+      ]),
       content: readString(json, ['content', 'message', 'review'], fallback: ''),
       level: readInt(json, ['level', 'rate', 'rating']) ?? 0,
-      createdAt: readOptionalString(json, ['created_at', 'createdAt', 'time', 'created']),
+      createdAt: readOptionalString(json, [
+        'created_at',
+        'createdAt',
+        'time',
+        'created',
+      ]),
       productId: readOptionalString(json, ['product_id', 'productId']),
       avatar: readOptionalString(json, ['avatar']),
-      coverImageWeb: readOptionalString(json, ['cover_image_web', 'avatar_frame']),
+      coverImageWeb: readOptionalString(json, [
+        'cover_image_web',
+        'avatar_frame',
+      ]),
       purchaseId: readOptionalString(json, ['purchase_id', 'purchaseId']),
     );
   }

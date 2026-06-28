@@ -7,7 +7,8 @@ import 'package:dio/dio.dart';
 class FollowRemoteDataSource {
   final DioClient _dioClient;
 
-  FollowRemoteDataSource({required DioClient dioClient}) : _dioClient = dioClient;
+  FollowRemoteDataSource({required DioClient dioClient})
+    : _dioClient = dioClient;
 
   Future<ApiResponse<dynamic>> setUserFollow({
     required String followeeId,
@@ -16,10 +17,7 @@ class FollowRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.setUserFollow,
-        data: {
-          'followee_id': followeeId,
-          'action': action,
-        },
+        data: {'followee_id': followeeId, 'action': action},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
@@ -35,11 +33,7 @@ class FollowRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.getListFollowed,
-        data: {
-          'user_id': userId,
-          'index': index,
-          'count': count,
-        },
+        data: {'user_id': userId, 'index': index, 'count': count},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
@@ -55,11 +49,7 @@ class FollowRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.getListFollowing,
-        data: {
-          'user_id': userId,
-          'index': index,
-          'count': count,
-        },
+        data: {'user_id': userId, 'index': index, 'count': count},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {

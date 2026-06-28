@@ -63,30 +63,34 @@ class RewardState extends Equatable {
       isSubmittingProof: isSubmittingProof ?? this.isSubmittingProof,
       proofResult: clearProofResult ? null : proofResult ?? this.proofResult,
       isSubmittingAppeal: isSubmittingAppeal ?? this.isSubmittingAppeal,
-      appealResult: clearAppealResult ? null : appealResult ?? this.appealResult,
+      appealResult: clearAppealResult
+          ? null
+          : appealResult ?? this.appealResult,
       isLoadingDetail: isLoadingDetail ?? this.isLoadingDetail,
       proofDetail: clearProofDetail ? null : proofDetail ?? this.proofDetail,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       count: count ?? this.count,
     );
   }
 
   @override
   List<Object?> get props => [
-        history,
-        isLoadingHistory,
-        isLoadingMoreHistory,
-        hasReachedEndHistory,
-        currentPage,
-        isSubmittingProof,
-        proofResult,
-        isSubmittingAppeal,
-        appealResult,
-        isLoadingDetail,
-        proofDetail,
-        errorMessage,
-        successMessage,
-        count,
-      ];
+    history,
+    isLoadingHistory,
+    isLoadingMoreHistory,
+    hasReachedEndHistory,
+    currentPage,
+    isSubmittingProof,
+    proofResult,
+    isSubmittingAppeal,
+    appealResult,
+    isLoadingDetail,
+    proofDetail,
+    errorMessage,
+    successMessage,
+    count,
+  ];
 }

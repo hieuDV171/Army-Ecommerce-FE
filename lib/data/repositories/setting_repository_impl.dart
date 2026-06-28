@@ -1,4 +1,3 @@
-
 import '../../models/api_response.dart';
 import '../../models/push_setting_model.dart';
 import '../../repositories/setting_repository.dart';
@@ -32,5 +31,4 @@ class SettingRepositoryImpl implements SettingRepository {
       soundDefault: soundDefault,
     );
   }
-
 }

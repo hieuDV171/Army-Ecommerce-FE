@@ -23,9 +23,11 @@ class PriceText extends StatelessWidget {
   Widget build(BuildContext context) {
     final formattedPrice = NumberFormat.decimalPattern('vi_VN').format(price);
     final specialTheme = context.specialTheme;
-    
+
     final textStyle = AppTextStyles.productPrice.copyWith(
-      color: color ?? (specialTheme.useGradient ? Colors.white : specialTheme.primaryColor),
+      color:
+          color ??
+          (specialTheme.useGradient ? Colors.white : specialTheme.primaryColor),
       fontSize: fontSize,
       fontWeight: fontWeight,
     );
@@ -39,7 +41,8 @@ class PriceText extends StatelessWidget {
 
     if (color == null && specialTheme.useGradient) {
       return ShaderMask(
-        shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
+        shaderCallback: (bounds) =>
+            specialTheme.primaryGradient!.createShader(bounds),
         child: textWidget,
       );
     }
@@ -69,11 +72,13 @@ class DiscountPriceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceNewNumber = num.tryParse(priceNew ?? '');
     final hasPriceNew = priceNewNumber != null && priceNewNumber > 0;
-    
+
     num discountedPrice = originalPrice;
     if (hasPriceNew && priceNewNumber < originalPrice) {
       discountedPrice = priceNewNumber;
-    } else if (bestOffers != null && bestOffers!.isNotEmpty && bestOffers != '[]') {
+    } else if (bestOffers != null &&
+        bestOffers!.isNotEmpty &&
+        bestOffers != '[]') {
       final clean = bestOffers!
           .replaceAll('[', '')
           .replaceAll(']', '')
@@ -90,17 +95,16 @@ class DiscountPriceRow extends StatelessWidget {
       }
     }
 
-    final formattedOriginal = NumberFormat.decimalPattern('vi_VN').format(originalPrice);
+    final formattedOriginal = NumberFormat.decimalPattern(
+      'vi_VN',
+    ).format(originalPrice);
 
     if (isVertical) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          PriceText(
-            price: discountedPrice,
-            color: priceColor,
-          ),
+          PriceText(price: discountedPrice, color: priceColor),
           const SizedBox(height: 2),
           Text(
             '$formattedOriginal xu',
@@ -120,10 +124,7 @@ class DiscountPriceRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        PriceText(
-          price: discountedPrice,
-          color: priceColor,
-        ),
+        PriceText(price: discountedPrice, color: priceColor),
         const SizedBox(width: 6),
         Text(
           '$formattedOriginal xu',

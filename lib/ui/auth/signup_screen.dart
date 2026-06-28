@@ -21,7 +21,8 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   String? _phoneError;
   String? _passwordError;
@@ -97,24 +98,28 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     });
 
-    if (_phoneError != null || _passwordError != null || _confirmPasswordError != null) {
+    if (_phoneError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null) {
       return;
     }
 
     // Tạo UUID ngẫu nhiên cho thiết bị
     var uuid = const Uuid().v4();
-    
+
     context.read<AuthBloc>().add(
       SignupButtonPressed(phoneNumber: phone, password: pass, uuid: uuid),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final specialTheme = context.specialTheme;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+        backgroundColor: specialTheme.useGradient
+            ? Colors.transparent
+            : specialTheme.primaryDarkColor,
         flexibleSpace: specialTheme.useGradient
             ? Container(
                 decoration: BoxDecoration(
@@ -123,65 +128,71 @@ class _SignupScreenState extends State<SignupScreen> {
               )
             : null,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Đăng ký', style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text(
+          'Đăng ký',
+          style: TextStyle(color: Colors.white, fontSize: 16),
+        ),
       ),
       body: BlocConsumer<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AuthSignupSuccess) {
-              // Đăng ký thành công -> Chuyển sang màn hình xác thực OTP
-              AppSnackBar.showSuccess(context, message: 'Đăng ký thành công, vui lòng xác thực OTP');
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => VerifyOtpScreen(
-                    phoneNumber: state.phoneNumber,
-                    isForgotPassword: false,
-                    password: state.password,
-                  ),
+        listener: (context, state) {
+          if (state is AuthSignupSuccess) {
+            // Đăng ký thành công -> Chuyển sang màn hình xác thực OTP
+            AppSnackBar.showSuccess(
+              context,
+              message: 'Đăng ký thành công, vui lòng xác thực OTP',
+            );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => VerifyOtpScreen(
+                  phoneNumber: state.phoneNumber,
+                  isForgotPassword: false,
+                  password: state.password,
                 ),
-              );
-            } else if (state is AuthSuccess) {
-              // Không điều hướng trực tiếp — main.dart sẽ tự xử lý khi nhận AuthSuccess
-              AppSnackBar.showSuccess(context, message: 'Xác thực thành công!');
-            } else if (state is AuthFailure) {
-              AppSnackBar.showError(context, message: "Lỗi: ${state.error}");
-            }
-          },
-          builder: (context, state) {
-            return Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  AppTextField(
-                    controller: _phoneController,
-                    label: "Số điện thoại",
-                    keyboardType: TextInputType.phone,
-                    errorText: _phoneError,
-                  ),
-                  const SizedBox(height: 20,),
-                  AppTextField(
-                    controller: _passwordController,
-                    label: 'Mật khẩu (6-10 ký tự)',
-                    obscureText: true,
-                    errorText: _passwordError,
-                  ),
-                  const SizedBox(height: 20,),
-                  AppTextField(
-                    controller: _confirmPasswordController,
-                    label: 'Xác nhận mật khẩu',
-                    obscureText: true,
-                    errorText: _confirmPasswordError,
-                  ),
-                  const SizedBox(height: 30,),
-                  AppButton(
-                    label: 'TIẾP THEO',
-                    isLoading: state is AuthLoading,
-                    onPressed: _onSignupPressed,
-                  ),
-                ],
               ),
             );
-          },
+          } else if (state is AuthSuccess) {
+            // Không điều hướng trực tiếp — main.dart sẽ tự xử lý khi nhận AuthSuccess
+            AppSnackBar.showSuccess(context, message: 'Xác thực thành công!');
+          } else if (state is AuthFailure) {
+            AppSnackBar.showError(context, message: "Lỗi: ${state.error}");
+          }
+        },
+        builder: (context, state) {
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                AppTextField(
+                  controller: _phoneController,
+                  label: "Số điện thoại",
+                  keyboardType: TextInputType.phone,
+                  errorText: _phoneError,
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
+                  controller: _passwordController,
+                  label: 'Mật khẩu (6-10 ký tự)',
+                  obscureText: true,
+                  errorText: _passwordError,
+                ),
+                const SizedBox(height: 20),
+                AppTextField(
+                  controller: _confirmPasswordController,
+                  label: 'Xác nhận mật khẩu',
+                  obscureText: true,
+                  errorText: _confirmPasswordError,
+                ),
+                const SizedBox(height: 30),
+                AppButton(
+                  label: 'TIẾP THEO',
+                  isLoading: state is AuthLoading,
+                  onPressed: _onSignupPressed,
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

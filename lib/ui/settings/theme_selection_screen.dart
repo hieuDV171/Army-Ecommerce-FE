@@ -70,7 +70,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -81,7 +84,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
             const SizedBox(height: AppSpacing.xl),
 
             // Section 2: Custom Theme Sandbox
-            _buildSectionTitle('TỰ TẠO MÀU SẮC CÁ NHÂN', Icons.palette_outlined),
+            _buildSectionTitle(
+              'TỰ TẠO MÀU SẮC CÁ NHÂN',
+              Icons.palette_outlined,
+            ),
             const SizedBox(height: AppSpacing.sm),
             const Text(
               'Tự do sáng tạo giao diện độc bản của riêng đồng chí. Live preview bên dưới sẽ thay đổi ngay lập tức.',
@@ -116,7 +122,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
             const SizedBox(height: AppSpacing.lg),
 
             // Secondary/Dark color selection
-            _buildColorHeader('Màu phụ / Màu tối (Secondary Color)', _selectedDark),
+            _buildColorHeader(
+              'Màu phụ / Màu tối (Secondary Color)',
+              _selectedDark,
+            ),
             const SizedBox(height: AppSpacing.sm),
             _buildColorPicker(
               options: _darkColorOptions,
@@ -179,10 +188,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 4,
-              )
+              ),
             ],
           ),
-        )
+        ),
       ],
     );
   }
@@ -255,7 +264,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
               color: color.withValues(alpha: isSelected ? 0.3 : 0.05),
               blurRadius: isSelected ? 12 : 6,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
           border: Border.all(
             color: isSelected ? Colors.white : Colors.transparent,
@@ -285,7 +294,7 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                         color: Colors.black45,
                         blurRadius: 4,
                         offset: Offset(1, 1),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -305,7 +314,10 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
 
   Widget _buildGradientToggle() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -375,18 +387,16 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isSelected ? 0.35 : 0.1),
+                      color: Colors.black.withValues(
+                        alpha: isSelected ? 0.35 : 0.1,
+                      ),
                       blurRadius: isSelected ? 8 : 4,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ],
                 ),
                 child: isSelected
-                    ? const Icon(
-                        Icons.check,
-                        color: Colors.white,
-                        size: 20,
-                      )
+                    ? const Icon(Icons.check, color: Colors.white, size: 20)
                     : null,
               ),
             ),
@@ -397,7 +407,8 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
   }
 
   Widget _buildApplyButton(ThemeCubit cubit) {
-    final isCustomActive = cubit.state.themeMode == AppThemeMode.custom &&
+    final isCustomActive =
+        cubit.state.themeMode == AppThemeMode.custom &&
         cubit.state.customPrimaryColor == _selectedPrimary &&
         cubit.state.customDarkColor == _selectedDark &&
         cubit.state.customUseGradient == _useGradient;
@@ -420,10 +431,17 @@ class _ThemeSelectionScreenState extends State<ThemeSelectionScreen> {
                   dark: _selectedDark,
                   useGradient: _useGradient,
                 );
-                AppSnackBar.show(context, message: 'Đã áp dụng giao diện tùy biến của đồng chí!', backgroundColor: Colors.green, duration: Duration(seconds: 2));
+                AppSnackBar.show(
+                  context,
+                  message: 'Đã áp dụng giao diện tùy biến của đồng chí!',
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                );
               },
         child: Text(
-          isCustomActive ? 'Đang áp dụng giao diện này' : 'Áp Dụng Giao Diện Tùy Biến',
+          isCustomActive
+              ? 'Đang áp dụng giao diện này'
+              : 'Áp Dụng Giao Diện Tùy Biến',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
@@ -519,7 +537,11 @@ class ThemePreviewCard extends StatelessWidget {
                         color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      child: Icon(Icons.military_tech, color: primary, size: 30),
+                      child: Icon(
+                        Icons.military_tech,
+                        color: primary,
+                        size: 30,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(

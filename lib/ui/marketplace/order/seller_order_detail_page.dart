@@ -51,11 +51,8 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
 
   void _submitAction(OrderModel order, OrderActionType actionType) {
     context.read<OrderBloc>().add(
-          OrderActionRequested(
-            order: order,
-            actionType: actionType,
-          ),
-        );
+      OrderActionRequested(order: order, actionType: actionType),
+    );
   }
 
   @override
@@ -73,12 +70,16 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
       child: BlocBuilder<OrderBloc, OrderState>(
         builder: (context, state) {
           if (state.isDetailLoading && state.orderDetail == null) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
 
           if (state.errorMessage != null && state.orderDetail == null) {
             final errorMsg = state.errorMessage!;
-            final isPermissionError = errorMsg.contains('Parameter value is invalid') || errorMsg.contains('1002');
+            final isPermissionError =
+                errorMsg.contains('Parameter value is invalid') ||
+                errorMsg.contains('1002');
             return Scaffold(
               appBar: AppBar(title: const Text('Chi tiết đơn bán')),
               body: ErrorState(
@@ -86,7 +87,9 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
                     ? 'Do giới hạn phân quyền phía server, thông tin chi tiết đơn bán chỉ có thể được xem bởi Người mua. Người bán vui lòng sử dụng tính năng "Thao tác thủ công" ở màn hình danh sách bên ngoài.'
                     : errorMsg,
                 onRetry: () {
-                  context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+                  context.read<OrderBloc>().add(
+                    OrderDetailRequested(widget.orderId),
+                  );
                 },
               ),
             );
@@ -118,7 +121,9 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
                     IconButton(
                       tooltip: 'Làm mới',
                       onPressed: () {
-                        context.read<OrderBloc>().add(OrderDetailRequested(widget.orderId));
+                        context.read<OrderBloc>().add(
+                          OrderDetailRequested(widget.orderId),
+                        );
                       },
                       icon: const Icon(Icons.refresh),
                     ),
@@ -221,7 +226,9 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
             _InfoRow(label: 'Phí vận chuyển', value: order.shipFee),
             _InfoRow(
               label: 'Tổng cộng',
-              value: order.finalPrice > 0 ? order.finalPrice : (order.total + order.shipFee),
+              value: order.finalPrice > 0
+                  ? order.finalPrice
+                  : (order.total + order.shipFee),
             ),
             if ((order.buyerName ?? '').isNotEmpty)
               _TextInfoRow(label: 'Người nhận', value: order.buyerName!),
@@ -288,11 +295,7 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
             else
               Column(
                 children: state.timeline
-                    .map(
-                      (timeline) => _TimelineTile(
-                        timeline: timeline,
-                      ),
-                    )
+                    .map((timeline) => _TimelineTile(timeline: timeline))
                     .toList(),
               ),
           ],
@@ -323,7 +326,8 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => _submitAction(order, OrderActionType.reject),
+                          onPressed: () =>
+                              _submitAction(order, OrderActionType.reject),
                           icon: const Icon(Icons.close),
                           label: const Text('Từ chối'),
                           style: OutlinedButton.styleFrom(
@@ -335,7 +339,8 @@ class _SellerOrderDetailViewState extends State<_SellerOrderDetailView> {
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _submitAction(order, OrderActionType.accept),
+                          onPressed: () =>
+                              _submitAction(order, OrderActionType.accept),
                           icon: const Icon(Icons.check),
                           label: const Text('Chấp nhận'),
                         ),
@@ -367,12 +372,8 @@ class _OrderItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      splashColor: context.specialTheme.primaryColor.withValues(
-        alpha: 0.15,
-      ),
-      highlightColor: context.specialTheme.primaryColor.withValues(
-        alpha: 0.05,
-      ),
+      splashColor: context.specialTheme.primaryColor.withValues(alpha: 0.15),
+      highlightColor: context.specialTheme.primaryColor.withValues(alpha: 0.05),
       onTap: () {
         final rawId = item.productId;
         final cleanId = rawId.split('-').first;
@@ -407,7 +408,10 @@ class _OrderItemTile extends StatelessWidget {
                   children: [
                     const Text(
                       'Giá:',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     PriceText(
                       price: item.price,
@@ -423,17 +427,27 @@ class _OrderItemTile extends StatelessWidget {
                   children: [
                     const Text(
                       'x SL:',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
                       '${item.quantity} sản phẩm',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Divider(height: 1, thickness: 1, color: AppColors.border),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.border,
+                  ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -480,9 +494,15 @@ class _OrderItemImage extends StatelessWidget {
             ? Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(Icons.inventory_2_outlined, color: AppColors.textSecondary),
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.inventory_2_outlined,
+                  color: AppColors.textSecondary,
+                ),
               )
-            : const Icon(Icons.inventory_2_outlined, color: AppColors.textSecondary),
+            : const Icon(
+                Icons.inventory_2_outlined,
+                color: AppColors.textSecondary,
+              ),
       ),
     );
   }
@@ -508,7 +528,9 @@ class _TimelineTile extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 15,
-            backgroundColor: statusColor(timeline.state).withValues(alpha: 0.12),
+            backgroundColor: statusColor(
+              timeline.state,
+            ).withValues(alpha: 0.12),
             child: Icon(
               statusIcon(timeline.state),
               size: 16,
@@ -532,7 +554,10 @@ class _TimelineTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     timeline.time!,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ],

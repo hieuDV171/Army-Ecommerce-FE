@@ -37,6 +37,12 @@ class WalletState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [balance, history, isLoading, isLoadingMore, hasMore, errorMessage];
+  List<Object?> get props => [
+    balance,
+    history,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    errorMessage,
+  ];
 }

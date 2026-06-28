@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:army_ecommerce/models/user_model.dart';
@@ -28,7 +27,7 @@ class SignupButtonPressed extends AuthEvent {
   SignupButtonPressed({
     required this.phoneNumber,
     required this.password,
-    required this.uuid
+    required this.uuid,
   });
 
   @override
@@ -52,7 +51,11 @@ class VerifyOtpPressed extends AuthEvent {
   final String password;
   final String code;
 
-  VerifyOtpPressed({required this.phoneNumber, required this.password, required this.code});
+  VerifyOtpPressed({
+    required this.phoneNumber,
+    required this.password,
+    required this.code,
+  });
 
   @override
   List<Object?> get props => [phoneNumber, password, code];
@@ -72,7 +75,10 @@ class VerifyResetCodeRequested extends AuthEvent {
   final String phoneNumber;
   final String resetCode;
 
-  VerifyResetCodeRequested({required this.phoneNumber, required this.resetCode});
+  VerifyResetCodeRequested({
+    required this.phoneNumber,
+    required this.resetCode,
+  });
 
   @override
   List<Object?> get props => [phoneNumber, resetCode];
@@ -82,7 +88,10 @@ class ResetPasswordRequested extends AuthEvent {
   final String phoneNumber;
   final String newPassword;
 
-  ResetPasswordRequested({required this.phoneNumber, required this.newPassword});
+  ResetPasswordRequested({
+    required this.phoneNumber,
+    required this.newPassword,
+  });
 
   @override
   List<Object?> get props => [phoneNumber, newPassword];
@@ -92,7 +101,10 @@ class ChangePasswordRequested extends AuthEvent {
   final String oldPassword;
   final String newPassword;
 
-  ChangePasswordRequested({required this.oldPassword, required this.newPassword});
+  ChangePasswordRequested({
+    required this.oldPassword,
+    required this.newPassword,
+  });
 
   @override
   List<Object?> get props => [oldPassword, newPassword];
@@ -157,20 +169,19 @@ class SetUserInfoRequested extends AuthEvent {
 
   @override
   List<Object?> get props => [
-        currentUser,
-        email,
-        username,
-        status,
-        avatarFile,
-        firstName,
-        lastName,
-        address,
-        password,
-        coverImageFile,
-        coverImageWebFile,
-        removeAvatar,
-        removeCoverImage,
-        removeCoverImageWeb,
-      ];
+    currentUser,
+    email,
+    username,
+    status,
+    avatarFile,
+    firstName,
+    lastName,
+    address,
+    password,
+    coverImageFile,
+    coverImageWebFile,
+    removeAvatar,
+    removeCoverImage,
+    removeCoverImageWeb,
+  ];
 }
-

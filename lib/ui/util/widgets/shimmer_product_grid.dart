@@ -7,10 +7,7 @@ import 'shimmer_box.dart';
 class ShimmerProductGrid extends StatelessWidget {
   final int itemCount;
 
-  const ShimmerProductGrid({
-    super.key,
-    this.itemCount = 6,
-  });
+  const ShimmerProductGrid({super.key, this.itemCount = 6});
 
   @override
   Widget build(BuildContext context) {

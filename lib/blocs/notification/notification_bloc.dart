@@ -16,14 +16,17 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
   int _index = 0;
 
-  NotificationBloc({required this.notificationRepository}) : super(NotificationInitial()) {
+  NotificationBloc({required this.notificationRepository})
+    : super(NotificationInitial()) {
     on<LoadNotificationsRequested>(_onLoadNotificationsRequested);
     on<LoadMoreNotificationsRequested>(_onLoadMoreNotificationsRequested);
     on<MarkNotificationReadRequested>(_onMarkNotificationReadRequested);
     on<RealTimeNotificationReceived>(_onRealTimeNotificationReceived);
     on<MarkAllNotificationsReadRequested>(_onMarkAllNotificationsReadRequested);
 
-    _notificationSubscription = SocketService().newNotificationsStream.listen((data) {
+    _notificationSubscription = SocketService().newNotificationsStream.listen((
+      data,
+    ) {
       try {
         final notification = NotificationModel.fromJson(data);
         add(RealTimeNotificationReceived(notification: notification));
@@ -45,23 +48,27 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   ) {
     final currentState = state;
     if (currentState is NotificationsLoaded) {
-      if (currentState.notifications.any((n) => n.notificationId == event.notification.notificationId)) {
+      if (currentState.notifications.any(
+        (n) => n.notificationId == event.notification.notificationId,
+      )) {
         return;
       }
       final updatedList = [event.notification, ...currentState.notifications];
-      emit(NotificationsLoaded(
-        notifications: updatedList,
-        hasMore: currentState.hasMore,
-        unreadCount: _countUnread(updatedList),
-      ));
+      emit(
+        NotificationsLoaded(
+          notifications: updatedList,
+          hasMore: currentState.hasMore,
+          unreadCount: _countUnread(updatedList),
+        ),
+      );
     } else if (currentState is NotificationLoadingMore) {
-      if (currentState.currentList.any((n) => n.notificationId == event.notification.notificationId)) {
+      if (currentState.currentList.any(
+        (n) => n.notificationId == event.notification.notificationId,
+      )) {
         return;
       }
       final updatedList = [event.notification, ...currentState.currentList];
-      emit(NotificationLoadingMore(
-        currentList: updatedList,
-      ));
+      emit(NotificationLoadingMore(currentList: updatedList));
     }
   }
 
@@ -92,17 +99,26 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
         _index += 1;
-        emit(NotificationsLoaded(
-          notifications: list,
-          hasMore: list.length == _pageSize,
-          unreadCount: _countUnread(list),
-        ));
+        emit(
+          NotificationsLoaded(
+            notifications: list,
+            hasMore: list.length == _pageSize,
+            unreadCount: _countUnread(list),
+          ),
+        );
       } else {
-        logger.w('NotificationBloc: getNotification failed code=${response.code}');
+        logger.w(
+          'NotificationBloc: getNotification failed code=${response.code}',
+        );
         emit(NotificationFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(NotificationFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        NotificationFailure(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ),
+      );
     }
   }
 
@@ -129,25 +145,36 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
         final newItems = response.data ?? [];
         _index += 1;
         final updatedList = [...currentState.notifications, ...newItems];
-        emit(NotificationsLoaded(
-          notifications: updatedList,
-          hasMore: newItems.length == _pageSize,
-          unreadCount: _countUnread(updatedList),
-        ));
+        emit(
+          NotificationsLoaded(
+            notifications: updatedList,
+            hasMore: newItems.length == _pageSize,
+            unreadCount: _countUnread(updatedList),
+          ),
+        );
       } else {
         if (responseCode == ResponseCode.noData) {
-          emit(NotificationsLoaded(
-            notifications: currentState.notifications,
-            hasMore: false,
-            unreadCount: currentState.unreadCount,
-          ));
+          emit(
+            NotificationsLoaded(
+              notifications: currentState.notifications,
+              hasMore: false,
+              unreadCount: currentState.unreadCount,
+            ),
+          );
           return;
         }
-        logger.w('NotificationBloc: loadMore notifications failed code=${response.code}');
+        logger.w(
+          'NotificationBloc: loadMore notifications failed code=${response.code}',
+        );
         emit(NotificationFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(NotificationFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        NotificationFailure(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ),
+      );
     }
   }
 
@@ -177,13 +204,19 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     // Cập nhật state ngay lập tức (optimistic update)
     if (currentList != null) {
       final updatedList = currentList
-          .map((n) => n.notificationId == event.notificationId ? n.copyWith(isRead: true) : n)
+          .map(
+            (n) => n.notificationId == event.notificationId
+                ? n.copyWith(isRead: true)
+                : n,
+          )
           .toList();
-      emit(NotificationsLoaded(
-        notifications: updatedList,
-        hasMore: hasMore ?? false,
-        unreadCount: _countUnread(updatedList),
-      ));
+      emit(
+        NotificationsLoaded(
+          notifications: updatedList,
+          hasMore: hasMore ?? false,
+          unreadCount: _countUnread(updatedList),
+        ),
+      );
     }
   }
 
@@ -195,22 +228,30 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     final currentState = state;
     if (currentState is! NotificationsLoaded) return;
 
-    final unreadList = currentState.notifications.where((n) => !n.isRead).toList();
+    final unreadList = currentState.notifications
+        .where((n) => !n.isRead)
+        .toList();
     if (unreadList.isEmpty) return;
 
     // Optimistic update ngay lập tức
-    final updatedList = currentState.notifications.map((n) => n.copyWith(isRead: true)).toList();
-    emit(NotificationsLoaded(
-      notifications: updatedList,
-      hasMore: currentState.hasMore,
-      unreadCount: 0,
-    ));
+    final updatedList = currentState.notifications
+        .map((n) => n.copyWith(isRead: true))
+        .toList();
+    emit(
+      NotificationsLoaded(
+        notifications: updatedList,
+        hasMore: currentState.hasMore,
+        unreadCount: 0,
+      ),
+    );
 
     // Gọi API song song cho tất cả thông báo chưa đọc
     try {
       await Future.wait(
         unreadList.map(
-          (n) => notificationRepository.setReadNotification(notificationId: n.notificationId),
+          (n) => notificationRepository.setReadNotification(
+            notificationId: n.notificationId,
+          ),
         ),
       );
     } catch (e) {
@@ -218,5 +259,4 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       // Không rollback — giữ optimistic update để UX mượt hơn
     }
   }
-
 }

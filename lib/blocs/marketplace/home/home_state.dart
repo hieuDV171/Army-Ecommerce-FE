@@ -65,8 +65,10 @@ class HomeState extends Equatable {
       index: index ?? this.index,
       count: count ?? this.count,
       lastId: lastId ?? this.lastId,
-      isLoadingMoreCategories: isLoadingMoreCategories ?? this.isLoadingMoreCategories,
-      hasReachedEndCategories: hasReachedEndCategories ?? this.hasReachedEndCategories,
+      isLoadingMoreCategories:
+          isLoadingMoreCategories ?? this.isLoadingMoreCategories,
+      hasReachedEndCategories:
+          hasReachedEndCategories ?? this.hasReachedEndCategories,
       categoriesIndex: categoriesIndex ?? this.categoriesIndex,
       categoriesCount: categoriesCount ?? this.categoriesCount,
     );

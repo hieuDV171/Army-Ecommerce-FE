@@ -39,7 +39,9 @@ class SellerListingsState extends Equatable {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       index: index ?? this.index,
       count: count ?? this.count,
     );
@@ -47,13 +49,13 @@ class SellerListingsState extends Equatable {
 
   @override
   List<Object?> get props => [
-        products,
-        isLoading,
-        isLoadingMore,
-        hasReachedEnd,
-        errorMessage,
-        successMessage,
-        index,
-        count,
-      ];
+    products,
+    isLoading,
+    isLoadingMore,
+    hasReachedEnd,
+    errorMessage,
+    successMessage,
+    index,
+    count,
+  ];
 }

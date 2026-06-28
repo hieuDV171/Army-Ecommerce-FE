@@ -9,7 +9,6 @@
 // 3. Xóa logic tự động điền (auto-fill) trong initState của VerifyOtpScreen.
 // =============================================================================
 
-
 import 'package:army_ecommerce/core/network/api_exception.dart';
 import 'dart:io';
 
@@ -27,22 +26,21 @@ class AuthRemoteDataSource {
 
   AuthRemoteDataSource({required DioClient dioClient}) : _dioClient = dioClient;
 
-  Future<ApiResponse<UserModel>> login(String phoneNumber, String password) async {
+  Future<ApiResponse<UserModel>> login(
+    String phoneNumber,
+    String password,
+  ) async {
     try {
       // Gửi request POST với SĐT và mật khẩu
       final response = await _dioClient.dio.post(
         ApiPaths.login,
-        data: {
-          'phone_number': phoneNumber,
-          'password': password,
-        },
+        data: {'phone_number': phoneNumber, 'password': password},
       );
 
       return ApiResponse<UserModel>.fromJson(
         response.data,
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
-
     } on DioException catch (e) {
       throw ApiException.fromResponse(
         data: e.response?.data,
@@ -54,7 +52,11 @@ class AuthRemoteDataSource {
     }
   }
 
-  Future<ApiResponse<UserModel>> signup(String phoneNumber, String password, String uuid) async {
+  Future<ApiResponse<UserModel>> signup(
+    String phoneNumber,
+    String password,
+    String uuid,
+  ) async {
     try {
       // Gửi request POST đăng ký
       final response = await _dioClient.dio.post(
@@ -82,14 +84,8 @@ class AuthRemoteDataSource {
       // Gửi request POST kèm tham số token theo yêu cầu
       await _dioClient.dio.post(
         ApiPaths.logout,
-        data: {
-          'token': token,
-        },
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        ),
+        data: {'token': token},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -98,7 +94,10 @@ class AuthRemoteDataSource {
     }
   }
 
-  Future<ApiResponse<UserModel>> checkSignupCode(String phoneNumber, String code) async {
+  Future<ApiResponse<UserModel>> checkSignupCode(
+    String phoneNumber,
+    String code,
+  ) async {
     // --- ĐOẠN MÃ GIẢ LẬP (PLACEHOLDER) ---
     // Giả lập thời gian chờ phản hồi từ server là 1 giây
     await Future.delayed(const Duration(seconds: 1));
@@ -106,15 +105,20 @@ class AuthRemoteDataSource {
     // Giả lập logic kiểm tra: Nếu mã là '123456' thì coi như thành công
     if (code == '123456') {
       return ApiResponse(
-          code: '1000',
-          message: 'Xác thực thành công',
-          // Trả về data ảo để app không bị crash khi parse
-          data: UserModel(id: 'temp', username: phoneNumber, token: 'temp_token', active: -1)
+        code: '1000',
+        message: 'Xác thực thành công',
+        // Trả về data ảo để app không bị crash khi parse
+        data: UserModel(
+          id: 'temp',
+          username: phoneNumber,
+          token: 'temp_token',
+          active: -1,
+        ),
       );
     } else {
       return ApiResponse(
-          code: ResponseCode.codeVerifyIncorrect.code,
-          message: ResponseCode.codeVerifyIncorrect.message
+        code: ResponseCode.codeVerifyIncorrect.code,
+        message: ResponseCode.codeVerifyIncorrect.message,
       );
     }
 
@@ -162,13 +166,13 @@ class AuthRemoteDataSource {
 
   // [!!!] QUAN TRỌNG: ĐOẠN CODE TẠM THỜI ĐỂ LẤY OTP TRỰC TIẾP TỪ BE [!!!]
   // Sau này BE cài SMS xong, chỉ cần comment đoạn code dưới đây và mở đoạn code bên trên
-  Future<Map<String, dynamic>> createCodeResetPassword(String phoneNumber) async {
+  Future<Map<String, dynamic>> createCodeResetPassword(
+    String phoneNumber,
+  ) async {
     try {
       final response = await _dioClient.dio.post(
-          ApiPaths.createCodeResetPassword,
-          data: {
-            'phone_number': phoneNumber
-          }
+        ApiPaths.createCodeResetPassword,
+        data: {'phone_number': phoneNumber},
       );
 
       return response.data;
@@ -178,18 +182,18 @@ class AuthRemoteDataSource {
   }
   // [!!!] HẾT ĐOẠN TẠM THỜI [!!!]
 
-  Future<ApiResponse<String?>> checkCodeResetPassword(String phoneNumber, String resetCode) async {
+  Future<ApiResponse<String?>> checkCodeResetPassword(
+    String phoneNumber,
+    String resetCode,
+  ) async {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.checkCodeResetPassword,
-        data: {
-          'phone_number': phoneNumber,
-          'reset_code': resetCode,
-        },
+        data: {'phone_number': phoneNumber, 'reset_code': resetCode},
       );
       return ApiResponse<String?>.fromJson(
-          response.data,
-              (json) => json?.toString()
+        response.data,
+        (json) => json?.toString(),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -203,18 +207,15 @@ class AuthRemoteDataSource {
     Object? userId,
   }) async {
     try {
-      final data = <String, dynamic>{
-        'token': token,
-        'user_id': userId ?? 0,
-      };
+      final data = <String, dynamic>{'token': token, 'user_id': userId ?? 0};
 
       final response = await _dioClient.dio.post(
         ApiPaths.getUserInfo,
         data: data,
       );
       return ApiResponse<UserModel>.fromJson(
-          response.data,
-              (json) => UserModel.fromJson(json as Map<String, dynamic>)
+        response.data,
+        (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -223,19 +224,19 @@ class AuthRemoteDataSource {
     }
   }
 
-  Future<ApiResponse<UserModel>> resetPassword(String phoneNumber, String newPassword) async {
+  Future<ApiResponse<UserModel>> resetPassword(
+    String phoneNumber,
+    String newPassword,
+  ) async {
     try {
       final response = await _dioClient.dio.post(
-          ApiPaths.resetPassword,
-          data: {
-            'phone_number': phoneNumber,
-            'password': newPassword,
-          }
+        ApiPaths.resetPassword,
+        data: {'phone_number': phoneNumber, 'password': newPassword},
       );
 
       return ApiResponse<UserModel>.fromJson(
-          response.data,
-              (json) => UserModel.fromJson(json as Map<String, dynamic>)
+        response.data,
+        (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -246,23 +247,23 @@ class AuthRemoteDataSource {
 
   Future<ApiResponse<String>> changePassword({
     required String oldPassword,
-    required String newPassword
+    required String newPassword,
   }) async {
     try {
       final token = await SessionManager.getToken();
 
       final response = await _dioClient.dio.post(
-          ApiPaths.changePassword,
-          data: {
-            'token': token,
-            'password': oldPassword,
-            'new_password': newPassword,
-          }
+        ApiPaths.changePassword,
+        data: {
+          'token': token,
+          'password': oldPassword,
+          'new_password': newPassword,
+        },
       );
 
       return ApiResponse<String>.fromJson(
-          response.data,
-              (json) => json.toString()
+        response.data,
+        (json) => json.toString(),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -282,16 +283,12 @@ class AuthRemoteDataSource {
 
       final response = await _dioClient.dio.post(
         ApiPaths.setDevToken,
-        data: {
-          'token': token,
-          'devtype': devType,
-          'devtoken': devToken,
-        },
+        data: {'token': token, 'devtype': devType, 'devtoken': devToken},
       );
 
       return ApiResponse<String>.fromJson(
-          response.data,
-              (json) => json.toString()
+        response.data,
+        (json) => json.toString(),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -323,9 +320,7 @@ class AuthRemoteDataSource {
         final uploadResponse = await _dioClient.dio.post(
           ApiPaths.uploadFile,
           data: formData,
-          options: Options(
-            contentType: 'multipart/form-data',
-          ),
+          options: Options(contentType: 'multipart/form-data'),
         );
 
         avatarUrl = uploadResponse.data?['data']?['url'] as String?;
@@ -333,16 +328,12 @@ class AuthRemoteDataSource {
 
       final response = await _dioClient.dio.post(
         ApiPaths.changeInfoAfterSignup,
-        data: {
-          'token': token,
-          'username': username,
-          'avatar': avatarUrl,
-        },
+        data: {'token': token, 'username': username, 'avatar': avatarUrl},
       );
 
       return ApiResponse<UserModel>.fromJson(
-          response.data,
-              (json) => UserModel.fromJson(json as Map<String, dynamic>)
+        response.data,
+        (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -356,18 +347,13 @@ class AuthRemoteDataSource {
 
     final fileName = file.path.split(Platform.pathSeparator).last;
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        file.path,
-        filename: fileName,
-      ),
+      'file': await MultipartFile.fromFile(file.path, filename: fileName),
     });
 
     final uploadResponse = await _dioClient.dio.post(
       ApiPaths.uploadFile,
       data: formData,
-      options: Options(
-        contentType: 'multipart/form-data',
-      ),
+      options: Options(contentType: 'multipart/form-data'),
     );
 
     return uploadResponse.data?['data']?['url'] as String?;
@@ -396,25 +382,30 @@ class AuthRemoteDataSource {
       final coverImageUrl = await _uploadFile(coverImageFile);
       final coverImageWebUrl = await _uploadFile(coverImageWebFile);
 
-      final payload = <String, dynamic>{
-        'token': token,
-      };
+      final payload = <String, dynamic>{'token': token};
 
-      if (email != null && email.trim().isNotEmpty) payload['email'] = email.trim();
-      if (username != null && username.trim().isNotEmpty) payload['username'] = username.trim();
-      if (status != null && status.trim().isNotEmpty) payload['status'] = status.trim();
-      
+      if (email != null && email.trim().isNotEmpty)
+        payload['email'] = email.trim();
+      if (username != null && username.trim().isNotEmpty)
+        payload['username'] = username.trim();
+      if (status != null && status.trim().isNotEmpty)
+        payload['status'] = status.trim();
+
       if (removeAvatar) {
         payload['avatar'] = "";
       } else if (avatarUrl != null) {
         payload['avatar'] = avatarUrl;
       }
 
-      if (firstName != null && firstName.trim().isNotEmpty) payload['firstname'] = firstName.trim();
-      if (lastName != null && lastName.trim().isNotEmpty) payload['lastname'] = lastName.trim();
-      if (address != null && address.trim().isNotEmpty) payload['address'] = address.trim();
-      if (password != null && password.trim().isNotEmpty) payload['password'] = password;
-      
+      if (firstName != null && firstName.trim().isNotEmpty)
+        payload['firstname'] = firstName.trim();
+      if (lastName != null && lastName.trim().isNotEmpty)
+        payload['lastname'] = lastName.trim();
+      if (address != null && address.trim().isNotEmpty)
+        payload['address'] = address.trim();
+      if (password != null && password.trim().isNotEmpty)
+        payload['password'] = password;
+
       if (removeCoverImage) {
         payload['cover_image'] = "";
       } else if (coverImageUrl != null) {
@@ -434,7 +425,7 @@ class AuthRemoteDataSource {
 
       final parsedResponse = ApiResponse<UserModel>.fromJson(
         response.data,
-            (json) => UserModel.fromJson(json as Map<String, dynamic>),
+        (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
 
       final responseCode = ResponseCode.fromCode(parsedResponse.code);
@@ -449,8 +440,12 @@ class AuthRemoteDataSource {
           firstName: firstName ?? currentUser.firstName,
           lastName: lastName ?? currentUser.lastName,
           address: address ?? currentUser.address,
-          coverImage: removeCoverImage ? "" : (coverImageUrl ?? currentUser.coverImage),
-          coverImageWeb: removeCoverImageWeb ? "" : (coverImageWebUrl ?? currentUser.coverImageWeb),
+          coverImage: removeCoverImage
+              ? ""
+              : (coverImageUrl ?? currentUser.coverImage),
+          coverImageWeb: removeCoverImageWeb
+              ? ""
+              : (coverImageWebUrl ?? currentUser.coverImageWeb),
         );
 
         return ApiResponse<UserModel>(
@@ -463,15 +458,40 @@ class AuthRemoteDataSource {
       if (responseCode == ResponseCode.ok && parsedResponse.data != null) {
         final mergedUser = parsedResponse.data!.copyWith(
           token: token ?? parsedResponse.data!.token,
-          username: username?.trim().isNotEmpty == true ? username!.trim() : (parsedResponse.data!.username.isNotEmpty ? parsedResponse.data!.username : currentUser.username),
-          avatar: removeAvatar ? "" : (avatarUrl ?? (parsedResponse.data!.avatar ?? currentUser.avatar)),
-          email: email?.trim().isNotEmpty == true ? email!.trim() : (parsedResponse.data!.email ?? currentUser.email),
-          status: status?.trim().isNotEmpty == true ? status!.trim() : (parsedResponse.data!.status ?? currentUser.status),
-          firstName: firstName?.trim().isNotEmpty == true ? firstName!.trim() : (parsedResponse.data!.firstName ?? currentUser.firstName),
-          lastName: lastName?.trim().isNotEmpty == true ? lastName!.trim() : (parsedResponse.data!.lastName ?? currentUser.lastName),
-          address: address?.trim().isNotEmpty == true ? address!.trim() : (parsedResponse.data!.address ?? currentUser.address),
-          coverImage: removeCoverImage ? "" : (coverImageUrl ?? (parsedResponse.data!.coverImage ?? currentUser.coverImage)),
-          coverImageWeb: removeCoverImageWeb ? "" : (coverImageWebUrl ?? (parsedResponse.data!.coverImageWeb ?? currentUser.coverImageWeb)),
+          username: username?.trim().isNotEmpty == true
+              ? username!.trim()
+              : (parsedResponse.data!.username.isNotEmpty
+                    ? parsedResponse.data!.username
+                    : currentUser.username),
+          avatar: removeAvatar
+              ? ""
+              : (avatarUrl ??
+                    (parsedResponse.data!.avatar ?? currentUser.avatar)),
+          email: email?.trim().isNotEmpty == true
+              ? email!.trim()
+              : (parsedResponse.data!.email ?? currentUser.email),
+          status: status?.trim().isNotEmpty == true
+              ? status!.trim()
+              : (parsedResponse.data!.status ?? currentUser.status),
+          firstName: firstName?.trim().isNotEmpty == true
+              ? firstName!.trim()
+              : (parsedResponse.data!.firstName ?? currentUser.firstName),
+          lastName: lastName?.trim().isNotEmpty == true
+              ? lastName!.trim()
+              : (parsedResponse.data!.lastName ?? currentUser.lastName),
+          address: address?.trim().isNotEmpty == true
+              ? address!.trim()
+              : (parsedResponse.data!.address ?? currentUser.address),
+          coverImage: removeCoverImage
+              ? ""
+              : (coverImageUrl ??
+                    (parsedResponse.data!.coverImage ??
+                        currentUser.coverImage)),
+          coverImageWeb: removeCoverImageWeb
+              ? ""
+              : (coverImageWebUrl ??
+                    (parsedResponse.data!.coverImageWeb ??
+                        currentUser.coverImageWeb)),
         );
 
         return ApiResponse<UserModel>(

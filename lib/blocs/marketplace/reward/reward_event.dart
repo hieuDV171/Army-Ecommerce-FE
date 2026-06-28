@@ -39,10 +39,7 @@ class RewardAppealSubmitted extends RewardEvent {
   final String rewardId;
   final String? reason;
 
-  const RewardAppealSubmitted({
-    required this.rewardId,
-    this.reason,
-  });
+  const RewardAppealSubmitted({required this.rewardId, this.reason});
 
   @override
   List<Object?> get props => [rewardId, reason];

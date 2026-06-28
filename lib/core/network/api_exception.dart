@@ -2,7 +2,10 @@ import 'package:dio/dio.dart';
 import '../constants/response_code.dart';
 
 class ApiException implements Exception {
-  static String getMessage(Object? error, [String fallback = "Lỗi kết nối mạng"]) {
+  static String getMessage(
+    Object? error, [
+    String fallback = "Lỗi kết nối mạng",
+  ]) {
     if (error is ApiException) {
       return error.message;
     }
@@ -49,6 +52,7 @@ class ApiException implements Exception {
     }
     return error?.toString() ?? fallback;
   }
+
   final String code;
   final String message;
   final int? statusCode;
@@ -68,7 +72,8 @@ class ApiException implements Exception {
       if (statusCode == 502 || statusCode == 503 || statusCode == 504) {
         return ApiException(
           code: ResponseCode.exception.code,
-          message: 'Hệ thống đang bảo trì hoặc gặp sự cố. Vui lòng thử lại sau ít phút.',
+          message:
+              'Hệ thống đang bảo trì hoặc gặp sự cố. Vui lòng thử lại sau ít phút.',
           statusCode: statusCode,
         );
       }
@@ -86,7 +91,8 @@ class ApiException implements Exception {
       if (msgLower.contains('timeout') || msgLower.contains('deadline')) {
         return ApiException(
           code: ResponseCode.exception.code,
-          message: 'Kết nối mạng quá hạn. Vui lòng kiểm tra lại kết nối và thử lại.',
+          message:
+              'Kết nối mạng quá hạn. Vui lòng kiểm tra lại kết nối và thử lại.',
           statusCode: statusCode,
         );
       }
@@ -97,7 +103,8 @@ class ApiException implements Exception {
           msgLower.contains('network is unreachable')) {
         return ApiException(
           code: ResponseCode.exception.code,
-          message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.',
+          message:
+              'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.',
           statusCode: statusCode,
         );
       }
@@ -112,7 +119,9 @@ class ApiException implements Exception {
         code: code,
         message: responseCode != ResponseCode.unhandled
             ? responseCode.message
-            : (message?.isNotEmpty == true ? message! : _messageFor(responseCode, fallbackMessage)),
+            : (message?.isNotEmpty == true
+                  ? message!
+                  : _messageFor(responseCode, fallbackMessage)),
         statusCode: statusCode,
       );
     }
@@ -124,7 +133,10 @@ class ApiException implements Exception {
     );
   }
 
-  static String _messageFor(ResponseCode responseCode, String? fallbackMessage) {
+  static String _messageFor(
+    ResponseCode responseCode,
+    String? fallbackMessage,
+  ) {
     if (responseCode != ResponseCode.unhandled) return responseCode.message;
     return fallbackMessage ?? ResponseCode.exception.message;
   }

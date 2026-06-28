@@ -9,7 +9,7 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
   final MarketplaceRepository marketplaceRepository;
 
   ProductSearchBloc({required this.marketplaceRepository})
-      : super(const ProductSearchState()) {
+    : super(const ProductSearchState()) {
     on<ProductSearchRequested>(_onRequested);
     on<ProductSearchFiltered>(_onFiltered);
     on<ProductSearchRefreshed>(_onRefreshed);
@@ -19,15 +19,20 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     on<ProductSearchSavedSearchesRequested>(_onSavedSearchesRequested);
     on<ProductSearchDelSavedSearchRequested>(_onDelSavedSearchRequested);
     on<ProductSearchCategoriesRequested>(_onCategoriesRequested);
-    on<ProductSearchCategoriesLoadMoreRequested>(_onCategoriesLoadMoreRequested);
+    on<ProductSearchCategoriesLoadMoreRequested>(
+      _onCategoriesLoadMoreRequested,
+    );
   }
 
   Future<void> _onRequested(
     ProductSearchRequested event,
     Emitter<ProductSearchState> emit,
   ) async {
-    final hasCondition = event.keyword.trim().isNotEmpty ||
-        (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') ||
+    final hasCondition =
+        event.keyword.trim().isNotEmpty ||
+        (event.categoryId != null &&
+            event.categoryId!.isNotEmpty &&
+            event.categoryId != '0') ||
         (event.brandId != null && event.brandId!.isNotEmpty) ||
         event.priceMin != null ||
         event.priceMax != null;
@@ -59,7 +64,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     );
 
     // Tải danh sách thương hiệu nếu có categoryId
-    if (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') {
+    if (event.categoryId != null &&
+        event.categoryId!.isNotEmpty &&
+        event.categoryId != '0') {
       add(ProductSearchBrandsRequested(categoryId: event.categoryId));
     } else {
       emit(state.copyWith(brands: const [], brandId: () => null));
@@ -80,8 +87,11 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
       } catch (_) {}
     }
 
-    final hasCondition = event.keyword.trim().isNotEmpty ||
-        (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') ||
+    final hasCondition =
+        event.keyword.trim().isNotEmpty ||
+        (event.categoryId != null &&
+            event.categoryId!.isNotEmpty &&
+            event.categoryId != '0') ||
         (event.brandId != null && event.brandId!.isNotEmpty) ||
         event.priceMin != null ||
         event.priceMax != null;
@@ -105,7 +115,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     );
 
     // Tải danh sách thương hiệu nếu có categoryId
-    if (event.categoryId != null && event.categoryId!.isNotEmpty && event.categoryId != '0') {
+    if (event.categoryId != null &&
+        event.categoryId!.isNotEmpty &&
+        event.categoryId != '0') {
       add(ProductSearchBrandsRequested(categoryId: event.categoryId));
     } else {
       emit(state.copyWith(brands: const [], brandId: () => null));
@@ -118,7 +130,14 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchRefreshed event,
     Emitter<ProductSearchState> emit,
   ) async {
-    emit(state.copyWith(isRefreshing: true, index: 0, lastId: () => null, clearError: true));
+    emit(
+      state.copyWith(
+        isRefreshing: true,
+        index: 0,
+        lastId: () => null,
+        clearError: true,
+      ),
+    );
     await _loadPage(emit, index: 0, replace: true);
   }
 
@@ -126,7 +145,8 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchLoadMoreRequested event,
     Emitter<ProductSearchState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) return;
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+      return;
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     await _loadPage(emit, index: state.index, replace: false);
   }
@@ -179,7 +199,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
           count: state.count,
         );
       }
-      final merged = replace ? products : _deduplicate([...state.products, ...products]);
+      final merged = replace
+          ? products
+          : _deduplicate([...state.products, ...products]);
       emit(
         state.copyWith(
           products: merged,
@@ -233,7 +255,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     try {
       await marketplaceRepository.likeProduct(event.productId);
     } catch (error) {
-      emit(state.copyWith(products: originalProducts, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          products: originalProducts,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -246,7 +273,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
       final saved = await marketplaceRepository.getSavedSearches();
       emit(state.copyWith(savedSearches: saved, isSavedSearchesLoading: false));
     } catch (error) {
-      emit(state.copyWith(isSavedSearchesLoading: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isSavedSearchesLoading: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -274,12 +306,14 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchCategoriesRequested event,
     Emitter<ProductSearchState> emit,
   ) async {
-    emit(state.copyWith(
-      isCategoriesLoading: true,
-      categoriesIndex: 0,
-      hasReachedEndCategories: false,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        isCategoriesLoading: true,
+        categoriesIndex: 0,
+        hasReachedEndCategories: false,
+        clearError: true,
+      ),
+    );
     try {
       final categories = await marketplaceRepository.getCategories(
         parentId: 0,
@@ -296,7 +330,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isCategoriesLoading: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isCategoriesLoading: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -329,7 +368,12 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isCategoriesLoadingMore: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isCategoriesLoadingMore: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 }

@@ -9,7 +9,7 @@ class WalletBloc extends Bloc<WalletEvent, WalletState> {
   static const int _pageSize = 20;
 
   WalletBloc({required this.marketplaceRepository})
-      : super(const WalletState()) {
+    : super(const WalletState()) {
     on<WalletRequested>(_onRequested);
     on<WalletLoadMoreRequested>(_onLoadMore);
   }

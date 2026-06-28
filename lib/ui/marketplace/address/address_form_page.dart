@@ -57,12 +57,15 @@ class _AddressFormPageState extends State<AddressFormPage> {
       text: widget.address?.receiverName ?? '',
     );
     _phoneCtrl = TextEditingController(text: widget.address?.phone ?? '');
-    
+
     final initialAddress = widget.address?.address ?? '';
-    if (initialAddress.isEmpty || initialAddress == widget.address?.fullAddress) {
+    if (initialAddress.isEmpty ||
+        initialAddress == widget.address?.fullAddress) {
       _selectedTag = null;
       _addressCtrl = TextEditingController(text: '');
-    } else if (initialAddress == 'Nhà riêng' || initialAddress == 'Văn phòng' || initialAddress == 'Trường học') {
+    } else if (initialAddress == 'Nhà riêng' ||
+        initialAddress == 'Văn phòng' ||
+        initialAddress == 'Trường học') {
       _selectedTag = initialAddress;
       _addressCtrl = TextEditingController(text: initialAddress);
     } else {
@@ -192,7 +195,12 @@ class _AddressFormPageState extends State<AddressFormPage> {
         phone.isEmpty ||
         fullAddress.isEmpty ||
         addressDetail.isEmpty) {
-      AppSnackBar.show(context, message: 'Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm', backgroundColor: AppColors.danger);
+      AppSnackBar.show(
+        context,
+        message:
+            'Vui lòng điền đầy đủ: Tên người nhận, SĐT, Địa chỉ đầy đủ, Chi tiết thêm',
+        backgroundColor: AppColors.danger,
+      );
       return;
     }
 
@@ -207,12 +215,20 @@ class _AddressFormPageState extends State<AddressFormPage> {
     }
 
     if (_selectedProvinceModel == null || _selectedWardModel == null) {
-      AppSnackBar.show(context, message: 'Vui lòng chọn Tỉnh/Thành phố và Phường/Xã', backgroundColor: AppColors.danger);
+      AppSnackBar.show(
+        context,
+        message: 'Vui lòng chọn Tỉnh/Thành phố và Phường/Xã',
+        backgroundColor: AppColors.danger,
+      );
       return;
     }
 
     if (latitude.isEmpty || longitude.isEmpty) {
-      AppSnackBar.show(context, message: 'Vui lòng chọn vị trí (Kinh Độ và Vĩ độ)', backgroundColor: AppColors.danger);
+      AppSnackBar.show(
+        context,
+        message: 'Vui lòng chọn vị trí (Kinh Độ và Vĩ độ)',
+        backgroundColor: AppColors.danger,
+      );
       return;
     }
 
@@ -220,7 +236,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
 
     if (_isEditMode) {
       final orig = widget.address!;
-      final hasChanged = receiverName != orig.receiverName ||
+      final hasChanged =
+          receiverName != orig.receiverName ||
           phone != orig.phone ||
           (address.isEmpty ? fullAddress : address) != orig.address ||
           fullAddress != orig.fullAddress ||
@@ -295,7 +312,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
           setState(() {
             if (_isEditMode && widget.address?.province != null) {
               final matched = state.provinces.firstWhere(
-                (p) => p.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase(),
+                (p) =>
+                    p.name.trim().toLowerCase() ==
+                    widget.address!.province!.trim().toLowerCase(),
                 orElse: () => state.provinces.first,
               );
               _selectedProvinceModel = matched;
@@ -311,9 +330,15 @@ class _AddressFormPageState extends State<AddressFormPage> {
         // Handle wards loaded
         if (state.wards.isNotEmpty && _selectedWardModel == null) {
           setState(() {
-            if (_isEditMode && widget.address?.district != null && _selectedProvinceModel != null && _selectedProvinceModel!.name.trim().toLowerCase() == widget.address!.province!.trim().toLowerCase()) {
+            if (_isEditMode &&
+                widget.address?.district != null &&
+                _selectedProvinceModel != null &&
+                _selectedProvinceModel!.name.trim().toLowerCase() ==
+                    widget.address!.province!.trim().toLowerCase()) {
               final matched = state.wards.firstWhere(
-                (w) => w.name.trim().toLowerCase() == widget.address!.district!.trim().toLowerCase(),
+                (w) =>
+                    w.name.trim().toLowerCase() ==
+                    widget.address!.district!.trim().toLowerCase(),
                 orElse: () => state.wards.first,
               );
               _selectedWardModel = matched;
@@ -338,39 +363,49 @@ class _AddressFormPageState extends State<AddressFormPage> {
                   children: [
                     Text(
                       'Tên địa chỉ (Tùy chọn)',
-                      style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Wrap(
                       spacing: AppSpacing.sm,
-                      children: ['Nhà riêng', 'Văn phòng', 'Trường học', 'Khác'].map((tag) {
-                        final isSelected = _selectedTag == tag;
-                        return ChoiceChip(
-                          label: Text(tag),
-                          selected: isSelected,
-                          selectedColor: context.specialTheme.primaryColor.withValues(alpha: 0.2),
-                          checkmarkColor: context.specialTheme.primaryColor,
-                          labelStyle: TextStyle(
-                            color: isSelected ? context.specialTheme.primaryColor : AppColors.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedTag = tag;
-                                if (tag != 'Khác') {
-                                  _addressCtrl.text = tag;
-                                } else {
-                                  _addressCtrl.text = '';
-                                }
-                              } else {
-                                _selectedTag = null;
-                                _addressCtrl.text = '';
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                      children: ['Nhà riêng', 'Văn phòng', 'Trường học', 'Khác']
+                          .map((tag) {
+                            final isSelected = _selectedTag == tag;
+                            return ChoiceChip(
+                              label: Text(tag),
+                              selected: isSelected,
+                              selectedColor: context.specialTheme.primaryColor
+                                  .withValues(alpha: 0.2),
+                              checkmarkColor: context.specialTheme.primaryColor,
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? context.specialTheme.primaryColor
+                                    : AppColors.textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    _selectedTag = tag;
+                                    if (tag != 'Khác') {
+                                      _addressCtrl.text = tag;
+                                    } else {
+                                      _addressCtrl.text = '';
+                                    }
+                                  } else {
+                                    _selectedTag = null;
+                                    _addressCtrl.text = '';
+                                  }
+                                });
+                              },
+                            );
+                          })
+                          .toList(),
                     ),
                     if (_selectedTag == 'Khác') ...[
                       const SizedBox(height: AppSpacing.sm),
@@ -403,7 +438,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
                       child: DropdownButton<ProvinceModel>(
                         isExpanded: true,
                         underline: const SizedBox(),
-                        value: state.provinces.contains(_selectedProvinceModel) ? _selectedProvinceModel : null,
+                        value: state.provinces.contains(_selectedProvinceModel)
+                            ? _selectedProvinceModel
+                            : null,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         items: state.provinces.map((province) {
                           return DropdownMenuItem(
@@ -416,18 +453,26 @@ class _AddressFormPageState extends State<AddressFormPage> {
                             ),
                           );
                         }).toList(),
-                        onChanged: state.isLoadingProvinces ? null : (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedProvinceModel = value;
-                              _selectedWardModel = null;
-                            });
-                            _loadWards(value.id);
-                          }
-                        },
+                        onChanged: state.isLoadingProvinces
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedProvinceModel = value;
+                                    _selectedWardModel = null;
+                                  });
+                                  _loadWards(value.id);
+                                }
+                              },
                         hint: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                          child: Text(state.isLoadingProvinces ? 'Đang tải tỉnh/thành phố...' : 'Chọn Tỉnh/Thành phố *'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                          child: Text(
+                            state.isLoadingProvinces
+                                ? 'Đang tải tỉnh/thành phố...'
+                                : 'Chọn Tỉnh/Thành phố *',
+                          ),
                         ),
                       ),
                     ),
@@ -441,7 +486,9 @@ class _AddressFormPageState extends State<AddressFormPage> {
                       child: DropdownButton<WardModel>(
                         isExpanded: true,
                         underline: const SizedBox(),
-                        value: state.wards.contains(_selectedWardModel) ? _selectedWardModel : null,
+                        value: state.wards.contains(_selectedWardModel)
+                            ? _selectedWardModel
+                            : null,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         items: state.wards.map((ward) {
                           return DropdownMenuItem(
@@ -454,14 +501,22 @@ class _AddressFormPageState extends State<AddressFormPage> {
                             ),
                           );
                         }).toList(),
-                        onChanged: state.isLoadingWards ? null : (value) {
-                          if (value != null) {
-                            setState(() => _selectedWardModel = value);
-                          }
-                        },
+                        onChanged: state.isLoadingWards
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() => _selectedWardModel = value);
+                                }
+                              },
                         hint: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                          child: Text(state.isLoadingWards ? 'Đang tải phường/xã...' : 'Chọn Phường/Xã *'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                          child: Text(
+                            state.isLoadingWards
+                                ? 'Đang tải phường/xã...'
+                                : 'Chọn Phường/Xã *',
+                          ),
                         ),
                       ),
                     ),
@@ -495,7 +550,8 @@ class _AddressFormPageState extends State<AddressFormPage> {
                                 padding: EdgeInsets.zero,
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                foregroundColor: context.specialTheme.primaryColor,
+                                foregroundColor:
+                                    context.specialTheme.primaryColor,
                               ),
                             ),
                             const SizedBox(width: AppSpacing.md),
@@ -532,11 +588,13 @@ class _AddressFormPageState extends State<AddressFormPage> {
                     if (!_isEditMode) ...[
                       SwitchListTile(
                         value: _isDefault,
-                        onChanged: (value) => setState(() => _isDefault = value),
+                        onChanged: (value) =>
+                            setState(() => _isDefault = value),
                         title: const Text('Đặt làm địa chỉ mặc định'),
                         subtitle: const Text('Tự động chọn khi đặt hàng'),
                         activeThumbColor: context.specialTheme.primaryColor,
-                        activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
+                        activeTrackColor: context.specialTheme.primaryColor
+                            .withValues(alpha: 0.5),
                         contentPadding: EdgeInsets.zero,
                       ),
                       const SizedBox(height: AppSpacing.xl),

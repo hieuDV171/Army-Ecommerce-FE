@@ -92,58 +92,79 @@ class _ProductFormViewState extends State<_ProductFormView> {
       _selectedCategory = category;
       _selectedBrand = null;
     });
-    context.read<ProductFormBloc>().add(ProductFormBrandsRequested(category?.id ?? ''));
+    context.read<ProductFormBloc>().add(
+      ProductFormBrandsRequested(category?.id ?? ''),
+    );
   }
 
   void _loadMoreCategories() {
-    context.read<ProductFormBloc>().add(ProductFormCategoriesLoadMoreRequested());
+    context.read<ProductFormBloc>().add(
+      ProductFormCategoriesLoadMoreRequested(),
+    );
   }
 
   void _submitForm() {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedWarehouse == null) {
-      AppSnackBar.show(context, message: 'Vui lòng chọn Kho hàng (Địa chỉ gửi)');
+      AppSnackBar.show(
+        context,
+        message: 'Vui lòng chọn Kho hàng (Địa chỉ gửi)',
+      );
       return;
     }
 
     if (_variants.isEmpty) {
-      AppSnackBar.show(context, message: 'Sản phẩm cần có ít nhất 1 phân loại hàng (kích cỡ/màu sắc...)');
+      AppSnackBar.show(
+        context,
+        message:
+            'Sản phẩm cần có ít nhất 1 phân loại hàng (kích cỡ/màu sắc...)',
+      );
       return;
     }
 
-    final remainingImagesCount = _existingImages.length - _deletedImages.length + _newImageFiles.length;
+    final remainingImagesCount =
+        _existingImages.length - _deletedImages.length + _newImageFiles.length;
     if (remainingImagesCount == 0) {
-      AppSnackBar.show(context, message: 'Vui lòng thêm ít nhất 1 hình ảnh sản phẩm');
+      AppSnackBar.show(
+        context,
+        message: 'Vui lòng thêm ít nhất 1 hình ảnh sản phẩm',
+      );
       return;
     }
 
     context.read<ProductFormBloc>().add(
-          ProductFormSubmitted(
-            product: widget.product,
-            title: _titleController.text.trim(),
-            price: double.parse(_priceController.text.trim()),
-            description: _descController.text.trim(),
-            categoryId: _selectedCategory?.id,
-            brandId: _selectedBrand?.id,
-            warehouseId: _selectedWarehouse!.id,
-            newImages: _newImageFiles,
-            existingImages: _existingImages,
-            deletedImages: _deletedImages,
-            variants: _variants,
-            videoUrl: _videoUrlController.text.trim(),
-          ),
-        );
+      ProductFormSubmitted(
+        product: widget.product,
+        title: _titleController.text.trim(),
+        price: double.parse(_priceController.text.trim()),
+        description: _descController.text.trim(),
+        categoryId: _selectedCategory?.id,
+        brandId: _selectedBrand?.id,
+        warehouseId: _selectedWarehouse!.id,
+        newImages: _newImageFiles,
+        existingImages: _existingImages,
+        deletedImages: _deletedImages,
+        variants: _variants,
+        videoUrl: _videoUrlController.text.trim(),
+      ),
+    );
   }
 
   Future<void> _pickImage() async {
-    if (_existingImages.length - _deletedImages.length + _newImageFiles.length >= 4) {
+    if (_existingImages.length -
+            _deletedImages.length +
+            _newImageFiles.length >=
+        4) {
       AppSnackBar.show(context, message: 'Chỉ được chọn tối đa 4 hình ảnh');
       return;
     }
 
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
 
     if (image == null) return;
 
@@ -170,11 +191,22 @@ class _ProductFormViewState extends State<_ProductFormView> {
     });
   }
 
-  void _showAddVariantDialog({ProductSizeModel? variantToEdit, int? editIndex}) {
-    final sizeController = TextEditingController(text: variantToEdit?.name ?? '');
-    final colorController = TextEditingController(text: variantToEdit?.color ?? '');
-    final stockController = TextEditingController(text: variantToEdit?.stock?.toString() ?? '');
-    final weightController = TextEditingController(text: variantToEdit?.weight?.toString() ?? '');
+  void _showAddVariantDialog({
+    ProductSizeModel? variantToEdit,
+    int? editIndex,
+  }) {
+    final sizeController = TextEditingController(
+      text: variantToEdit?.name ?? '',
+    );
+    final colorController = TextEditingController(
+      text: variantToEdit?.color ?? '',
+    );
+    final stockController = TextEditingController(
+      text: variantToEdit?.stock?.toString() ?? '',
+    );
+    final weightController = TextEditingController(
+      text: variantToEdit?.weight?.toString() ?? '',
+    );
 
     showDialog(
       context: context,
@@ -211,7 +243,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
               const SizedBox(height: AppSpacing.sm),
               TextField(
                 controller: weightController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Khối lượng (kg) *',
                   hintText: 'VD: 0.5, 1.2...',
@@ -232,8 +266,16 @@ class _ProductFormViewState extends State<_ProductFormView> {
               final stock = int.tryParse(stockController.text.trim());
               final weight = double.tryParse(weightController.text.trim());
 
-              if (size.isEmpty || color.isEmpty || stock == null || stock < 0 || weight == null || weight < 0) {
-                AppSnackBar.show(dialogContext, message: 'Vui lòng nhập đầy đủ thông tin hợp lệ');
+              if (size.isEmpty ||
+                  color.isEmpty ||
+                  stock == null ||
+                  stock < 0 ||
+                  weight == null ||
+                  weight < 0) {
+                AppSnackBar.show(
+                  dialogContext,
+                  message: 'Vui lòng nhập đầy đủ thông tin hợp lệ',
+                );
                 return;
               }
 
@@ -267,7 +309,10 @@ class _ProductFormViewState extends State<_ProductFormView> {
     return BlocConsumer<ProductFormBloc, ProductFormState>(
       listener: (context, state) {
         if (state.isSuccess) {
-          AppSnackBar.showSuccess(context, message: state.successMessage ?? 'Thao tác thành công');
+          AppSnackBar.showSuccess(
+            context,
+            message: state.successMessage ?? 'Thao tác thành công',
+          );
           Navigator.pop(context, true);
         }
         if (state.errorMessage != null) {
@@ -275,7 +320,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
         }
 
         // Initialize lists/flags on metadata loaded
-        if (!state.isLoadingMetadata && state.categories.isNotEmpty && _isInitializing) {
+        if (!state.isLoadingMetadata &&
+            state.categories.isNotEmpty &&
+            _isInitializing) {
           setState(() {
             _categories = List.from(state.categories);
             _warehouses = List.from(state.addresses);
@@ -287,7 +334,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
               _titleController.text = prod.title;
               _priceController.text = prod.price.toInt().toString();
               _descController.text = prod.described;
-              
+
               if (prod.videos.isNotEmpty) {
                 _videoUrlController.text = prod.videos.first.url;
               }
@@ -295,12 +342,16 @@ class _ProductFormViewState extends State<_ProductFormView> {
               _existingImages.addAll(prod.imageUrls);
 
               if (prod.category != null) {
-                final exists = _categories.any((c) => c.id.toString() == prod.category!.id.toString());
+                final exists = _categories.any(
+                  (c) => c.id.toString() == prod.category!.id.toString(),
+                );
                 if (!exists) {
-                  _categories.add(CategoryModel(
-                    id: prod.category!.id.toString(),
-                    name: prod.category!.name,
-                  ));
+                  _categories.add(
+                    CategoryModel(
+                      id: prod.category!.id.toString(),
+                      name: prod.category!.name,
+                    ),
+                  );
                 }
                 _selectedCategory = _categories.firstWhere(
                   (c) => c.id.toString() == prod.category!.id.toString(),
@@ -309,13 +360,23 @@ class _ProductFormViewState extends State<_ProductFormView> {
               }
 
               // Load brands for selected Category
-              context.read<ProductFormBloc>().add(ProductFormBrandsRequested(_selectedCategory?.id ?? ''));
+              context.read<ProductFormBloc>().add(
+                ProductFormBrandsRequested(_selectedCategory?.id ?? ''),
+              );
 
               // Find Warehouse
               if (prod.shipsFromId != null) {
                 _selectedWarehouse = _warehouses.firstWhere(
                   (w) => w.id.toString() == prod.shipsFromId.toString(),
-                  orElse: () => _warehouses.isNotEmpty ? _warehouses.first : const AddressModel(id: '', receiverName: '', phone: '', fullAddress: '', address: ''),
+                  orElse: () => _warehouses.isNotEmpty
+                      ? _warehouses.first
+                      : const AddressModel(
+                          id: '',
+                          receiverName: '',
+                          phone: '',
+                          fullAddress: '',
+                          address: '',
+                        ),
                 );
               }
 
@@ -326,7 +387,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
               }
             } else {
               // Load all brands initially
-              context.read<ProductFormBloc>().add(const ProductFormBrandsRequested(''));
+              context.read<ProductFormBloc>().add(
+                const ProductFormBrandsRequested(''),
+              );
             }
             _isInitializing = false;
           });
@@ -334,20 +397,31 @@ class _ProductFormViewState extends State<_ProductFormView> {
 
         // Update brands when loaded
         if (!state.isLoadingBrands) {
-          final isDifferent = _brands.length != state.brands.length ||
-              _brands.asMap().entries.any((entry) => entry.value != state.brands[entry.key]);
+          final isDifferent =
+              _brands.length != state.brands.length ||
+              _brands.asMap().entries.any(
+                (entry) => entry.value != state.brands[entry.key],
+              );
           if (isDifferent) {
             setState(() {
               _brands = List.from(state.brands);
               _isBrandsLoading = false;
 
-              if (_isEditMode && widget.product!.brand != null && _selectedBrand == null) {
+              if (_isEditMode &&
+                  widget.product!.brand != null &&
+                  _selectedBrand == null) {
                 _selectedBrand = _brands.firstWhere(
-                  (b) => b.id.toString() == widget.product!.brand!.id.toString(),
-                  orElse: () => _brands.isNotEmpty ? _brands.first : const BrandModel(id: '', name: ''),
+                  (b) =>
+                      b.id.toString() == widget.product!.brand!.id.toString(),
+                  orElse: () => _brands.isNotEmpty
+                      ? _brands.first
+                      : const BrandModel(id: '', name: ''),
                 );
               }
-              if (_selectedBrand != null && !_brands.any((b) => b.id.toString() == _selectedBrand!.id.toString())) {
+              if (_selectedBrand != null &&
+                  !_brands.any(
+                    (b) => b.id.toString() == _selectedBrand!.id.toString(),
+                  )) {
                 _selectedBrand = null;
               }
             });
@@ -370,7 +444,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
             _hasReachedEndCat = state.hasReachedEndCategories;
           });
         }
-        if (state.categories != _categories && state.categories.isNotEmpty && !_isInitializing) {
+        if (state.categories != _categories &&
+            state.categories.isNotEmpty &&
+            !_isInitializing) {
           setState(() {
             _categories = List.from(state.categories);
           });
@@ -383,7 +459,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
           isLoading: state.isSubmitting,
           child: Scaffold(
             appBar: AppBar(
-              backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+              backgroundColor: specialTheme.useGradient
+                  ? Colors.transparent
+                  : specialTheme.primaryDarkColor,
               flexibleSpace: specialTheme.useGradient
                   ? Container(
                       decoration: BoxDecoration(
@@ -400,214 +478,302 @@ class _ProductFormViewState extends State<_ProductFormView> {
             body: state.isLoadingMetadata
                 ? const Center(child: CircularProgressIndicator())
                 : state.errorMessage != null && _categories.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xl),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(state.errorMessage!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                              const SizedBox(height: AppSpacing.lg),
-                              ElevatedButton(
-                                onPressed: () => context.read<ProductFormBloc>().add(ProductFormMetadataRequested()),
-                                child: const Text('Tải lại'),
-                              ),
-                            ],
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            state.errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Section 1: Images
-                              _buildImageSection(),
-                              const SizedBox(height: AppSpacing.lg),
-
-                              // Section 2: Info
-                              Card(
-                                elevation: 1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  side: const BorderSide(color: AppColors.border),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(AppSpacing.lg),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Thông tin chung', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                      const SizedBox(height: AppSpacing.md),
-                                      TextFormField(
-                                        controller: _titleController,
-                                        decoration: const InputDecoration(labelText: 'Tên sản phẩm *'),
-                                        validator: (val) {
-                                          if (val == null || val.trim().isEmpty) return 'Vui lòng nhập tên sản phẩm';
-                                          if (val.trim().length > 255) return 'Tên sản phẩm tối đa 255 ký tự';
-                                          return null;
-                                        },
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      TextFormField(
-                                        controller: _priceController,
-                                        decoration: const InputDecoration(labelText: 'Giá bán (xu) *'),
-                                        keyboardType: TextInputType.number,
-                                        validator: (val) {
-                                          if (val == null || val.trim().isEmpty) return 'Vui lòng nhập giá bán';
-                                          final price = double.tryParse(val.trim());
-                                          if (price == null || price < 0) return 'Giá bán phải là số hợp lệ >= 0';
-                                          return null;
-                                        },
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      TextFormField(
-                                        controller: _descController,
-                                        decoration: const InputDecoration(labelText: 'Mô tả chi tiết *'),
-                                        maxLines: 4,
-                                        keyboardType: TextInputType.multiline,
-                                        validator: (val) {
-                                          if (val == null || val.trim().isEmpty) return 'Vui lòng nhập mô tả';
-                                          return null;
-                                        },
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      TextFormField(
-                                        controller: _videoUrlController,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Đường dẫn Video (Tùy chọn)',
-                                          hintText: 'VD: https://youtube.com/...',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-
-                              // Section 3: Dropdowns
-                              Card(
-                                elevation: 1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  side: const BorderSide(color: AppColors.border),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(AppSpacing.lg),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('Phân loại & Xuất xứ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                      const SizedBox(height: AppSpacing.md),
-
-                                      // Category Dropdown
-                                      DropdownButtonFormField<CategoryModel>(
-                                        decoration: const InputDecoration(labelText: 'Danh mục'),
-                                        initialValue: _selectedCategory,
-                                        items: [
-                                          ..._categories.map(
-                                            (c) => DropdownMenuItem<CategoryModel>(
-                                              value: c,
-                                              child: Text(c.name),
-                                            ),
-                                          ),
-                                          if (!_hasReachedEndCat)
-                                            DropdownMenuItem<CategoryModel>(
-                                              value: null,
-                                              enabled: !_isLoadingMoreCat,
-                                              child: _isLoadingMoreCat
-                                                  ? const Row(
-                                                      children: [
-                                                        SizedBox(
-                                                          width: 16,
-                                                          height: 16,
-                                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                                        ),
-                                                        SizedBox(width: 8),
-                                                        Text('Đang tải...', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13)),
-                                                      ],
-                                                    )
-                                                  : const Row(
-                                                      children: [
-                                                        Icon(Icons.expand_more, size: 18, color: Colors.blue),
-                                                        SizedBox(width: 4),
-                                                        Text('Tải thêm danh mục', style: TextStyle(color: Colors.blue, fontStyle: FontStyle.italic, fontSize: 13)),
-                                                      ],
-                                                    ),
-                                          ),
-                                        ],
-                                        onChanged: (val) {
-                                          // null value = sentinel "Tải thêm"
-                                          if (val == null) {
-                                            _loadMoreCategories();
-                                            return;
-                                          }
-                                          _onCategoryChanged(val);
-                                        },
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-
-                                      // Brand Dropdown
-                                      _isBrandsLoading
-                                          ? const Padding(
-                                              padding: EdgeInsets.symmetric(vertical: 12.0),
-                                              child: Center(
-                                                child: SizedBox(
-                                                  width: 24,
-                                                  height: 24,
-                                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                                ),
-                                              ),
-                                            )
-                                          : DropdownButtonFormField<BrandModel>(
-                                              decoration: const InputDecoration(labelText: 'Thương hiệu'),
-                                              initialValue: _selectedBrand,
-                                              items: _brands
-                                                  .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
-                                                  .toList(),
-                                              onChanged: (val) => setState(() => _selectedBrand = val),
-                                            ),
-                                      const SizedBox(height: AppSpacing.md),
-
-                                      // Warehouse (Address) Dropdown
-                                      DropdownButtonFormField<AddressModel>(
-                                        decoration: const InputDecoration(labelText: 'Kho hàng gửi (Địa chỉ của bạn) *'),
-                                        initialValue: _selectedWarehouse,
-                                        items: _warehouses
-                                            .map((w) => DropdownMenuItem(value: w, child: Text(w.address ?? w.fullAddress)))
-                                            .toList(),
-                                        onChanged: (val) => setState(() => _selectedWarehouse = val),
-                                        validator: (val) => val == null ? 'Vui lòng chọn kho hàng gửi đi' : null,
-                                      ),
-                                      if (_warehouses.isEmpty) ...[
-                                        const SizedBox(height: AppSpacing.sm),
-                                        const Text(
-                                          'Bạn chưa đăng ký địa chỉ kho hàng nào. Hãy thêm địa chỉ của bạn trước khi bán sản phẩm.',
-                                          style: TextStyle(color: Colors.redAccent, fontSize: 12),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-
-                              // Section 4: Variants
-                              _buildVariantsSection(),
-                              const SizedBox(height: AppSpacing.xl),
-
-                              // Submit Button
-                              AppButton(
-                                label: _isEditMode ? 'CẬP NHẬT SẢN PHẨM' : 'ĐĂNG BÁN NGAY',
-                                onPressed: _submitForm,
-                                icon: _isEditMode ? Icons.check : Icons.rocket_launch,
-                              ),
-                            ],
+                          const SizedBox(height: AppSpacing.lg),
+                          ElevatedButton(
+                            onPressed: () => context
+                                .read<ProductFormBloc>()
+                                .add(ProductFormMetadataRequested()),
+                            child: const Text('Tải lại'),
                           ),
-                        ),
+                        ],
                       ),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Section 1: Images
+                          _buildImageSection(),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Section 2: Info
+                          Card(
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Thông tin chung',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  TextFormField(
+                                    controller: _titleController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Tên sản phẩm *',
+                                    ),
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty)
+                                        return 'Vui lòng nhập tên sản phẩm';
+                                      if (val.trim().length > 255)
+                                        return 'Tên sản phẩm tối đa 255 ký tự';
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  TextFormField(
+                                    controller: _priceController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Giá bán (xu) *',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty)
+                                        return 'Vui lòng nhập giá bán';
+                                      final price = double.tryParse(val.trim());
+                                      if (price == null || price < 0)
+                                        return 'Giá bán phải là số hợp lệ >= 0';
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  TextFormField(
+                                    controller: _descController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Mô tả chi tiết *',
+                                    ),
+                                    maxLines: 4,
+                                    keyboardType: TextInputType.multiline,
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty)
+                                        return 'Vui lòng nhập mô tả';
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  TextFormField(
+                                    controller: _videoUrlController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Đường dẫn Video (Tùy chọn)',
+                                      hintText: 'VD: https://youtube.com/...',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Section 3: Dropdowns
+                          Card(
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              side: const BorderSide(color: AppColors.border),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Phân loại & Xuất xứ',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+
+                                  // Category Dropdown
+                                  DropdownButtonFormField<CategoryModel>(
+                                    decoration: const InputDecoration(
+                                      labelText: 'Danh mục',
+                                    ),
+                                    initialValue: _selectedCategory,
+                                    items: [
+                                      ..._categories.map(
+                                        (c) => DropdownMenuItem<CategoryModel>(
+                                          value: c,
+                                          child: Text(c.name),
+                                        ),
+                                      ),
+                                      if (!_hasReachedEndCat)
+                                        DropdownMenuItem<CategoryModel>(
+                                          value: null,
+                                          enabled: !_isLoadingMoreCat,
+                                          child: _isLoadingMoreCat
+                                              ? const Row(
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 16,
+                                                      height: 16,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Text(
+                                                      'Đang tải...',
+                                                      style: TextStyle(
+                                                        color: Colors.grey,
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : const Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.expand_more,
+                                                      size: 18,
+                                                      color: Colors.blue,
+                                                    ),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'Tải thêm danh mục',
+                                                      style: TextStyle(
+                                                        color: Colors.blue,
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                        ),
+                                    ],
+                                    onChanged: (val) {
+                                      // null value = sentinel "Tải thêm"
+                                      if (val == null) {
+                                        _loadMoreCategories();
+                                        return;
+                                      }
+                                      _onCategoryChanged(val);
+                                    },
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+
+                                  // Brand Dropdown
+                                  _isBrandsLoading
+                                      ? const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 12.0,
+                                          ),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : DropdownButtonFormField<BrandModel>(
+                                          decoration: const InputDecoration(
+                                            labelText: 'Thương hiệu',
+                                          ),
+                                          initialValue: _selectedBrand,
+                                          items: _brands
+                                              .map(
+                                                (b) => DropdownMenuItem(
+                                                  value: b,
+                                                  child: Text(b.name),
+                                                ),
+                                              )
+                                              .toList(),
+                                          onChanged: (val) => setState(
+                                            () => _selectedBrand = val,
+                                          ),
+                                        ),
+                                  const SizedBox(height: AppSpacing.md),
+
+                                  // Warehouse (Address) Dropdown
+                                  DropdownButtonFormField<AddressModel>(
+                                    decoration: const InputDecoration(
+                                      labelText:
+                                          'Kho hàng gửi (Địa chỉ của bạn) *',
+                                    ),
+                                    initialValue: _selectedWarehouse,
+                                    items: _warehouses
+                                        .map(
+                                          (w) => DropdownMenuItem(
+                                            value: w,
+                                            child: Text(
+                                              w.address ?? w.fullAddress,
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (val) => setState(
+                                      () => _selectedWarehouse = val,
+                                    ),
+                                    validator: (val) => val == null
+                                        ? 'Vui lòng chọn kho hàng gửi đi'
+                                        : null,
+                                  ),
+                                  if (_warehouses.isEmpty) ...[
+                                    const SizedBox(height: AppSpacing.sm),
+                                    const Text(
+                                      'Bạn chưa đăng ký địa chỉ kho hàng nào. Hãy thêm địa chỉ của bạn trước khi bán sản phẩm.',
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+
+                          // Section 4: Variants
+                          _buildVariantsSection(),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // Submit Button
+                          AppButton(
+                            label: _isEditMode
+                                ? 'CẬP NHẬT SẢN PHẨM'
+                                : 'ĐĂNG BÁN NGAY',
+                            onPressed: _submitForm,
+                            icon: _isEditMode
+                                ? Icons.check
+                                : Icons.rocket_launch,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         );
       },
@@ -615,7 +781,8 @@ class _ProductFormViewState extends State<_ProductFormView> {
   }
 
   Widget _buildImageSection() {
-    final activeImagesCount = _existingImages.length - _deletedImages.length + _newImageFiles.length;
+    final activeImagesCount =
+        _existingImages.length - _deletedImages.length + _newImageFiles.length;
 
     return Card(
       elevation: 1,
@@ -637,7 +804,11 @@ class _ProductFormViewState extends State<_ProductFormView> {
                 ),
                 Text(
                   '$activeImagesCount / 4',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -647,7 +818,7 @@ class _ProductFormViewState extends State<_ProductFormView> {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
             const SizedBox(height: AppSpacing.md),
-            
+
             // Image grid/list
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -662,15 +833,28 @@ class _ProductFormViewState extends State<_ProductFormView> {
                         width: 90,
                         height: 90,
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!, width: 2),
+                          border: Border.all(
+                            color: Colors.grey[300]!,
+                            width: 2,
+                          ),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: const Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_photo_alternate_outlined, size: 28, color: AppColors.textSecondary),
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 28,
+                              color: AppColors.textSecondary,
+                            ),
                             SizedBox(height: 4),
-                            Text('Chọn ảnh', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            Text(
+                              'Chọn ảnh',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -703,9 +887,16 @@ class _ProductFormViewState extends State<_ProductFormView> {
                               child: GestureDetector(
                                 onTap: () => _removeExistingImage(url),
                                 child: Container(
-                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
                                   padding: const EdgeInsets.all(4),
-                                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                  child: const Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             )
@@ -716,9 +907,16 @@ class _ProductFormViewState extends State<_ProductFormView> {
                               child: GestureDetector(
                                 onTap: () => _undoRemoveExistingImage(url),
                                 child: Container(
-                                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
                                   padding: const EdgeInsets.all(4),
-                                  child: const Icon(Icons.undo, size: 14, color: Colors.white),
+                                  child: const Icon(
+                                    Icons.undo,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -750,9 +948,16 @@ class _ProductFormViewState extends State<_ProductFormView> {
                             child: GestureDetector(
                               onTap: () => _removeNewImage(idx),
                               child: Container(
-                                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
                                 padding: const EdgeInsets.all(4),
-                                child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -791,7 +996,10 @@ class _ProductFormViewState extends State<_ProductFormView> {
                 TextButton.icon(
                   onPressed: () => _showAddVariantDialog(),
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Thêm phân loại', style: TextStyle(fontSize: 13)),
+                  label: const Text(
+                    'Thêm phân loại',
+                    style: TextStyle(fontSize: 13),
+                  ),
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
@@ -814,9 +1022,16 @@ class _ProductFormViewState extends State<_ProductFormView> {
                 ),
                 child: const Column(
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 36, color: Colors.grey),
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 36,
+                      color: Colors.grey,
+                    ),
                     SizedBox(height: AppSpacing.sm),
-                    Text('Chưa có phân loại nào', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    Text(
+                      'Chưa có phân loại nào',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
                   ],
                 ),
               )
@@ -834,7 +1049,10 @@ class _ProductFormViewState extends State<_ProductFormView> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Size: ${variant.name} | Màu: ${variant.color ?? "Mặc định"}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 4.0),
@@ -848,10 +1066,17 @@ class _ProductFormViewState extends State<_ProductFormView> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 20),
-                          onPressed: () => _showAddVariantDialog(variantToEdit: variant, editIndex: index),
+                          onPressed: () => _showAddVariantDialog(
+                            variantToEdit: variant,
+                            editIndex: index,
+                          ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                            size: 20,
+                          ),
                           onPressed: () {
                             setState(() {
                               _variants.removeAt(index);

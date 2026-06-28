@@ -44,10 +44,7 @@ class NewsDetailPage extends StatelessWidget {
           }
           if (snapshot.hasError) {
             final errorStr = snapshot.error.toString();
-            return ErrorState(
-              message: errorStr,
-              onRetry: () {},
-            );
+            return ErrorState(message: errorStr, onRetry: () {});
           }
           final item = snapshot.data;
           if (item == null) {

@@ -4,14 +4,16 @@ class WalletBalanceModel {
   final num available;
   final num pending;
 
-  const WalletBalanceModel({
-    required this.available,
-    required this.pending,
-  });
+  const WalletBalanceModel({required this.available, required this.pending});
 
   factory WalletBalanceModel.fromJson(Map<String, dynamic> json) {
     return WalletBalanceModel(
-      available: readNum(json, ['available_balance', 'available', 'balance', 'current_balance']),
+      available: readNum(json, [
+        'available_balance',
+        'available',
+        'balance',
+        'current_balance',
+      ]),
       pending: readNum(json, ['pending', 'pending_balance']),
     );
   }
@@ -54,7 +56,9 @@ class WalletHistoryModel {
       detail: readString(json, ['detail', 'description']),
       balance: balance,
       date: readString(json, ['date', 'created_at', 'createdAt']),
-      type: readString(json, ['type'], fallback: balance >= 0 ? 'income' : 'expense'),
+      type: readString(json, [
+        'type',
+      ], fallback: balance >= 0 ? 'income' : 'expense'),
     );
   }
 

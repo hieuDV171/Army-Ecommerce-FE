@@ -8,7 +8,7 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
   final MarketplaceRepository marketplaceRepository;
 
   ConversationListBloc({required this.marketplaceRepository})
-      : super(const ConversationState()) {
+    : super(const ConversationState()) {
     on<ConversationsRequested>(_onRequested);
     on<ConversationsRefreshed>(_onRefreshed);
     on<ConversationsLoadMoreRequested>(_onLoadMoreRequested);
@@ -34,7 +34,8 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationsLoadMoreRequested event,
     Emitter<ConversationState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) return;
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+      return;
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     await _loadPage(emit, index: state.index, replace: false);
   }
@@ -50,9 +51,12 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
         count: state.count,
       );
       final conversations = response.data ?? [];
-      final merged = replace ? conversations : _deduplicateConversations(
-        [...state.conversations, ...conversations],
-      );
+      final merged = replace
+          ? conversations
+          : _deduplicateConversations([
+              ...state.conversations,
+              ...conversations,
+            ]);
       emit(
         state.copyWith(
           conversations: merged,

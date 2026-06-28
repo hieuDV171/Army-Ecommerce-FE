@@ -11,7 +11,8 @@ import 'package:army_ecommerce/ui/util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-Color __themePrimaryColor(BuildContext context) => context.specialTheme.primaryDarkColor;
+Color __themePrimaryColor(BuildContext context) =>
+    context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
 
 class NotificationScreen extends StatefulWidget {
@@ -58,13 +59,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   // Đánh dấu đã đọc và cập nhật UI ngay lập tức (optimistic)
   void _onNotificationTap(NotificationModel notification) {
-    if (!notification.isRead && !_locallyReadIds.contains(notification.notificationId)) {
+    if (!notification.isRead &&
+        !_locallyReadIds.contains(notification.notificationId)) {
       setState(() => _locallyReadIds.add(notification.notificationId));
       context.read<NotificationBloc>().add(
-            MarkNotificationReadRequested(notificationId: notification.notificationId),
-          );
+        MarkNotificationReadRequested(
+          notificationId: notification.notificationId,
+        ),
+      );
     }
-    
+
     final type = notification.type.toLowerCase();
     final objectId = notification.objectId;
     if (objectId != null && objectId.isNotEmpty) {
@@ -127,7 +131,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
         elevation: 0.5,
         iconTheme: const IconThemeData(color: Colors.black87),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black87,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -142,9 +150,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              context.read<NotificationBloc>().add(MarkAllNotificationsReadRequested());
+              context.read<NotificationBloc>().add(
+                MarkAllNotificationsReadRequested(),
+              );
             },
-            icon: Icon(Icons.done_all, color: context.specialTheme.primaryColor),
+            icon: Icon(
+              Icons.done_all,
+              color: context.specialTheme.primaryColor,
+            ),
             tooltip: 'Đọc tất cả',
           ),
         ],
@@ -158,11 +171,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_none_outlined, size: 80, color: Colors.grey[400]),
+          Icon(
+            Icons.notifications_none_outlined,
+            size: 80,
+            color: Colors.grey[400],
+          ),
           const SizedBox(height: 16),
           const Text(
             'Vui lòng đăng nhập để xem thông báo',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
@@ -180,7 +201,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
-            child: const Text('Đăng nhập ngay', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Đăng nhập ngay',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -227,12 +251,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Center(
-                    child: CircularProgressIndicator(color: __themePrimaryColor(context)),
+                    child: CircularProgressIndicator(
+                      color: __themePrimaryColor(context),
+                    ),
                   ),
                 );
               }
               final notification = notifications[index];
-              final isRead = notification.isRead ||
+              final isRead =
+                  notification.isRead ||
                   _locallyReadIds.contains(notification.notificationId);
               return _NotificationItem(
                 notification: notification,
@@ -265,7 +292,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.notifications_none_outlined, size: 72, color: Colors.grey[300]),
+                Icon(
+                  Icons.notifications_none_outlined,
+                  size: 72,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Chưa có thông báo nào',

@@ -16,7 +16,8 @@ abstract class AuthState extends Equatable {
     return null;
   }
 
-  bool get isAuthenticated => currentUser != null && currentUser!.token.isNotEmpty;
+  bool get isAuthenticated =>
+      currentUser != null && currentUser!.token.isNotEmpty;
 }
 
 // Trạng thái khi người dùng chưa đăng nhập
@@ -74,7 +75,8 @@ class ForgotPasswordCodeSent extends AuthState {
 
 class VerifyResetCodeSuccess extends AuthState {
   final String phoneNumber;
-  final String resetCode; // Giữ lại mã code để gửi kèm ở bước Reset mật khẩu cuối cùng
+  final String
+  resetCode; // Giữ lại mã code để gửi kèm ở bước Reset mật khẩu cuối cùng
 
   VerifyResetCodeSuccess({required this.phoneNumber, required this.resetCode});
 
@@ -146,4 +148,3 @@ class SetUserInfoFailure extends AuthState {
   @override
   List<Object?> get props => [error, code];
 }
-

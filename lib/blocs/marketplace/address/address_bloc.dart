@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:army_ecommerce/models/address_model.dart';
 import '../../../repositories/marketplace_repository.dart';
@@ -8,7 +8,8 @@ import 'address_state.dart';
 class AddressBloc extends Bloc<AddressEvent, AddressState> {
   final MarketplaceRepository marketplaceRepository;
 
-  AddressBloc({required this.marketplaceRepository}) : super(const AddressState()) {
+  AddressBloc({required this.marketplaceRepository})
+    : super(const AddressState()) {
     on<AddressListRequested>(_onListRequested);
     on<AddressAdded>(_onAdded);
     on<AddressUpdated>(_onUpdated);
@@ -16,7 +17,9 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     on<AddressSetDefault>(_onSetDefault);
     on<ProvincesRequested>(_onProvincesRequested);
     on<WardsRequested>(_onWardsRequested);
-    on<AddressClearMessages>((event, emit) => emit(state.copyWith(clearMessages: true)));
+    on<AddressClearMessages>(
+      (event, emit) => emit(state.copyWith(clearMessages: true)),
+    );
   }
 
   Future<void> _onListRequested(
@@ -38,10 +41,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     }
   }
 
-  Future<void> _onAdded(
-    AddressAdded event,
-    Emitter<AddressState> emit,
-  ) async {
+  Future<void> _onAdded(AddressAdded event, Emitter<AddressState> emit) async {
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
       final data = <String, dynamic>{
@@ -134,7 +134,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         }
       }
 
-      debugPrint('AddressBloc _onUpdated payload data: $data');
+      logger.d('AddressBloc _onUpdated payload data: $data');
       await marketplaceRepository.updateAddress(event.id, data);
       final addresses = await marketplaceRepository.getAddresses();
       emit(
@@ -190,11 +190,13 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
       //   }
       // }
       final addresses = await marketplaceRepository.getAddresses();
-      emit(state.copyWith(
-        addresses: addresses,
-        isSubmitting: false,
-        successMessage: 'Đã đặt làm địa chỉ mặc định',
-      ));
+      emit(
+        state.copyWith(
+          addresses: addresses,
+          isSubmitting: false,
+          successMessage: 'Đã đặt làm địa chỉ mặc định',
+        ),
+      );
     } catch (error) {
       var msg = error.toString();
       if (msg.startsWith('Exception: ')) {
@@ -231,14 +233,14 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     emit(state.copyWith(isLoadingProvinces: true, clearMessages: true));
     try {
       final provinces = await marketplaceRepository.getProvinces();
+      emit(state.copyWith(provinces: provinces, isLoadingProvinces: false));
+    } catch (error) {
       emit(
         state.copyWith(
-          provinces: provinces,
           isLoadingProvinces: false,
+          errorMessage: error.toString(),
         ),
       );
-    } catch (error) {
-      emit(state.copyWith(isLoadingProvinces: false, errorMessage: error.toString()));
     }
   }
 
@@ -249,14 +251,11 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     emit(state.copyWith(isLoadingWards: true, clearMessages: true));
     try {
       final wards = await marketplaceRepository.getWards(event.provinceId);
-      emit(
-        state.copyWith(
-          wards: wards,
-          isLoadingWards: false,
-        ),
-      );
+      emit(state.copyWith(wards: wards, isLoadingWards: false));
     } catch (error) {
-      emit(state.copyWith(isLoadingWards: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingWards: false, errorMessage: error.toString()),
+      );
     }
   }
 }

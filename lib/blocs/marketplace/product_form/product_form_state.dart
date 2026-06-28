@@ -59,28 +59,32 @@ class ProductFormState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSuccess: isSuccess ?? this.isSuccess,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       categoriesIndex: categoriesIndex ?? this.categoriesIndex,
       categoriesCount: categoriesCount ?? this.categoriesCount,
-      hasReachedEndCategories: hasReachedEndCategories ?? this.hasReachedEndCategories,
-      isLoadingMoreCategories: isLoadingMoreCategories ?? this.isLoadingMoreCategories,
+      hasReachedEndCategories:
+          hasReachedEndCategories ?? this.hasReachedEndCategories,
+      isLoadingMoreCategories:
+          isLoadingMoreCategories ?? this.isLoadingMoreCategories,
     );
   }
 
   @override
   List<Object?> get props => [
-        categories,
-        addresses,
-        brands,
-        isLoadingMetadata,
-        isLoadingBrands,
-        isSubmitting,
-        isSuccess,
-        errorMessage,
-        successMessage,
-        categoriesIndex,
-        categoriesCount,
-        hasReachedEndCategories,
-        isLoadingMoreCategories,
-      ];
+    categories,
+    addresses,
+    brands,
+    isLoadingMetadata,
+    isLoadingBrands,
+    isSubmitting,
+    isSuccess,
+    errorMessage,
+    successMessage,
+    categoriesIndex,
+    categoriesCount,
+    hasReachedEndCategories,
+    isLoadingMoreCategories,
+  ];
 }

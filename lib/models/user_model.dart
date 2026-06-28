@@ -103,7 +103,8 @@ class UserModel {
           ? (int.tryParse(json['active']?.toString() ?? '1') ?? 1)
           : 1,
       email: json['email']?.toString(),
-      phoneNumber: json['phonenumber']?.toString() ?? json['phone_number']?.toString(),
+      phoneNumber:
+          json['phonenumber']?.toString() ?? json['phone_number']?.toString(),
       status: json['status']?.toString(),
       coverImage: json['cover_image']?.toString(),
       coverImageWeb: json['cover_image_web']?.toString(),
@@ -120,7 +121,6 @@ class UserModel {
       online: _parseBool(json['online']),
     );
   }
-
 
   static bool? _parseBool(dynamic value) {
     if (value == null) return null;

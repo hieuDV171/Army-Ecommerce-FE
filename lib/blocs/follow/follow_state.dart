@@ -39,7 +39,13 @@ class FollowActionSuccess extends FollowState {
   });
 
   @override
-  List<Object?> get props => [followeeId, username, isFollowed, followerCount, followingCount];
+  List<Object?> get props => [
+    followeeId,
+    username,
+    isFollowed,
+    followerCount,
+    followingCount,
+  ];
 }
 
 // Trạng thái sau khi tải danh sách người theo dõi thành công

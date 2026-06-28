@@ -30,13 +30,16 @@ class AddressModel {
   factory AddressModel.fromJson(Map<String, dynamic> json) {
     return AddressModel(
       id: readString(json, ['id', 'address_id']),
-      receiverName: readString(json, ['receiver_name', 'name'], fallback: 'Người nhận'),
+      receiverName: readString(json, [
+        'receiver_name',
+        'name',
+      ], fallback: 'Người nhận'),
       phone: readString(json, ['phone', 'phone_number']),
-      fullAddress: readString(
-        json,
-        ['full_address', 'address', 'address_detail'],
-        fallback: 'Chưa có địa chỉ',
-      ),
+      fullAddress: readString(json, [
+        'full_address',
+        'address',
+        'address_detail',
+      ], fallback: 'Chưa có địa chỉ'),
       isDefault: readBool(json, ['is_default', 'default']) ?? false,
       address: readOptionalString(json, ['address_name', 'address']),
       addressDetail: readOptionalString(json, ['address_detail']),
@@ -113,9 +116,7 @@ class WardModel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is WardModel &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      other is WardModel && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

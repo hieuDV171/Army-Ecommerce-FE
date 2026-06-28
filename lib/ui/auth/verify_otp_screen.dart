@@ -9,7 +9,7 @@ import '../util/widgets/app_button.dart';
 import '../util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-class VerifyOtpScreen extends StatefulWidget{
+class VerifyOtpScreen extends StatefulWidget {
   final String phoneNumber;
   final bool isForgotPassword;
   final String? tempOtp; // Mã OTP tạm thời từ BE
@@ -43,7 +43,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
       // Thông báo cho đồng chí biết mã đã được điền tự động
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppSnackBar.show(context, message: 'Mã xác thực tạm thời: ${widget.tempOtp}');
+        AppSnackBar.show(
+          context,
+          message: 'Mã xác thực tạm thời: ${widget.tempOtp}',
+        );
       });
     }
 
@@ -83,7 +86,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     if (widget.isForgotPassword) {
       // GỌI LOGIC QUÊN MẬT KHẨU
       context.read<AuthBloc>().add(
-        VerifyResetCodeRequested(phoneNumber: widget.phoneNumber, resetCode: otpCode),
+        VerifyResetCodeRequested(
+          phoneNumber: widget.phoneNumber,
+          resetCode: otpCode,
+        ),
       );
     } else {
       // GỌI LOGIC ĐĂNG KÝ
@@ -100,92 +106,106 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if(state is VerifyResetCodeSuccess) {
-            // NẾU LÀ QUÊN MẬT KHẨU THÌ CHUYỂN SANG MÀN ĐẶT PASS MỚI
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => CreateNewPasswordScreen(
-                      phoneNumber: state.phoneNumber,
-                      resetCode: state.resetCode
-                    )
-                )
-            );
-          } else if (state is AuthSuccess && !widget.isForgotPassword) {
-            AppSnackBar.showSuccess(context, message: 'Xác thực OTP thành công!');
-            // Không thực hiện Navigator.push hay Navigator.pushAndRemoveUntil nữa.
-            // main.dart đang lắng nghe AuthSuccess ở root và sẽ tự động điều hướng.
-          } else if (state is AuthFailure) {
-            // XÁC THỰC THẤT BẠI -> Hiển thị thông báo lỗi
-            AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
-          }
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
-            flexibleSpace: context.specialTheme.useGradient
-                ? Container(
-                    decoration: BoxDecoration(
-                      gradient: context.specialTheme.primaryGradient,
-                    ),
-                  )
-                : null,
-            iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text('Xác thực OTP', style: TextStyle(color: Colors.white, fontSize: 16)),
-          ),
-          body: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  (() {
-                    final specialTheme = context.specialTheme;
-                    final iconWidget = Icon(
-                      Icons.verified_user,
-                      size: 80,
-                      color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
-                    );
-                    if (specialTheme.useGradient) {
-                      return ShaderMask(
-                        shaderCallback: (bounds) => specialTheme.primaryGradient!.createShader(bounds),
-                        child: iconWidget,
-                      );
-                    }
-                    return iconWidget;
-                  }()),
-                  const SizedBox(height: 20,),
-                  Text('Nhập mã 6 ký tự được gửi đến:\n${widget.phoneNumber}',
-                    textAlign: TextAlign.center, style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 30,),
-                  TextField(
-                    controller: _otpController,
-                    decoration: InputDecoration(
-                      labelText: 'Mã xác thực',
-                      border: const OutlineInputBorder(),
-                      counterText: "", // Ẩn dòng đếm ký tự mặc định
-                      errorText: _otpError,
-                    ),
-                    maxLength: 6,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Sử dụng BlocBuilder để đổi trạng thái nút bấm (Loading)
-                  BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, state) {
-                        return AppButton(
-                          label: 'XÁC NHẬN',
-                          isLoading: state is AuthLoading,
-                          onPressed: _onVerifyPressed,
-                        );
-                      }
-                  ),
-                ],
+      listener: (context, state) {
+        if (state is VerifyResetCodeSuccess) {
+          // NẾU LÀ QUÊN MẬT KHẨU THÌ CHUYỂN SANG MÀN ĐẶT PASS MỚI
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CreateNewPasswordScreen(
+                phoneNumber: state.phoneNumber,
+                resetCode: state.resetCode,
               ),
+            ),
+          );
+        } else if (state is AuthSuccess && !widget.isForgotPassword) {
+          AppSnackBar.showSuccess(context, message: 'Xác thực OTP thành công!');
+          // Không thực hiện Navigator.push hay Navigator.pushAndRemoveUntil nữa.
+          // main.dart đang lắng nghe AuthSuccess ở root và sẽ tự động điều hướng.
+        } else if (state is AuthFailure) {
+          // XÁC THỰC THẤT BẠI -> Hiển thị thông báo lỗi
+          AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: context.specialTheme.useGradient
+              ? Colors.transparent
+              : context.specialTheme.primaryDarkColor,
+          flexibleSpace: context.specialTheme.useGradient
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: context.specialTheme.primaryGradient,
+                  ),
+                )
+              : null,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: const Text(
+            'Xác thực OTP',
+            style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
+        body: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              (() {
+                final specialTheme = context.specialTheme;
+                final iconWidget = Icon(
+                  Icons.verified_user,
+                  size: 80,
+                  color: specialTheme.useGradient
+                      ? Colors.white
+                      : specialTheme.primaryColor,
+                );
+                if (specialTheme.useGradient) {
+                  return ShaderMask(
+                    shaderCallback: (bounds) =>
+                        specialTheme.primaryGradient!.createShader(bounds),
+                    child: iconWidget,
+                  );
+                }
+                return iconWidget;
+              }()),
+              const SizedBox(height: 20),
+              Text(
+                'Nhập mã 6 ký tự được gửi đến:\n${widget.phoneNumber}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 30),
+              TextField(
+                controller: _otpController,
+                decoration: InputDecoration(
+                  labelText: 'Mã xác thực',
+                  border: const OutlineInputBorder(),
+                  counterText: "", // Ẩn dòng đếm ký tự mặc định
+                  errorText: _otpError,
+                ),
+                maxLength: 6,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  letterSpacing: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // Sử dụng BlocBuilder để đổi trạng thái nút bấm (Loading)
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  return AppButton(
+                    label: 'XÁC NHẬN',
+                    isLoading: state is AuthLoading,
+                    onPressed: _onVerifyPressed,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

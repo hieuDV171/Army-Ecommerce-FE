@@ -12,8 +12,8 @@ class ApiResponse<T> {
   });
 
   factory ApiResponse.fromJson(
-      Map<String, dynamic> json,
-      T Function(dynamic json)? fromJsonT
+    Map<String, dynamic> json,
+    T Function(dynamic json)? fromJsonT,
   ) {
     final hasEnvelopeData = json.containsKey('data');
     final rawData = hasEnvelopeData ? json['data'] : json;
@@ -27,8 +27,8 @@ class ApiResponse<T> {
   }
 
   factory ApiResponse.fromDynamic(
-      dynamic rawData,
-      T Function(dynamic json)? fromJsonT,
+    dynamic rawData,
+    T Function(dynamic json)? fromJsonT,
   ) {
     if (rawData is Map) {
       return ApiResponse<T>.fromJson(
@@ -46,8 +46,8 @@ class ApiResponse<T> {
   }
 
   static T? _parseData<T>(
-      dynamic rawData,
-      T Function(dynamic json)? fromJsonT,
+    dynamic rawData,
+    T Function(dynamic json)? fromJsonT,
   ) {
     if (rawData == null) return null;
     if (fromJsonT == null) return rawData as T;

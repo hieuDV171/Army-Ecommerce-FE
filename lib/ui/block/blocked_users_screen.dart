@@ -8,7 +8,8 @@ import '../util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-Color _themePrimaryColor(BuildContext context) => context.specialTheme.primaryDarkColor;
+Color _themePrimaryColor(BuildContext context) =>
+    context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
 
 class BlockedUsersScreen extends StatefulWidget {
@@ -57,7 +58,11 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black87,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -80,8 +85,15 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
             final message = state.isBlocked
                 ? 'Đã chặn ${state.username}'
                 : 'Đã bỏ chặn ${state.username}';
-            final Color color = state.isBlocked ? Colors.black87 : _themePrimaryColor(context);
-            AppSnackBar.show(context, message: message, backgroundColor: color, duration: const Duration(seconds: 2));
+            final Color color = state.isBlocked
+                ? Colors.black87
+                : _themePrimaryColor(context);
+            AppSnackBar.show(
+              context,
+              message: message,
+              backgroundColor: color,
+              duration: const Duration(seconds: 2),
+            );
           } else if (state is BlockFailure) {
             AppSnackBar.showError(context, message: 'Lỗi: ${state.error}');
           }
@@ -115,7 +127,10 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                 Container(
                   width: double.infinity,
                   color: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   child: Text(
                     'Người bị chặn không thể xem trang cá nhân hay liên hệ với bạn.',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
@@ -131,7 +146,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Center(
-                            child: CircularProgressIndicator(color: _themePrimaryColor(context)),
+                            child: CircularProgressIndicator(
+                              color: _themePrimaryColor(context),
+                            ),
                           ),
                         );
                       }
@@ -140,12 +157,12 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                         user: blockedUsers[index],
                         onBlockToggle: (u, action) {
                           context.read<BlockBloc>().add(
-                                BlockUserRequested(
-                                  userId: u.id,
-                                  username: u.username,
-                                  action: action,
-                                ),
-                              );
+                            BlockUserRequested(
+                              userId: u.id,
+                              username: u.username,
+                              action: action,
+                            ),
+                          );
                         },
                       );
                     },
@@ -251,7 +268,9 @@ class _BlockedUserItemState extends State<_BlockedUserItem> {
             onPressed: () => Navigator.pop(dialogCtx, false),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.grey),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
             child: const Text('Hủy', style: TextStyle(color: Colors.black54)),
           ),
@@ -260,9 +279,14 @@ class _BlockedUserItemState extends State<_BlockedUserItem> {
             onPressed: () => Navigator.pop(dialogCtx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: _themePrimaryColor(context),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -289,10 +313,13 @@ class _BlockedUserItemState extends State<_BlockedUserItem> {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Colors.grey[200],
-                backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
+                backgroundImage:
+                    (widget.user.avatar != null &&
+                        widget.user.avatar!.isNotEmpty)
                     ? NetworkImage(widget.user.avatar!)
                     : null,
-                child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
+                child:
+                    (widget.user.avatar == null || widget.user.avatar!.isEmpty)
                     ? Icon(Icons.person, size: 28, color: Colors.grey[400])
                     : null,
               ),

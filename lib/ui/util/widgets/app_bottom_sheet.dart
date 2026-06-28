@@ -8,11 +8,7 @@ class AppBottomSheet extends StatelessWidget {
   final Widget child;
   final ScrollController? scrollController;
 
-  const AppBottomSheet({
-    super.key,
-    required this.child,
-    this.scrollController,
-  });
+  const AppBottomSheet({super.key, required this.child, this.scrollController});
 
   static Future<T?> show<T>({
     required BuildContext context,
@@ -23,16 +19,18 @@ class AppBottomSheet extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AppBottomSheet(
-        scrollController: scrollController,
-        child: child,
-      ),
+      builder: (_) =>
+          AppBottomSheet(scrollController: scrollController, child: child),
     );
   }
 
   static Future<T?> showScrollable<T>({
     required BuildContext context,
-    required Widget Function(BuildContext context, ScrollController scrollController) builder,
+    required Widget Function(
+      BuildContext context,
+      ScrollController scrollController,
+    )
+    builder,
     double initialChildSize = 0.6,
     double minChildSize = 0.35,
     double maxChildSize = 0.9,
@@ -48,13 +46,17 @@ class AppBottomSheet extends StatelessWidget {
         expand: false,
         builder: (context, scrollController) {
           return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
             child: SafeArea(
               top: false,
               child: Container(
                 decoration: const BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.lg),
+                  ),
                 ),
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg,
@@ -74,9 +76,7 @@ class AppBottomSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                     ),
-                    Expanded(
-                      child: builder(context, scrollController),
-                    ),
+                    Expanded(child: builder(context, scrollController)),
                   ],
                 ),
               ),
@@ -90,13 +90,17 @@ class AppBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         top: false,
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
           ),
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,

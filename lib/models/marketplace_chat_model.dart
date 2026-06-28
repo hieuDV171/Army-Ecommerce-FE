@@ -21,7 +21,11 @@ class ConversationModel {
     return ConversationModel(
       id: readString(json, ['conversation_id', 'id']),
       partnerId: readString(json, ['partner_id', 'to_id', 'user_id']),
-      partnerName: readString(json, ['partner_name', 'username', 'name'], fallback: 'Người bán'),
+      partnerName: readString(json, [
+        'partner_name',
+        'username',
+        'name',
+      ], fallback: 'Người bán'),
       lastMessage: readString(json, ['last_message', 'message', 'content']),
       productId: readOptionalString(json, ['product_id']),
       unread: readBool(json, ['unread', 'is_unread']) ?? false,

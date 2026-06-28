@@ -62,7 +62,9 @@ class RewardHistoryModel {
 
   factory RewardHistoryModel.fromJson(Map<String, dynamic> json) {
     final userJson = json['user'];
-    final parsedUserId = userJson is Map ? readString(Map<String, dynamic>.from(userJson), ['id']) : readString(json, ['user_id']);
+    final parsedUserId = userJson is Map
+        ? readString(Map<String, dynamic>.from(userJson), ['id'])
+        : readString(json, ['user_id']);
 
     return RewardHistoryModel(
       userId: parsedUserId,
@@ -93,7 +95,9 @@ class RewardAppealModel {
 
   factory RewardAppealModel.fromJson(Map<String, dynamic> json) {
     final proofJson = json['proof'];
-    final parsedRewardId = proofJson is Map ? readOptionalString(Map<String, dynamic>.from(proofJson), ['id']) : readOptionalString(json, ['reward_id', 'proof_id']);
+    final parsedRewardId = proofJson is Map
+        ? readOptionalString(Map<String, dynamic>.from(proofJson), ['id'])
+        : readOptionalString(json, ['reward_id', 'proof_id']);
 
     return RewardAppealModel(
       appealId: readOptionalString(json, ['id', 'appeal_id']),

@@ -17,12 +17,12 @@ class PushSettingModel {
 
   factory PushSettingModel.fromJson(Map<String, dynamic> json) {
     return PushSettingModel(
-        like: _toInt(json['like']),
-        comment: _toInt(json['comment']),
-        transaction: _toInt(json['transaction']),
-        announcement: _toInt(json['announcement']),
-        soundOn: _toInt(json['sound_on']),
-        soundDefault: _toInt(json['sound_default'])
+      like: _toInt(json['like']),
+      comment: _toInt(json['comment']),
+      transaction: _toInt(json['transaction']),
+      announcement: _toInt(json['announcement']),
+      soundOn: _toInt(json['sound_on']),
+      soundDefault: _toInt(json['sound_default']),
     );
   }
 
@@ -40,17 +40,17 @@ class PushSettingModel {
     int? transaction,
     int? announcement,
     int? soundOn,
-    int? soundDefault
+    int? soundDefault,
   }) {
     return PushSettingModel(
-        like: like ?? this.like,
-        comment: comment ?? this.comment,
-        transaction: transaction ?? this.transaction,
-        announcement: announcement ?? this.announcement,
-        soundOn: soundOn ?? this.soundOn,
-        soundDefault: soundDefault ?? this.soundDefault);
+      like: like ?? this.like,
+      comment: comment ?? this.comment,
+      transaction: transaction ?? this.transaction,
+      announcement: announcement ?? this.announcement,
+      soundOn: soundOn ?? this.soundOn,
+      soundDefault: soundDefault ?? this.soundDefault,
+    );
   }
-
 }
 
 class SetPushSettingRequest {

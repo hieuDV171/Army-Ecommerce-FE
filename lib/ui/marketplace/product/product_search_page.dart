@@ -26,19 +26,17 @@ class SearchPage extends StatelessWidget {
   final String? categoryId;
   final bool autofocus;
 
-  const SearchPage({
-    super.key,
-    this.categoryId,
-    this.autofocus = false,
-  });
+  const SearchPage({super.key, this.categoryId, this.autofocus = false});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ProductSearchBloc(
-        marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(ProductSearchRequested(categoryId: categoryId))
-       ..add(ProductSearchSavedSearchesRequested()),
+      create: (context) =>
+          ProductSearchBloc(
+              marketplaceRepository: context.read<MarketplaceRepository>(),
+            )
+            ..add(ProductSearchRequested(categoryId: categoryId))
+            ..add(ProductSearchSavedSearchesRequested()),
       child: _SearchView(autofocus: autofocus),
     );
   }
@@ -96,7 +94,8 @@ class _SearchViewState extends State<_SearchView> {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         scrollDirection: Axis.horizontal,
         itemCount: options.length,
-        separatorBuilder: (context, index) => const SizedBox(width: AppSpacing.xs),
+        separatorBuilder: (context, index) =>
+            const SizedBox(width: AppSpacing.xs),
         itemBuilder: (context, idx) {
           final opt = options[idx];
           final isSelected = _sortBy == opt.$2;
@@ -106,7 +105,9 @@ class _SearchViewState extends State<_SearchView> {
             selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
             checkmarkColor: specialTheme.primaryColor,
             labelStyle: TextStyle(
-              color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
+              color: isSelected
+                  ? specialTheme.primaryColor
+                  : AppColors.textSecondary,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               fontSize: 12,
             ),
@@ -141,7 +142,10 @@ class _SearchViewState extends State<_SearchView> {
     }
   }
 
-  Future<void> _openFilterSheet(BuildContext context, ProductSearchState state) async {
+  Future<void> _openFilterSheet(
+    BuildContext context,
+    ProductSearchState state,
+  ) async {
     final searchBloc = context.read<ProductSearchBloc>();
     final scrollController = ScrollController();
     await AppBottomSheet.show<void>(
@@ -188,11 +192,11 @@ class _SearchViewState extends State<_SearchView> {
                                 final kw = value.trim();
                                 _searchFocusNode.unfocus();
                                 context.read<ProductSearchBloc>().add(
-                                      ProductSearchRequested(
-                                        keyword: kw,
-                                        categoryId: state.categoryId,
-                                      ),
-                                    );
+                                  ProductSearchRequested(
+                                    keyword: kw,
+                                    categoryId: state.categoryId,
+                                  ),
+                                );
                               },
                             ),
                           ),
@@ -203,11 +207,11 @@ class _SearchViewState extends State<_SearchView> {
                               final kw = _keywordController.text.trim();
                               _searchFocusNode.unfocus();
                               context.read<ProductSearchBloc>().add(
-                                    ProductSearchRequested(
-                                      keyword: kw,
-                                      categoryId: state.categoryId,
-                                    ),
-                                  );
+                                ProductSearchRequested(
+                                  keyword: kw,
+                                  categoryId: state.categoryId,
+                                ),
+                              );
                             },
                             icon: const Icon(Icons.search),
                           ),
@@ -228,14 +232,14 @@ class _SearchViewState extends State<_SearchView> {
                         selectedBrandId: state.brandId,
                         onBrandSelected: (brandId) {
                           context.read<ProductSearchBloc>().add(
-                                ProductSearchFiltered(
-                                  keyword: state.keyword,
-                                  categoryId: state.categoryId,
-                                  brandId: brandId,
-                                  priceMin: state.priceMin,
-                                  priceMax: state.priceMax,
-                                ),
-                              );
+                            ProductSearchFiltered(
+                              keyword: state.keyword,
+                              categoryId: state.categoryId,
+                              brandId: brandId,
+                              priceMin: state.priceMin,
+                              priceMax: state.priceMax,
+                            ),
+                          );
                         },
                       ),
                     _buildSortRow(),
@@ -252,8 +256,11 @@ class _SearchViewState extends State<_SearchView> {
   }
 
   Widget _buildResult(BuildContext context, ProductSearchState state) {
-    final showHistory = _keywordController.text.trim().isEmpty &&
-        (state.categoryId == null || state.categoryId!.isEmpty || state.categoryId == '0') &&
+    final showHistory =
+        _keywordController.text.trim().isEmpty &&
+        (state.categoryId == null ||
+            state.categoryId!.isEmpty ||
+            state.categoryId == '0') &&
         (state.brandId == null || state.brandId!.isEmpty) &&
         state.priceMin == null &&
         state.priceMax == null;
@@ -272,8 +279,11 @@ class _SearchViewState extends State<_SearchView> {
       );
     }
     if (state.errorMessage != null && state.products.isEmpty) {
-      final hasCondition = state.keyword.trim().isNotEmpty ||
-          (state.categoryId != null && state.categoryId!.isNotEmpty && state.categoryId != '0') ||
+      final hasCondition =
+          state.keyword.trim().isNotEmpty ||
+          (state.categoryId != null &&
+              state.categoryId!.isNotEmpty &&
+              state.categoryId != '0') ||
           (state.brandId != null && state.brandId!.isNotEmpty) ||
           state.priceMin != null ||
           state.priceMax != null;
@@ -287,22 +297,22 @@ class _SearchViewState extends State<_SearchView> {
       return ErrorState(
         message: state.errorMessage!,
         onRetry: () => context.read<ProductSearchBloc>().add(
-              state.useListProductsApi
-                  ? ProductSearchFiltered(
-                      keyword: state.keyword,
-                      categoryId: state.categoryId,
-                      brandId: state.brandId,
-                      priceMin: state.priceMin,
-                      priceMax: state.priceMax,
-                    )
-                  : ProductSearchRequested(
-                      keyword: state.keyword,
-                      categoryId: state.categoryId,
-                      brandId: state.brandId,
-                      priceMin: state.priceMin,
-                      priceMax: state.priceMax,
-                    ),
-            ),
+          state.useListProductsApi
+              ? ProductSearchFiltered(
+                  keyword: state.keyword,
+                  categoryId: state.categoryId,
+                  brandId: state.brandId,
+                  priceMin: state.priceMin,
+                  priceMax: state.priceMax,
+                )
+              : ProductSearchRequested(
+                  keyword: state.keyword,
+                  categoryId: state.categoryId,
+                  brandId: state.brandId,
+                  priceMin: state.priceMin,
+                  priceMax: state.priceMax,
+                ),
+        ),
       );
     }
     if (state.products.isEmpty) {
@@ -314,9 +324,13 @@ class _SearchViewState extends State<_SearchView> {
 
     final sortedProducts = List<ProductModel>.from(state.products);
     if (_sortBy == 'name_asc') {
-      sortedProducts.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      sortedProducts.sort(
+        (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+      );
     } else if (_sortBy == 'name_desc') {
-      sortedProducts.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+      sortedProducts.sort(
+        (a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()),
+      );
     } else if (_sortBy == 'price_asc') {
       sortedProducts.sort((a, b) => a.price.compareTo(b.price));
     } else if (_sortBy == 'price_desc') {
@@ -326,22 +340,22 @@ class _SearchViewState extends State<_SearchView> {
     return RefreshIndicator(
       onRefresh: () async {
         context.read<ProductSearchBloc>().add(
-              state.useListProductsApi
-                  ? ProductSearchFiltered(
-                      keyword: state.keyword,
-                      categoryId: state.categoryId,
-                      brandId: state.brandId,
-                      priceMin: state.priceMin,
-                      priceMax: state.priceMax,
-                    )
-                  : ProductSearchRequested(
-                      keyword: state.keyword,
-                      categoryId: state.categoryId,
-                      brandId: state.brandId,
-                      priceMin: state.priceMin,
-                      priceMax: state.priceMax,
-                    ),
-            );
+          state.useListProductsApi
+              ? ProductSearchFiltered(
+                  keyword: state.keyword,
+                  categoryId: state.categoryId,
+                  brandId: state.brandId,
+                  priceMin: state.priceMin,
+                  priceMax: state.priceMax,
+                )
+              : ProductSearchRequested(
+                  keyword: state.keyword,
+                  categoryId: state.categoryId,
+                  brandId: state.brandId,
+                  priceMin: state.priceMin,
+                  priceMax: state.priceMax,
+                ),
+        );
       },
       child: GridView.builder(
         controller: _scrollController,
@@ -362,10 +376,17 @@ class _SearchViewState extends State<_SearchView> {
             product: productCardDataFromModel(product),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock)),
+              MaterialPageRoute(
+                builder: (_) => ProductDetailPage(
+                  productId: product.id,
+                  isStock: product.isStock,
+                ),
+              ),
             ),
             onLikeTap: () {
-              context.read<ProductSearchBloc>().add(ProductSearchProductLikeToggled(product.id));
+              context.read<ProductSearchBloc>().add(
+                ProductSearchProductLikeToggled(product.id),
+              );
             },
           );
         },
@@ -375,7 +396,7 @@ class _SearchViewState extends State<_SearchView> {
 
   Widget _buildDropdownOverlay(BuildContext context, ProductSearchState state) {
     final query = _keywordController.text.trim().toLowerCase();
-    
+
     final suggestions = state.savedSearches.where((item) {
       if (query.isEmpty) return true;
       return item.title.toLowerCase().contains(query);
@@ -408,19 +429,18 @@ class _SearchViewState extends State<_SearchView> {
               final item = suggestions[index];
               return ListTile(
                 dense: true,
-                leading: const Icon(Icons.history, size: 18, color: AppColors.textSecondary),
-                title: Text(
-                  item.title,
-                  style: const TextStyle(fontSize: 14),
+                leading: const Icon(
+                  Icons.history,
+                  size: 18,
+                  color: AppColors.textSecondary,
                 ),
+                title: Text(item.title, style: const TextStyle(fontSize: 14)),
                 trailing: IconButton(
                   icon: const Icon(Icons.clear, size: 16, color: Colors.red),
                   onPressed: () {
                     context.read<ProductSearchBloc>().add(
-                          ProductSearchDelSavedSearchRequested(
-                            searchId: item.id,
-                          ),
-                        );
+                      ProductSearchDelSavedSearchRequested(searchId: item.id),
+                    );
                   },
                 ),
                 onTap: () {
@@ -430,11 +450,11 @@ class _SearchViewState extends State<_SearchView> {
                   );
                   _searchFocusNode.unfocus();
                   context.read<ProductSearchBloc>().add(
-                        ProductSearchRequested(
-                          keyword: item.title,
-                          categoryId: state.categoryId,
-                        ),
-                      );
+                    ProductSearchRequested(
+                      keyword: item.title,
+                      categoryId: state.categoryId,
+                    ),
+                  );
                 },
               );
             },
@@ -455,7 +475,8 @@ class _ProductSearchFilterSheet extends StatefulWidget {
   });
 
   @override
-  State<_ProductSearchFilterSheet> createState() => _ProductSearchFilterSheetState();
+  State<_ProductSearchFilterSheet> createState() =>
+      _ProductSearchFilterSheetState();
 }
 
 class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
@@ -470,8 +491,12 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     super.initState();
     _selectedCategoryId = widget.state.categoryId;
 
-    _minPriceController.text = widget.state.priceMin != null ? widget.state.priceMin!.toInt().toString() : '';
-    _maxPriceController.text = widget.state.priceMax != null ? widget.state.priceMax!.toInt().toString() : '';
+    _minPriceController.text = widget.state.priceMin != null
+        ? widget.state.priceMin!.toInt().toString()
+        : '';
+    _maxPriceController.text = widget.state.priceMax != null
+        ? widget.state.priceMax!.toInt().toString()
+        : '';
 
     final searchBloc = context.read<ProductSearchBloc>();
     if (searchBloc.state.categories.isEmpty) {
@@ -480,7 +505,9 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   }
 
   void _loadMoreCategories() {
-    context.read<ProductSearchBloc>().add(ProductSearchCategoriesLoadMoreRequested());
+    context.read<ProductSearchBloc>().add(
+      ProductSearchCategoriesLoadMoreRequested(),
+    );
   }
 
   @override
@@ -542,10 +569,16 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
   }
 
   void _applyFilter() {
-    final minPriceVal = double.tryParse(_minPriceController.text.trim())?.round();
-    final maxPriceVal = double.tryParse(_maxPriceController.text.trim())?.round();
+    final minPriceVal = double.tryParse(
+      _minPriceController.text.trim(),
+    )?.round();
+    final maxPriceVal = double.tryParse(
+      _maxPriceController.text.trim(),
+    )?.round();
 
-    if (minPriceVal != null && maxPriceVal != null && maxPriceVal < minPriceVal) {
+    if (minPriceVal != null &&
+        maxPriceVal != null &&
+        maxPriceVal < minPriceVal) {
       setState(() {
         _priceError = true;
       });
@@ -553,24 +586,21 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
     }
 
     context.read<ProductSearchBloc>().add(
-          ProductSearchFiltered(
-            keyword: widget.currentKeyword,
-            categoryId: _selectedCategoryId,
-            brandId: widget.state.brandId,
-            priceMin: minPriceVal,
-            priceMax: maxPriceVal,
-          ),
-        );
+      ProductSearchFiltered(
+        keyword: widget.currentKeyword,
+        categoryId: _selectedCategoryId,
+        brandId: widget.state.brandId,
+        priceMin: minPriceVal,
+        priceMax: maxPriceVal,
+      ),
+    );
     Navigator.of(context).pop();
   }
 
   void _clearFilter() {
     context.read<ProductSearchBloc>().add(
-          ProductSearchRequested(
-            keyword: widget.currentKeyword,
-            categoryId: null,
-          ),
-        );
+      ProductSearchRequested(keyword: widget.currentKeyword, categoryId: null),
+    );
     Navigator.of(context).pop();
   }
 
@@ -645,16 +675,16 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
           children: [
             Text(
               'Bộ lọc tìm kiếm',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Danh mục',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.xs),
             if (state.isCategoriesLoading)
@@ -673,7 +703,10 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
                   'Không có danh mục nào',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               )
             else ...[
@@ -685,11 +718,17 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                   return ChoiceChip(
                     label: Text(category.name),
                     selected: isSelected,
-                    selectedColor: specialTheme.primaryColor.withValues(alpha: 0.2),
+                    selectedColor: specialTheme.primaryColor.withValues(
+                      alpha: 0.2,
+                    ),
                     checkmarkColor: specialTheme.primaryColor,
                     labelStyle: TextStyle(
-                      color: isSelected ? specialTheme.primaryColor : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? specialTheme.primaryColor
+                          : AppColors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                     onSelected: (selected) {
                       setState(() {
@@ -704,24 +743,35 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
                     icon: state.isCategoriesLoadingMore
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.expand_more, size: 16),
                     label: Text(
-                      state.isCategoriesLoadingMore ? 'Đang tải...' : 'Tải thêm',
+                      state.isCategoriesLoadingMore
+                          ? 'Đang tải...'
+                          : 'Tải thêm',
                       style: const TextStyle(fontSize: 13),
                     ),
-                    onPressed: state.isCategoriesLoadingMore ? null : _loadMoreCategories,
+                    onPressed: state.isCategoriesLoadingMore
+                        ? null
+                        : _loadMoreCategories,
                   ),
                 ),
             ],
             const SizedBox(height: AppSpacing.md),
             Text(
               'Khoảng giá',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
@@ -732,7 +782,10 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                     children: [
                       const Text(
                         'Giá tối thiểu',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       _buildPriceSpinnerField(
@@ -759,7 +812,10 @@ class _ProductSearchFilterSheetState extends State<_ProductSearchFilterSheet> {
                     children: [
                       const Text(
                         'Giá tối đa',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       _buildPriceSpinnerField(
@@ -842,15 +898,18 @@ class _BrandsList extends StatelessWidget {
           SizedBox(
             height: 40,
             child: isLoading
-                ? const Center(child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ))
+                ? const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
                 : ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: brands.length + 1,
-                    separatorBuilder: (_, i) => const SizedBox(width: AppSpacing.sm),
+                    separatorBuilder: (_, i) =>
+                        const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       if (index == 0) {
                         // Nút "Tất cả" để xóa filter thương hiệu

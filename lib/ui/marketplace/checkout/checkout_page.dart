@@ -20,11 +20,7 @@ class CheckoutPage extends StatelessWidget {
   final List<CartItem> items;
   final int orderSource;
 
-  const CheckoutPage({
-    super.key,
-    required this.items,
-    this.orderSource = 0,
-  });
+  const CheckoutPage({super.key, required this.items, this.orderSource = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +40,7 @@ class _CheckoutView extends StatefulWidget {
   final List<CartItem> items;
   final int orderSource;
 
-  const _CheckoutView({
-    required this.items,
-    required this.orderSource,
-  });
+  const _CheckoutView({required this.items, required this.orderSource});
 
   @override
   State<_CheckoutView> createState() => _CheckoutViewState();
@@ -55,8 +48,9 @@ class _CheckoutView extends StatefulWidget {
 
 class _CheckoutViewState extends State<_CheckoutView> {
   void _showProductNotExistedDialog(BuildContext context) {
-    final firstItemTitle =
-        widget.items.isNotEmpty ? widget.items.first.title : '';
+    final firstItemTitle = widget.items.isNotEmpty
+        ? widget.items.first.title
+        : '';
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -129,8 +123,10 @@ class _CheckoutViewState extends State<_CheckoutView> {
 
   @override
   Widget build(BuildContext context) {
-    final subtotal = widget.items
-        .fold<num>(0, (sum, item) => sum + item.price * item.quantity);
+    final subtotal = widget.items.fold<num>(
+      0,
+      (sum, item) => sum + item.price * item.quantity,
+    );
 
     return BlocConsumer<CheckoutBloc, CheckoutState>(
       listener: (context, state) {
@@ -171,11 +167,11 @@ class _CheckoutViewState extends State<_CheckoutView> {
                   icon: Icons.payment,
                   onPressed: () {
                     context.read<CheckoutBloc>().add(
-                          CheckoutSubmitted(
-                            items: widget.items,
-                            orderSource: widget.orderSource,
-                          ),
-                        );
+                      CheckoutSubmitted(
+                        items: widget.items,
+                        orderSource: widget.orderSource,
+                      ),
+                    );
                   },
                 ),
               ),
@@ -188,7 +184,11 @@ class _CheckoutViewState extends State<_CheckoutView> {
   }
 
   Widget _buildBody(
-      BuildContext context, CheckoutState state, num subtotal, num total) {
+    BuildContext context,
+    CheckoutState state,
+    num subtotal,
+    num total,
+  ) {
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -198,9 +198,9 @@ class _CheckoutViewState extends State<_CheckoutView> {
           : null;
       return ErrorState(
         message: state.errorMessage!,
-        onRetry: () => context
-            .read<CheckoutBloc>()
-            .add(CheckoutRequested(productId: firstItemId)),
+        onRetry: () => context.read<CheckoutBloc>().add(
+          CheckoutRequested(productId: firstItemId),
+        ),
       );
     }
 
@@ -218,9 +218,9 @@ class _CheckoutViewState extends State<_CheckoutView> {
           ...state.addresses.map(
             (address) => ListTile(
               onTap: () {
-                context
-                    .read<CheckoutBloc>()
-                    .add(CheckoutAddressSelected(address));
+                context.read<CheckoutBloc>().add(
+                  CheckoutAddressSelected(address),
+                );
               },
               title: Text(address.title),
               subtitle: Text(address.subtitle),
@@ -300,8 +300,10 @@ class _CheckoutItemTile extends StatelessWidget {
       ),
       title: Text(item.title),
       subtitle: PriceText(price: item.price),
-      trailing:
-          Text('x${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w600)),
+      trailing: Text(
+        'x${item.quantity}',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
     );
   }
 }

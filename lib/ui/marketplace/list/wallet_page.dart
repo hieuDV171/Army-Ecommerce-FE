@@ -224,9 +224,7 @@ class _WalletView extends StatelessWidget {
                             notification.metrics.maxScrollExtent - 200 &&
                         state.hasMore &&
                         !state.isLoadingMore) {
-                      context
-                          .read<WalletBloc>()
-                          .add(WalletLoadMoreRequested());
+                      context.read<WalletBloc>().add(WalletLoadMoreRequested());
                     }
                     return false;
                   },
@@ -241,7 +239,7 @@ class _WalletView extends StatelessWidget {
                               : LinearGradient(
                                   colors: [
                                     AppColors.tactical,
-                                    context.specialTheme.primaryColor
+                                    context.specialTheme.primaryColor,
                                   ],
                                 ),
                           borderRadius: BorderRadius.circular(AppRadius.lg),

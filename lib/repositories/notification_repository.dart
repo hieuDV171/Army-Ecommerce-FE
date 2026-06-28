@@ -8,7 +8,5 @@ abstract class NotificationRepository {
     required int group,
   });
 
-  Future<SimpleResponse> setReadNotification({
-    required String notificationId,
-  });
+  Future<SimpleResponse> setReadNotification({required String notificationId});
 }

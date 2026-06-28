@@ -81,7 +81,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     return Scaffold(
       backgroundColor: _greyBackground,
       appBar: AppBar(
-        backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+        backgroundColor: specialTheme.useGradient
+            ? Colors.transparent
+            : specialTheme.primaryDarkColor,
         flexibleSpace: specialTheme.useGradient
             ? Container(
                 decoration: BoxDecoration(
@@ -121,7 +123,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
           if (state is ConversationsLoaded) {
             conversations = state.conversations;
           } else if (state is ChatLoadingMore) {
-            conversations = state.currentList.whereType<ConversationModel>().toList();
+            conversations = state.currentList
+                .whereType<ConversationModel>()
+                .toList();
             isLoadingMore = true;
           }
 
@@ -145,7 +149,9 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: specialTheme.primaryColor),
+                      child: CircularProgressIndicator(
+                        color: specialTheme.primaryColor,
+                      ),
                     ),
                   );
                 }
@@ -164,11 +170,8 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
   Widget _buildSkeleton() {
     return ListView.separated(
       itemCount: 8,
-      separatorBuilder: (context, index) => const Divider(
-        height: 1,
-        indent: 76,
-        color: AppColors.greyLight,
-      ),
+      separatorBuilder: (context, index) =>
+          const Divider(height: 1, indent: 76, color: AppColors.greyLight),
       itemBuilder: (context, i) => const _SkeletonItem(),
     );
   }
@@ -245,11 +248,14 @@ class _ConversationItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    conversation.lastMessage?.message ?? 'Bắt đầu cuộc trò chuyện',
+                    conversation.lastMessage?.message ??
+                        'Bắt đầu cuộc trò chuyện',
                     style: TextStyle(
                       fontSize: 12,
                       color: hasUnread ? Colors.black87 : Colors.grey[500],
-                      fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                      fontWeight: hasUnread
+                          ? FontWeight.w500
+                          : FontWeight.normal,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -269,16 +275,23 @@ class _ConversationItem extends StatelessWidget {
                     _formatTime(conversation.lastMessage?.created),
                     style: TextStyle(
                       fontSize: 11,
-                      color: hasUnread ? specialTheme.primaryColor : Colors.grey[400],
+                      color: hasUnread
+                          ? specialTheme.primaryColor
+                          : Colors.grey[400],
                     ),
                   ),
                   const SizedBox(height: 4),
                   if (hasUnread)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: specialTheme.primaryColor,
-                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(10),
+                        ),
                       ),
                       constraints: const BoxConstraints(minWidth: 18),
                       child: Text(
@@ -315,16 +328,14 @@ class _ConversationItem extends StatelessWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes} phút';
 
     // Cùng ngày → hiển thị giờ:phút
-    if (diff.inDays < 1 &&
-        now.day == time.day) {
+    if (diff.inDays < 1 && now.day == time.day) {
       final h = time.hour.toString().padLeft(2, '0');
       final m = time.minute.toString().padLeft(2, '0');
       return '$h:$m';
     }
 
     // Hôm qua
-    if (diff.inDays == 1 ||
-        (diff.inDays < 2 && now.day != time.day)) {
+    if (diff.inDays == 1 || (diff.inDays < 2 && now.day != time.day)) {
       return 'Hôm qua';
     }
 

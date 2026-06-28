@@ -32,4 +32,3 @@ class AppConfig {
 
   static bool get hasBaseUrl => _baseUrl.trim().isNotEmpty;
 }
-

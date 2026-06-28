@@ -43,11 +43,7 @@ class AppTheme {
         primaryColor = const Color(0xFF4B5320);
         primaryDarkColor = const Color(0xFF2E3B34);
         primaryGradient = const LinearGradient(
-          colors: [
-            Color(0xFF4B5320),
-            Color(0xFF2E3B34),
-            Color(0xFF3F4E3E),
-          ],
+          colors: [Color(0xFF4B5320), Color(0xFF2E3B34), Color(0xFF3F4E3E)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );
@@ -96,7 +92,10 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: primaryColor,
-        contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),

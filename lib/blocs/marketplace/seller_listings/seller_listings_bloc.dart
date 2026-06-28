@@ -3,11 +3,12 @@ import '../../../repositories/marketplace_repository.dart';
 import 'seller_listings_event.dart';
 import 'seller_listings_state.dart';
 
-class SellerListingsBloc extends Bloc<SellerListingsEvent, SellerListingsState> {
+class SellerListingsBloc
+    extends Bloc<SellerListingsEvent, SellerListingsState> {
   final MarketplaceRepository marketplaceRepository;
 
   SellerListingsBloc({required this.marketplaceRepository})
-      : super(const SellerListingsState()) {
+    : super(const SellerListingsState()) {
     on<SellerListingsRequested>(_onRequested);
     on<SellerListingsLoadMoreRequested>(_onLoadMoreRequested);
     on<SellerListingsLikeToggled>(_onLikeToggled);
@@ -17,7 +18,14 @@ class SellerListingsBloc extends Bloc<SellerListingsEvent, SellerListingsState> 
     SellerListingsRequested event,
     Emitter<SellerListingsState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true, clearMessages: true, index: 0, hasReachedEnd: false));
+    emit(
+      state.copyWith(
+        isLoading: true,
+        clearMessages: true,
+        index: 0,
+        hasReachedEnd: false,
+      ),
+    );
     try {
       final products = await marketplaceRepository.getUserListings(
         userId: event.userId,
@@ -61,7 +69,9 @@ class SellerListingsBloc extends Bloc<SellerListingsEvent, SellerListingsState> 
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingMore: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingMore: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -78,7 +88,9 @@ class SellerListingsBloc extends Bloc<SellerListingsEvent, SellerListingsState> 
       if (p.id == product.id) {
         return p.copyWith(
           isLiked: !originalIsLiked,
-          likeCount: originalIsLiked ? originalLikeCount - 1 : originalLikeCount + 1,
+          likeCount: originalIsLiked
+              ? originalLikeCount - 1
+              : originalLikeCount + 1,
         );
       }
       return p;
@@ -99,7 +111,12 @@ class SellerListingsBloc extends Bloc<SellerListingsEvent, SellerListingsState> 
         }
         return p;
       }).toList();
-      emit(state.copyWith(products: revertedProducts, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          products: revertedProducts,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 }

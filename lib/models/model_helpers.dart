@@ -18,15 +18,38 @@ class MarketplaceItem extends Equatable {
 
   factory MarketplaceItem.fromJson(Map<String, dynamic> json) {
     return MarketplaceItem(
-      id: readString(json, ['id', 'notification_id', 'purchase_id', 'conversation_id']),
-      title: readString(json, ['title', 'name', 'username', 'status', 'keyword'], fallback: 'Mục dữ liệu'),
-      subtitle: readString(
-        json,
-        ['message', 'content', 'description', 'address', 'last_message'],
-        fallback: '',
-      ),
-      trailing: readOptionalString(json, ['created_at', 'time', 'state', 'total']),
-      imageUrl: readOptionalString(json, ['image_url', 'thumbnail', 'image', 'cover']),
+      id: readString(json, [
+        'id',
+        'notification_id',
+        'purchase_id',
+        'conversation_id',
+      ]),
+      title: readString(json, [
+        'title',
+        'name',
+        'username',
+        'status',
+        'keyword',
+      ], fallback: 'Mục dữ liệu'),
+      subtitle: readString(json, [
+        'message',
+        'content',
+        'description',
+        'address',
+        'last_message',
+      ], fallback: ''),
+      trailing: readOptionalString(json, [
+        'created_at',
+        'time',
+        'state',
+        'total',
+      ]),
+      imageUrl: readOptionalString(json, [
+        'image_url',
+        'thumbnail',
+        'image',
+        'cover',
+      ]),
     );
   }
 
@@ -47,13 +70,23 @@ List<T> parseListFromData<T>(
 
 Map<String, dynamic> parseMapFromData(dynamic data) {
   final rawMap = findMap(data);
-  return rawMap == null ? <String, dynamic>{} : Map<String, dynamic>.from(rawMap);
+  return rawMap == null
+      ? <String, dynamic>{}
+      : Map<String, dynamic>.from(rawMap);
 }
 
 List<dynamic> findList(dynamic data) {
   if (data is List) return data;
   if (data is Map) {
-    for (final key in ['items', 'data', 'products', 'categories', 'list', 'rows', 'result']) {
+    for (final key in [
+      'items',
+      'data',
+      'products',
+      'categories',
+      'list',
+      'rows',
+      'result',
+    ]) {
       final value = data[key];
       if (value is List) return value;
       if (value is Map || value is List) {
@@ -137,7 +170,10 @@ List<String> readStringList(Map<String, dynamic> json, List<String> keys) {
   for (final key in keys) {
     final value = json[key];
     if (value is List) {
-      return value.map((item) => item.toString()).where((item) => item.isNotEmpty).toList();
+      return value
+          .map((item) => item.toString())
+          .where((item) => item.isNotEmpty)
+          .toList();
     }
     if (value is String && value.isNotEmpty) return [value];
   }

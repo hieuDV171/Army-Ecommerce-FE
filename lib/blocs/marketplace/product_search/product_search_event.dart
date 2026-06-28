@@ -87,4 +87,3 @@ class ProductSearchCategoriesRequested extends ProductSearchEvent {
 }
 
 class ProductSearchCategoriesLoadMoreRequested extends ProductSearchEvent {}
-

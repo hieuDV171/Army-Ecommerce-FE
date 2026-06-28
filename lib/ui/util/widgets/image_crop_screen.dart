@@ -25,8 +25,9 @@ class ImageCropScreen extends StatefulWidget {
 
 class _ImageCropScreenState extends State<ImageCropScreen> {
   late Future<ui.Image> _imageLoader;
-  final TransformationController _transformationController = TransformationController();
-  
+  final TransformationController _transformationController =
+      TransformationController();
+
   double _currentScale = 1.0;
   int _rotationQuarterTurns = 0;
   bool _isSaving = false;
@@ -38,7 +39,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   double _hCrop = 0.0;
   double _xCrop = 0.0;
   double _yCrop = 0.0;
-  
+
   double _wImg = 0.0;
   double _hImg = 0.0;
   double _xImg = 0.0;
@@ -87,7 +88,7 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
       // Rectangular crop box
       _wCrop = _wView * 0.85;
       _hCrop = _wCrop / widget.aspectRatio;
-      
+
       // Ensure height fits comfortably within viewport
       if (_hCrop > _hView * 0.7) {
         _hCrop = _hView * 0.7;
@@ -100,8 +101,12 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
 
     // effective original size under current rotation
     final bool isRotated = _rotationQuarterTurns % 2 == 1;
-    final double origW = isRotated ? image.height.toDouble() : image.width.toDouble();
-    final double origH = isRotated ? image.width.toDouble() : image.height.toDouble();
+    final double origW = isRotated
+        ? image.height.toDouble()
+        : image.width.toDouble();
+    final double origH = isRotated
+        ? image.width.toDouble()
+        : image.height.toDouble();
 
     // Fitted size (covering the crop box)
     final double initialScale = math.max(_wCrop / origW, _hCrop / origH);
@@ -130,18 +135,18 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
   void _onScaleChanged(double newScale) {
     final double centerX = _wView / 2;
     final double centerY = _hView / 2;
-    
+
     final Matrix4 currentMatrix = _transformationController.value;
     final double oldScale = currentMatrix.getMaxScaleOnAxis();
     final double oldTx = currentMatrix.storage[12];
     final double oldTy = currentMatrix.storage[13];
-    
+
     final double childCenterX = (centerX - oldTx) / oldScale;
     final double childCenterY = (centerY - oldTy) / oldScale;
-    
+
     final double newTx = centerX - childCenterX * newScale;
     final double newTy = centerY - childCenterY * newScale;
-    
+
     final Matrix4 newMatrix = Matrix4.identity();
     newMatrix.setEntry(0, 0, newScale);
     newMatrix.setEntry(1, 1, newScale);
@@ -193,11 +198,15 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
 
       final picture = recorder.endRecording();
       final croppedUiImage = await picture.toImage(outW.toInt(), outH.toInt());
-      final byteData = await croppedUiImage.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await croppedUiImage.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       final bytes = byteData!.buffer.asUint8List();
 
       final tempDir = Directory.systemTemp;
-      final croppedFile = File('${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.png');
+      final croppedFile = File(
+        '${tempDir.path}/cropped_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
       await croppedFile.writeAsBytes(bytes);
 
       if (mounted) {
@@ -224,7 +233,13 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(widget.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         elevation: 0,
         actions: [
           IconButton(
@@ -243,7 +258,9 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
         future: _imageLoader,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Colors.white));
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
           }
 
           if (snapshot.hasError || !snapshot.hasData) {
@@ -253,7 +270,10 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                 children: [
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 12),
-                  const Text('Không thể tải ảnh', style: TextStyle(color: Colors.white70)),
+                  const Text(
+                    'Không thể tải ảnh',
+                    style: TextStyle(color: Colors.white70),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -267,7 +287,11 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
           final image = snapshot.data!;
           return LayoutBuilder(
             builder: (context, constraints) {
-              _calculateLayout(image, constraints.maxWidth, constraints.maxHeight);
+              _calculateLayout(
+                image,
+                constraints.maxWidth,
+                constraints.maxHeight,
+              );
 
               return Stack(
                 fit: StackFit.expand,
@@ -331,7 +355,10 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                           ],
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 28,
+                      ),
                       child: SafeArea(
                         top: false,
                         child: Column(
@@ -340,14 +367,20 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                             // Scale slider
                             Row(
                               children: [
-                                const Icon(Icons.zoom_out, color: Colors.white54, size: 18),
+                                const Icon(
+                                  Icons.zoom_out,
+                                  color: Colors.white54,
+                                  size: 18,
+                                ),
                                 Expanded(
                                   child: SliderTheme(
                                     data: SliderTheme.of(context).copyWith(
                                       activeTrackColor: Colors.blue.shade400,
                                       inactiveTrackColor: Colors.white12,
                                       thumbColor: Colors.white,
-                                      overlayColor: Colors.blue.withValues(alpha: 0.12),
+                                      overlayColor: Colors.blue.withValues(
+                                        alpha: 0.12,
+                                      ),
                                     ),
                                     child: Slider(
                                       value: _currentScale.clamp(1.0, 6.0),
@@ -357,7 +390,11 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                     ),
                                   ),
                                 ),
-                                const Icon(Icons.zoom_in, color: Colors.white54, size: 18),
+                                const Icon(
+                                  Icons.zoom_in,
+                                  color: Colors.white54,
+                                  size: 18,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 24),
@@ -369,31 +406,58 @@ class _ImageCropScreenState extends State<ImageCropScreen> {
                                     onPressed: () => Navigator.pop(context),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.white70,
-                                      side: const BorderSide(color: Colors.white24),
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      side: const BorderSide(
+                                        color: Colors.white24,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
-                                    child: const Text('Hủy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    child: const Text(
+                                      'Hủy',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: ElevatedButton(
-                                    onPressed: _isSaving ? null : () => _confirmCrop(image),
+                                    onPressed: _isSaving
+                                        ? null
+                                        : () => _confirmCrop(image),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       elevation: 0,
                                     ),
                                     child: _isSaving
                                         ? const SizedBox(
                                             height: 20,
                                             width: 20,
-                                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2.5,
+                                            ),
                                           )
-                                        : const Text('Xác nhận', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                        : const Text(
+                                            'Xác nhận',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ],
@@ -422,14 +486,14 @@ class _CropMaskPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    
+
     final cutout = isCircle
         ? (Path()..addOval(cropRect))
         : (Path()..addRect(cropRect));
 
     // Difference leaves the outside area dark
     final maskPath = Path.combine(PathOperation.difference, path, cutout);
-    
+
     canvas.drawPath(
       maskPath,
       Paint()..color = Colors.black.withValues(alpha: 0.72),

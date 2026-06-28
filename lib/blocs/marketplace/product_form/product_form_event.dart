@@ -53,17 +53,17 @@ class ProductFormSubmitted extends ProductFormEvent {
 
   @override
   List<Object?> get props => [
-        product,
-        title,
-        price,
-        description,
-        categoryId,
-        brandId,
-        warehouseId,
-        newImages,
-        existingImages,
-        deletedImages,
-        variants,
-        videoUrl,
-      ];
+    product,
+    title,
+    price,
+    description,
+    categoryId,
+    brandId,
+    warehouseId,
+    newImages,
+    existingImages,
+    deletedImages,
+    variants,
+    videoUrl,
+  ];
 }

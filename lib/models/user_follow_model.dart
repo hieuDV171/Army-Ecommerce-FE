@@ -67,8 +67,10 @@ class FollowActionResult {
     return FollowActionResult(
       followeeId: json['followee_id']?.toString() ?? '',
       isFollowed: json['is_followed'] == true || json['is_followed'] == 1,
-      followerCount: int.tryParse(json['follower_count']?.toString() ?? '0') ?? 0,
-      followingCount: int.tryParse(json['following_count']?.toString() ?? '0') ?? 0,
+      followerCount:
+          int.tryParse(json['follower_count']?.toString() ?? '0') ?? 0,
+      followingCount:
+          int.tryParse(json['following_count']?.toString() ?? '0') ?? 0,
     );
   }
 }
@@ -92,7 +94,9 @@ class UserFollowListResponse {
     if (rawData is List) {
       dataList = rawData
           .whereType<Map>()
-          .map((item) => UserFollowModel.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) => UserFollowModel.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     }
     return UserFollowListResponse(
@@ -109,11 +113,7 @@ class FollowActionResponse {
   final String message;
   final FollowActionResult? data;
 
-  FollowActionResponse({
-    required this.code,
-    required this.message,
-    this.data,
-  });
+  FollowActionResponse({required this.code, required this.message, this.data});
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory FollowActionResponse.fromJson(Map<String, dynamic> json) {
@@ -121,7 +121,9 @@ class FollowActionResponse {
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       data: (json['data'] != null && json['data'] is Map)
-          ? FollowActionResult.fromJson(Map<String, dynamic>.from(json['data'] as Map))
+          ? FollowActionResult.fromJson(
+              Map<String, dynamic>.from(json['data'] as Map),
+            )
           : null,
     );
   }

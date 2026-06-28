@@ -100,8 +100,11 @@ class _BuyerOrderListViewState extends State<_BuyerOrderListView> {
     final threshold = _scrollController.position.maxScrollExtent - 240;
     if (_scrollController.position.pixels >= threshold) {
       context.read<OrderBloc>().add(
-            OrderLoadMoreRequested(isSeller: false, stateFilter: widget.stateFilter),
-          );
+        OrderLoadMoreRequested(
+          isSeller: false,
+          stateFilter: widget.stateFilter,
+        ),
+      );
     }
   }
 
@@ -118,12 +121,12 @@ class _BuyerOrderListViewState extends State<_BuyerOrderListView> {
             message: state.errorMessage!,
             onRetry: () {
               context.read<OrderBloc>().add(
-                    OrderListRequested(
-                      isSeller: false,
-                      stateFilter: widget.stateFilter,
-                      isRefresh: true,
-                    ),
-                  );
+                OrderListRequested(
+                  isSeller: false,
+                  stateFilter: widget.stateFilter,
+                  isRefresh: true,
+                ),
+              );
             },
           );
         }
@@ -174,12 +177,12 @@ class _BuyerOrderListViewState extends State<_BuyerOrderListView> {
                         onRefresh: () {
                           if (context.mounted) {
                             context.read<OrderBloc>().add(
-                                  OrderListRequested(
-                                    isSeller: false,
-                                    stateFilter: widget.stateFilter,
-                                    isRefresh: true,
-                                  ),
-                                );
+                              OrderListRequested(
+                                isSeller: false,
+                                stateFilter: widget.stateFilter,
+                                isRefresh: true,
+                              ),
+                            );
                           }
                         },
                       ),
@@ -187,12 +190,12 @@ class _BuyerOrderListViewState extends State<_BuyerOrderListView> {
                   );
                   if (result == true && context.mounted) {
                     context.read<OrderBloc>().add(
-                          OrderListRequested(
-                            isSeller: false,
-                            stateFilter: widget.stateFilter,
-                            isRefresh: true,
-                          ),
-                        );
+                      OrderListRequested(
+                        isSeller: false,
+                        stateFilter: widget.stateFilter,
+                        isRefresh: true,
+                      ),
+                    );
                   }
                 },
               );

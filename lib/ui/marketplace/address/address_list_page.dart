@@ -155,7 +155,9 @@ class _AddressListView extends StatelessWidget {
     if (result == true && context.mounted) {
       AppDialog.showSuccess(
         context,
-        message: address == null ? 'Đã thêm địa chỉ thành công' : 'Đã cập nhật địa chỉ thành công',
+        message: address == null
+            ? 'Đã thêm địa chỉ thành công'
+            : 'Đã cập nhật địa chỉ thành công',
       );
       bloc.add(AddressListRequested());
     }

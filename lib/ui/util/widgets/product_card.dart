@@ -117,10 +117,7 @@ class _ProductImage extends StatefulWidget {
   final ProductCardData product;
   final VoidCallback? onLikeTap;
 
-  const _ProductImage({
-    required this.product,
-    this.onLikeTap,
-  });
+  const _ProductImage({required this.product, this.onLikeTap});
 
   @override
   State<_ProductImage> createState() => _ProductImageState();
@@ -163,7 +160,10 @@ class _ProductImageState extends State<_ProductImage> {
                 child: imageUrl == null || imageUrl.isEmpty
                     ? const ColoredBox(
                         color: AppColors.border,
-                        child: Icon(Icons.image_outlined, color: AppColors.textSecondary),
+                        child: Icon(
+                          Icons.image_outlined,
+                          color: AppColors.textSecondary,
+                        ),
                       )
                     : Hero(
                         tag: 'product-image-${widget.product.id}',
@@ -174,10 +174,11 @@ class _ProductImageState extends State<_ProductImage> {
                             if (loadingProgress == null) return child;
                             return const ShimmerBox(height: double.infinity);
                           },
-                          errorBuilder: (context, error, stackTrace) => const ColoredBox(
-                            color: AppColors.border,
-                            child: Icon(Icons.broken_image_outlined),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const ColoredBox(
+                                color: AppColors.border,
+                                child: Icon(Icons.broken_image_outlined),
+                              ),
                         ),
                       ),
               ),
@@ -196,7 +197,9 @@ class _ProductImageState extends State<_ProductImage> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    widget.product.isLiked ? Icons.favorite : Icons.favorite_border,
+                    widget.product.isLiked
+                        ? Icons.favorite
+                        : Icons.favorite_border,
                     color: widget.product.isLiked ? Colors.red : Colors.white,
                     size: 18,
                   ),
@@ -213,10 +216,7 @@ class _ProductMeta extends StatelessWidget {
   final ProductCardData product;
   final VoidCallback? onCommentTap;
 
-  const _ProductMeta({
-    required this.product,
-    this.onCommentTap,
-  });
+  const _ProductMeta({required this.product, this.onCommentTap});
 
   @override
   Widget build(BuildContext context) {
@@ -228,10 +228,15 @@ class _ProductMeta extends StatelessWidget {
           runSpacing: AppSpacing.xs,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            if (product.rating != null) RatingStars(rating: product.rating!, size: 13),
+            if (product.rating != null)
+              RatingStars(rating: product.rating!, size: 13),
             if (product.soldCount != null)
-              Text('Đã bán ${product.soldCount}', style: AppTextStyles.metadata),
-            if (product.sellerLocation != null && product.sellerLocation!.isNotEmpty)
+              Text(
+                'Đã bán ${product.soldCount}',
+                style: AppTextStyles.metadata,
+              ),
+            if (product.sellerLocation != null &&
+                product.sellerLocation!.isNotEmpty)
               StatusChip(
                 label: product.sellerLocation!,
                 color: AppColors.tactical,
@@ -240,7 +245,9 @@ class _ProductMeta extends StatelessWidget {
             StatusChip(
               label: product.isStock ? 'Còn hàng' : 'Hết hàng',
               color: product.isStock ? Colors.green : Colors.red,
-              icon: product.isStock ? Icons.check_circle_outline : Icons.remove_circle_outline,
+              icon: product.isStock
+                  ? Icons.check_circle_outline
+                  : Icons.remove_circle_outline,
             ),
           ],
         ),
@@ -250,7 +257,11 @@ class _ProductMeta extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.favorite, size: 12, color: AppColors.textSecondary),
+                const Icon(
+                  Icons.favorite,
+                  size: 12,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: 2),
                 Text('${product.likeCount}', style: AppTextStyles.metadata),
               ],
@@ -258,7 +269,8 @@ class _ProductMeta extends StatelessWidget {
             const SizedBox(width: AppSpacing.md),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: onCommentTap ??
+              onTap:
+                  onCommentTap ??
                   () {
                     Navigator.push(
                       context,
@@ -276,9 +288,16 @@ class _ProductMeta extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.mode_comment, size: 12, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.mode_comment,
+                      size: 12,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 2),
-                    Text('${product.commentCount}', style: AppTextStyles.metadata),
+                    Text(
+                      '${product.commentCount}',
+                      style: AppTextStyles.metadata,
+                    ),
                   ],
                 ),
               ),

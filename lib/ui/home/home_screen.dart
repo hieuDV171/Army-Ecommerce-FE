@@ -50,7 +50,6 @@ import '../settings/theme_selection_screen.dart';
 import '../util/constants/app_colors.dart';
 import '../util/theme/special_app_theme.dart';
 
-
 class HomeScreen extends StatefulWidget {
   final String userId;
   final String username;
@@ -67,10 +66,11 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
   late final PageController _pageController;
-  
+
   String? _avatarUrl;
   String? _coverImageUrl;
   String? _coverImageWeb;
@@ -93,18 +93,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
     _pageController = PageController(initialPage: _selectedIndex);
 
     // Khởi tạo 4 BLoC từ Repository do thành viên đảm nhận
-    _followBloc = FollowBloc(followRepository: context.read<FollowRepository>());
+    _followBloc = FollowBloc(
+      followRepository: context.read<FollowRepository>(),
+    );
     _blockBloc = BlockBloc(blockRepository: context.read<BlockRepository>());
-    _chatBloc = ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>());
+    _chatBloc = ChatBloc(
+      marketplaceRepository: context.read<MarketplaceRepository>(),
+    );
 
     final marketplaceRepository = context.read<MarketplaceRepository>();
     _newsBloc = SimpleListBloc(
-      loader: (index, count) => marketplaceRepository.getNews(index: index, count: count),
+      loader: (index, count) =>
+          marketplaceRepository.getNews(index: index, count: count),
       marketplaceRepository: marketplaceRepository,
     )..add(SimpleListRequested());
 
     // Đăng ký lắng nghe foreground message để cập nhật badge số chưa đọc ngay lập tức
-    FirebaseNotificationService.addMessageReceivedListener(_onForegroundMessageReceived);
+    FirebaseNotificationService.addMessageReceivedListener(
+      _onForegroundMessageReceived,
+    );
 
     // Tải avatar và cover image từ bộ nhớ cục bộ
     if (widget.token.isNotEmpty) {
@@ -131,7 +138,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    FirebaseNotificationService.removeMessageReceivedListener(_onForegroundMessageReceived);
+    FirebaseNotificationService.removeMessageReceivedListener(
+      _onForegroundMessageReceived,
+    );
     _pageController.dispose();
     _followBloc.close();
     _blockBloc.close();
@@ -150,7 +159,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
   @override
   void didUpdateWidget(covariant HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.userId != oldWidget.userId || widget.token != oldWidget.token || widget.username != oldWidget.username) {
+    if (widget.userId != oldWidget.userId ||
+        widget.token != oldWidget.token ||
+        widget.username != oldWidget.username) {
       setState(() {
         _currentUsername = widget.username;
         if (widget.token.isEmpty) {
@@ -193,7 +204,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
       context.read<NotificationBloc>().add(LoadNotificationsRequested());
     }
   }
-
 
   // Mở màn hình danh sách người theo dõi (followers)
   void _openFollowers() {
@@ -277,9 +287,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
       ],
       child: BlocProvider<HomeBloc>(
         // HomeBloc phục vụ MarketplaceHomeBody (giao diện mới của team)
-        create: (ctx) => HomeBloc(
-          marketplaceRepository: ctx.read<MarketplaceRepository>(),
-        )..add(HomeRequested()),
+        create: (ctx) =>
+            HomeBloc(marketplaceRepository: ctx.read<MarketplaceRepository>())
+              ..add(HomeRequested()),
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is ChangeInfoSuccess && mounted) {
@@ -310,7 +320,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
                 _coverImageUrl = state.user.coverImage;
                 _coverImageWeb = state.user.coverImageWeb;
               });
-            } else if ((state is Unauthenticated || state is AuthLogoutSuccess) && mounted) {
+            } else if ((state is Unauthenticated ||
+                    state is AuthLogoutSuccess) &&
+                mounted) {
               setState(() {
                 _currentUsername = "Khách";
                 _avatarUrl = null;
@@ -334,7 +346,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
               onPageChanged: (index) {
                 setState(() => _selectedIndex = index);
                 if (index == 3 && widget.token.isNotEmpty) {
-                  context.read<NotificationBloc>().add(LoadNotificationsRequested());
+                  context.read<NotificationBloc>().add(
+                    LoadNotificationsRequested(),
+                  );
                 }
               },
               children: [
@@ -392,12 +406,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
   AppBar _buildAppBar() {
     final specialTheme = context.specialTheme;
     return AppBar(
-      backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+      backgroundColor: specialTheme.useGradient
+          ? Colors.transparent
+          : specialTheme.primaryDarkColor,
       flexibleSpace: specialTheme.useGradient
           ? Container(
-              decoration: BoxDecoration(
-                gradient: specialTheme.primaryGradient,
-              ),
+              decoration: BoxDecoration(gradient: specialTheme.primaryGradient),
             )
           : null,
       iconTheme: const IconThemeData(color: Colors.white),
@@ -407,13 +421,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
         _selectedIndex == 0
             ? 'Quân Nhu Tiền Tuyến'
             : _selectedIndex == 1
-                ? 'Tin tức'
-                : _selectedIndex == 2
-                    ? 'Giỏ hàng'
-                    : _selectedIndex == 3
-                        ? 'Thông báo'
-                        : 'Trang cá nhân',
-        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            ? 'Tin tức'
+            : _selectedIndex == 2
+            ? 'Giỏ hàng'
+            : _selectedIndex == 3
+            ? 'Thông báo'
+            : 'Trang cá nhân',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       // Nút "Đọc tất cả" (dấu tích kép) chỉ hiện ở tab Thông báo khi đã đăng nhập
       actions: _selectedIndex == 3
@@ -421,7 +439,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
               if (widget.token.isNotEmpty)
                 IconButton(
                   onPressed: () {
-                    context.read<NotificationBloc>().add(MarkAllNotificationsReadRequested());
+                    context.read<NotificationBloc>().add(
+                      MarkAllNotificationsReadRequested(),
+                    );
                   },
                   icon: const Icon(Icons.done_all, color: Colors.white),
                   tooltip: 'Đọc tất cả',
@@ -434,7 +454,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
   Widget _buildBottomNavBar() {
     return BlocBuilder<NotificationBloc, NotificationState>(
       builder: (context, notifState) {
-        final notifUnread = notifState is NotificationsLoaded ? notifState.unreadCount : 0;
+        final notifUnread = notifState is NotificationsLoaded
+            ? notifState.unreadCount
+            : 0;
         final theme = context.specialTheme;
         final screenWidth = MediaQuery.of(context).size.width;
         final itemWidth = screenWidth / 5;
@@ -474,8 +496,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
                   // Tab items
                   Row(
                     children: [
-                      _buildNavItem(0, Icons.home_outlined, Icons.home, 'Trang chủ', itemWidth, 0),
-                      _buildNavItem(1, Icons.article_outlined, Icons.article, 'Tin tức', itemWidth, 0),
+                      _buildNavItem(
+                        0,
+                        Icons.home_outlined,
+                        Icons.home,
+                        'Trang chủ',
+                        itemWidth,
+                        0,
+                      ),
+                      _buildNavItem(
+                        1,
+                        Icons.article_outlined,
+                        Icons.article,
+                        'Tin tức',
+                        itemWidth,
+                        0,
+                      ),
                       ListenableBuilder(
                         listenable: CartManager(),
                         builder: (context, _) => _buildNavItem(
@@ -487,8 +523,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
                           CartManager().totalCount,
                         ),
                       ),
-                      _buildNavItem(3, Icons.notifications_outlined, Icons.notifications, 'Thông báo', itemWidth, notifUnread),
-                      _buildNavItem(4, Icons.person_outline, Icons.person, 'Tôi', itemWidth, 0),
+                      _buildNavItem(
+                        3,
+                        Icons.notifications_outlined,
+                        Icons.notifications,
+                        'Thông báo',
+                        itemWidth,
+                        notifUnread,
+                      ),
+                      _buildNavItem(
+                        4,
+                        Icons.person_outline,
+                        Icons.person,
+                        'Tôi',
+                        itemWidth,
+                        0,
+                      ),
                     ],
                   ),
                 ],
@@ -500,7 +550,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, double width, int badgeCount) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+    double width,
+    int badgeCount,
+  ) {
     final isSelected = _selectedIndex == index;
     final theme = context.specialTheme;
     final color = isSelected ? theme.primaryColor : Colors.grey[600];
@@ -569,7 +626,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver, Si
 
 // ── Drawer (giao diện mới của team) ────────────────────────────────────────
 
-
 class _HomeDrawer extends StatelessWidget {
   final String displayName;
   final String? avatarUrl;
@@ -592,19 +648,30 @@ class _HomeDrawer extends StatelessWidget {
         children: [
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
-              color: context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor,
-              gradient: context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null,
+              color: context.specialTheme.useGradient
+                  ? null
+                  : context.specialTheme.primaryDarkColor,
+              gradient: context.specialTheme.useGradient
+                  ? context.specialTheme.primaryGradient
+                  : null,
             ),
-            accountName: Text(isGuest ? 'Đồng chí: Khách' : 'Đồng chí: $displayName'),
+            accountName: Text(
+              isGuest ? 'Đồng chí: Khách' : 'Đồng chí: $displayName',
+            ),
             accountEmail: const Text('Chợ quân nhu nội bộ'),
             currentAccountPicture: AvatarWithFrame(
               radius: 36,
-              avatarImage: !isGuest && avatarUrl != null && avatarUrl!.isNotEmpty
+              avatarImage:
+                  !isGuest && avatarUrl != null && avatarUrl!.isNotEmpty
                   ? SessionManager.getImageProvider(avatarUrl!)
                   : null,
               frameUrl: !isGuest ? coverImageWeb : null,
               fallbackChild: isGuest || avatarUrl == null || avatarUrl!.isEmpty
-                  ? Icon(Icons.person, size: 42, color: context.specialTheme.primaryDarkColor)
+                  ? Icon(
+                      Icons.person,
+                      size: 42,
+                      color: context.specialTheme.primaryDarkColor,
+                    )
                   : null,
             ),
           ),
@@ -664,7 +731,6 @@ class _HomeDrawer extends StatelessWidget {
               }
             },
           ),
-
 
           _DrawerTile(
             icon: Icons.palette_outlined,
@@ -777,14 +843,22 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
-        color: context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor,
-        gradient: context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null,
+        color: context.specialTheme.useGradient
+            ? null
+            : context.specialTheme.primaryDarkColor,
+        gradient: context.specialTheme.useGradient
+            ? context.specialTheme.primaryGradient
+            : null,
         borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       constraints: const BoxConstraints(minWidth: 16),
       child: Text(
         count > 99 ? '99+' : '$count',
-        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+        ),
         textAlign: TextAlign.center,
       ),
     );
@@ -831,7 +905,9 @@ class _CategoryTabBodyState extends State<_CategoryTabBody> {
       builder: (context, state) {
         if (state.isInitialLoading) {
           return Center(
-            child: CircularProgressIndicator(color: context.specialTheme.primaryColor),
+            child: CircularProgressIndicator(
+              color: context.specialTheme.primaryColor,
+            ),
           );
         }
         final categories = state.categories;
@@ -856,77 +932,73 @@ class _CategoryTabBodyState extends State<_CategoryTabBody> {
                   crossAxisSpacing: 16,
                   childAspectRatio: 0.85,
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final category = categories[index];
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SearchPage(categoryId: category.id),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final category = categories[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SearchPage(categoryId: category.id),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: context.specialTheme.primaryColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.category_outlined,
-                                color: context.specialTheme.primaryColor,
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                category.name,
-                                maxLines: 2,
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
-                    );
-                  },
-                  childCount: categories.length,
-                ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: context.specialTheme.primaryColor
+                                  .withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.category_outlined,
+                              color: context.specialTheme.primaryColor,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              category.name,
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }, childCount: categories.length),
               ),
             ),
             if (state.isLoadingMoreCategories)
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
               ),
           ],
@@ -952,11 +1024,19 @@ class _CartTabBody extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
+                Icon(
+                  Icons.shopping_cart_outlined,
+                  size: 80,
+                  color: Colors.grey,
+                ),
                 SizedBox(height: 16),
                 Text(
                   'Giỏ hàng trống',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -968,7 +1048,10 @@ class _CartTabBody extends StatelessWidget {
           );
         }
 
-        final totalPrice = items.fold<num>(0, (sum, item) => sum + item.price * item.quantity);
+        final totalPrice = items.fold<num>(
+          0,
+          (sum, item) => sum + item.price * item.quantity,
+        );
 
         return Column(
           children: [
@@ -981,7 +1064,9 @@ class _CartTabBody extends StatelessWidget {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Row(
@@ -989,24 +1074,34 @@ class _CartTabBody extends StatelessWidget {
                           // Product Image
                           ClipRRect(
                             borderRadius: BorderRadius.circular(6),
-                            child: item.imageUrl != null && item.imageUrl!.isNotEmpty
+                            child:
+                                item.imageUrl != null &&
+                                    item.imageUrl!.isNotEmpty
                                 ? Image.network(
                                     item.imageUrl!,
                                     width: 70,
                                     height: 70,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      width: 70,
-                                      height: 70,
-                                      color: Colors.grey[200],
-                                      child: const Icon(Icons.inventory_2_outlined, color: Colors.grey),
-                                    ),
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              width: 70,
+                                              height: 70,
+                                              color: Colors.grey[200],
+                                              child: const Icon(
+                                                Icons.inventory_2_outlined,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
                                   )
                                 : Container(
                                     width: 70,
                                     height: 70,
                                     color: Colors.grey[200],
-                                    child: const Icon(Icons.inventory_2_outlined, color: Colors.grey),
+                                    child: const Icon(
+                                      Icons.inventory_2_outlined,
+                                      color: Colors.grey,
+                                    ),
                                   ),
                           ),
                           const SizedBox(width: 12),
@@ -1017,7 +1112,10 @@ class _CartTabBody extends StatelessWidget {
                               children: [
                                 Text(
                                   item.title,
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -1032,41 +1130,63 @@ class _CartTabBody extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.redAccent,
+                                  size: 20,
+                                ),
                                 onPressed: () {
-                                  CartManager().updateQuantity(item.productId, 0);
+                                  CartManager().updateQuantity(
+                                    item.productId,
+                                    0,
+                                  );
                                 },
                               ),
                               Row(
                                 children: [
                                   GestureDetector(
                                     onTap: () {
-                                      CartManager().updateQuantity(item.productId, item.quantity - 1);
+                                      CartManager().updateQuantity(
+                                        item.productId,
+                                        item.quantity - 1,
+                                      );
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(
+                                          color: Colors.grey[300]!,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Icon(Icons.remove, size: 14),
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                    ),
                                     child: Text(
                                       '${item.quantity}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                   GestureDetector(
                                     onTap: () {
-                                      CartManager().updateQuantity(item.productId, item.quantity + 1);
+                                      CartManager().updateQuantity(
+                                        item.productId,
+                                        item.quantity + 1,
+                                      );
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey[300]!),
+                                        border: Border.all(
+                                          color: Colors.grey[300]!,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Icon(Icons.add, size: 14),
@@ -1104,7 +1224,10 @@ class _CartTabBody extends StatelessWidget {
                       children: [
                         const Text(
                           'Tổng tiền hàng:',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         PriceText(price: totalPrice),
                       ],
@@ -1184,7 +1307,11 @@ class _ProfileTabBody extends StatelessWidget {
                   fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 80),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image,
+                    color: Colors.white,
+                    size: 80,
+                  ),
                 ),
               ),
               Positioned(
@@ -1227,13 +1354,23 @@ class _ProfileTabBody extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white, width: 4),
-              color: (isGuest || coverImageUrl == null || coverImageUrl!.isEmpty)
-                  ? (context.specialTheme.useGradient ? null : const Color.fromARGB(255, 251, 209, 209))
+              color:
+                  (isGuest || coverImageUrl == null || coverImageUrl!.isEmpty)
+                  ? (context.specialTheme.useGradient
+                        ? null
+                        : const Color.fromARGB(255, 251, 209, 209))
                   : null,
-              gradient: (isGuest || coverImageUrl == null || coverImageUrl!.isEmpty) && context.specialTheme.useGradient
+              gradient:
+                  (isGuest ||
+                          coverImageUrl == null ||
+                          coverImageUrl!.isEmpty) &&
+                      context.specialTheme.useGradient
                   ? context.specialTheme.primaryGradient
                   : null,
-              image: (!isGuest && coverImageUrl != null && coverImageUrl!.isNotEmpty)
+              image:
+                  (!isGuest &&
+                      coverImageUrl != null &&
+                      coverImageUrl!.isNotEmpty)
                   ? DecorationImage(
                       image: SessionManager.getImageProvider(coverImageUrl!),
                       fit: BoxFit.cover,
@@ -1249,18 +1386,26 @@ class _ProfileTabBody extends StatelessWidget {
                 // Avatar
                 GestureDetector(
                   onTap: () {
-                    if (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty) {
+                    if (!isGuest &&
+                        avatarUrl != null &&
+                        avatarUrl!.isNotEmpty) {
                       _showZoomedAvatar(context, avatarUrl!, username);
                     }
                   },
                   child: AvatarWithFrame(
                     radius: 46,
-                    avatarImage: (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
+                    avatarImage:
+                        (!isGuest && avatarUrl != null && avatarUrl!.isNotEmpty)
                         ? SessionManager.getImageProvider(avatarUrl!)
                         : null,
                     frameUrl: !isGuest ? coverImageWeb : null,
-                    fallbackChild: (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
-                        ? Icon(Icons.person, size: 50, color: context.specialTheme.primaryDarkColor)
+                    fallbackChild:
+                        (isGuest || avatarUrl == null || avatarUrl!.isEmpty)
+                        ? Icon(
+                            Icons.person,
+                            size: 50,
+                            color: context.specialTheme.primaryDarkColor,
+                          )
                         : null,
                   ),
                 ),
@@ -1282,7 +1427,10 @@ class _ProfileTabBody extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -1290,7 +1438,10 @@ class _ProfileTabBody extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
                       );
                     },
-                    child: const Text('Đăng nhập / Đăng ký', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Đăng nhập / Đăng ký',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ] else ...[
                   Text(
@@ -1305,7 +1456,10 @@ class _ProfileTabBody extends StatelessWidget {
 
                   // Nút followers / following
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),

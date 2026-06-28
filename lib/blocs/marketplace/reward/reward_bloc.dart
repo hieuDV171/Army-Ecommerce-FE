@@ -7,7 +7,8 @@ import 'reward_state.dart';
 class RewardBloc extends Bloc<RewardEvent, RewardState> {
   final MarketplaceRepository marketplaceRepository;
 
-  RewardBloc({required this.marketplaceRepository}) : super(const RewardState()) {
+  RewardBloc({required this.marketplaceRepository})
+    : super(const RewardState()) {
     on<RewardHistoryRequested>(_onHistoryRequested);
     on<RewardLoadMoreHistoryRequested>(_onLoadMoreHistoryRequested);
     on<RewardProofSubmitted>(_onProofSubmitted);
@@ -19,17 +20,31 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
     RewardHistoryRequested event,
     Emitter<RewardState> emit,
   ) async {
-    emit(state.copyWith(isLoadingHistory: true, currentPage: 1, clearMessages: true, history: []));
+    emit(
+      state.copyWith(
+        isLoadingHistory: true,
+        currentPage: 1,
+        clearMessages: true,
+        history: [],
+      ),
+    );
     try {
-      final list = await marketplaceRepository.getRewardHistory(index: 1, count: state.count);
-      emit(state.copyWith(
-        history: list,
-        isLoadingHistory: false,
-        currentPage: 2,
-        hasReachedEndHistory: list.length < state.count,
-      ));
+      final list = await marketplaceRepository.getRewardHistory(
+        index: 1,
+        count: state.count,
+      );
+      emit(
+        state.copyWith(
+          history: list,
+          isLoadingHistory: false,
+          currentPage: 2,
+          hasReachedEndHistory: list.length < state.count,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(isLoadingHistory: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingHistory: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -37,7 +52,10 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
     RewardLoadMoreHistoryRequested event,
     Emitter<RewardState> emit,
   ) async {
-    if (state.isLoadingMoreHistory || state.hasReachedEndHistory || state.isLoadingHistory) return;
+    if (state.isLoadingMoreHistory ||
+        state.hasReachedEndHistory ||
+        state.isLoadingHistory)
+      return;
 
     emit(state.copyWith(isLoadingMoreHistory: true, clearMessages: true));
     try {
@@ -46,14 +64,21 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
         count: state.count,
       );
       final merged = [...state.history, ...list];
-      emit(state.copyWith(
-        history: merged,
-        isLoadingMoreHistory: false,
-        currentPage: state.currentPage + 1,
-        hasReachedEndHistory: list.length < state.count,
-      ));
+      emit(
+        state.copyWith(
+          history: merged,
+          isLoadingMoreHistory: false,
+          currentPage: state.currentPage + 1,
+          hasReachedEndHistory: list.length < state.count,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(isLoadingMoreHistory: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isLoadingMoreHistory: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -61,7 +86,13 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
     RewardProofSubmitted event,
     Emitter<RewardState> emit,
   ) async {
-    emit(state.copyWith(isSubmittingProof: true, clearMessages: true, clearProofResult: true));
+    emit(
+      state.copyWith(
+        isSubmittingProof: true,
+        clearMessages: true,
+        clearProofResult: true,
+      ),
+    );
     try {
       final file = File(event.filePath);
       final uploadedUrl = await marketplaceRepository.uploadFile(file);
@@ -73,13 +104,20 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
         imageUrl: event.isImage ? uploadedUrl : null,
         videoUrl: !event.isImage ? uploadedUrl : null,
       );
-      emit(state.copyWith(
-        isSubmittingProof: false,
-        proofResult: result ?? const {},
-        successMessage: 'Gửi minh chứng chiến tích thành công',
-      ));
+      emit(
+        state.copyWith(
+          isSubmittingProof: false,
+          proofResult: result ?? const {},
+          successMessage: 'Gửi minh chứng chiến tích thành công',
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(isSubmittingProof: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isSubmittingProof: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -87,19 +125,32 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
     RewardAppealSubmitted event,
     Emitter<RewardState> emit,
   ) async {
-    emit(state.copyWith(isSubmittingAppeal: true, clearMessages: true, clearAppealResult: true));
+    emit(
+      state.copyWith(
+        isSubmittingAppeal: true,
+        clearMessages: true,
+        clearAppealResult: true,
+      ),
+    );
     try {
       final appeal = await marketplaceRepository.createRewardAppeal(
         rewardId: event.rewardId,
         reason: event.reason,
       );
-      emit(state.copyWith(
-        isSubmittingAppeal: false,
-        appealResult: appeal,
-        successMessage: 'Gửi khiếu nại thành công',
-      ));
+      emit(
+        state.copyWith(
+          isSubmittingAppeal: false,
+          appealResult: appeal,
+          successMessage: 'Gửi khiếu nại thành công',
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(isSubmittingAppeal: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isSubmittingAppeal: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -107,15 +158,20 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
     RewardProofDetailRequested event,
     Emitter<RewardState> emit,
   ) async {
-    emit(state.copyWith(isLoadingDetail: true, clearMessages: true, clearProofDetail: true));
+    emit(
+      state.copyWith(
+        isLoadingDetail: true,
+        clearMessages: true,
+        clearProofDetail: true,
+      ),
+    );
     try {
       final proof = await marketplaceRepository.getRewardProof(event.rewardId);
-      emit(state.copyWith(
-        isLoadingDetail: false,
-        proofDetail: proof,
-      ));
+      emit(state.copyWith(isLoadingDetail: false, proofDetail: proof));
     } catch (error) {
-      emit(state.copyWith(isLoadingDetail: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingDetail: false, errorMessage: error.toString()),
+      );
     }
   }
 }

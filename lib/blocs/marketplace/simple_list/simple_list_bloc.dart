@@ -5,16 +5,15 @@ import 'package:army_ecommerce/repositories/marketplace_repository.dart';
 import 'simple_list_event.dart';
 import 'simple_list_state.dart';
 
-typedef SimpleListLoader = Future<List<MarketplaceItem>> Function(int index, int count);
+typedef SimpleListLoader =
+    Future<List<MarketplaceItem>> Function(int index, int count);
 
 class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
   final SimpleListLoader loader;
   final MarketplaceRepository marketplaceRepository;
 
-  SimpleListBloc({
-    required this.loader,
-    required this.marketplaceRepository,
-  }) : super(const SimpleListState()) {
+  SimpleListBloc({required this.loader, required this.marketplaceRepository})
+    : super(const SimpleListState()) {
     on<SimpleListRequested>(_onRequested);
     on<SimpleListRefreshed>(_onRefreshed);
     on<SimpleListLoadMoreRequested>(_onLoadMoreRequested);
@@ -38,7 +37,9 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isInitialLoading: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isInitialLoading: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -67,7 +68,8 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
     SimpleListLoadMoreRequested event,
     Emitter<SimpleListState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) return;
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+      return;
 
     emit(state.copyWith(isLoadingMore: true, clearMessages: true));
     try {
@@ -83,7 +85,9 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingMore: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingMore: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -94,7 +98,12 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
     emit(state.copyWith(isSubmitting: true, clearMessages: true));
     try {
       await marketplaceRepository.postAction(event.path, event.data);
-      emit(state.copyWith(isSubmitting: false, successMessage: 'Thao tác thành công'));
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          successMessage: 'Thao tác thành công',
+        ),
+      );
       add(SimpleListRefreshed());
     } catch (error) {
       emit(state.copyWith(isSubmitting: false, errorMessage: error.toString()));

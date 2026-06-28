@@ -2,6 +2,7 @@ import 'package:army_ecommerce/blocs/marketplace/product_detail/product_detail_b
 import 'package:army_ecommerce/blocs/marketplace/product_detail/product_detail_event.dart';
 import 'package:army_ecommerce/blocs/marketplace/product_detail/product_detail_state.dart';
 import 'package:army_ecommerce/core/services/session_manager.dart';
+import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/ui/util/widgets/login_prompt.dart';
 import 'package:flutter/material.dart';
@@ -120,7 +121,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           _buildVariantRow('Màu', size.color ?? 'Mặc định'),
           _buildVariantRow(
             'Tồn kho',
-            (size.stock != null && size.stock! > 0) ? '${size.stock} sản phẩm' : 'Hết hàng',
+            (size.stock != null && size.stock! > 0)
+                ? '${size.stock} sản phẩm'
+                : 'Hết hàng',
           ),
           _buildVariantRow(
             'Khối lượng',
@@ -197,7 +200,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
         );
       }
     } catch (e) {
-      debugPrint('Scroll error: $e');
+      logger.e('Scroll error: $e');
     }
   }
 
@@ -279,16 +282,21 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     return BlocConsumer<ProductDetailBloc, ProductDetailState>(
       listener: (context, state) {
         if (state.isDeleted) {
-          AppSnackBar.show(context, message: state.successMessage ?? 'Đã xóa sản phẩm');
+          AppSnackBar.show(
+            context,
+            message: state.successMessage ?? 'Đã xóa sản phẩm',
+          );
           Navigator.pop(context, true);
           return;
         }
         final message = state.errorMessage ?? state.successMessage;
         if (message != null) {
-          final isTokenInvalidMsg = message.toLowerCase().contains('token is invalid') ||
+          final isTokenInvalidMsg =
+              message.toLowerCase().contains('token is invalid') ||
               message.toLowerCase().contains('token_invalid') ||
               message.toLowerCase().contains('token is required');
-          final isGuest = (context.read<AuthBloc>().state.currentUser?.token ?? '').isEmpty;
+          final isGuest =
+              (context.read<AuthBloc>().state.currentUser?.token ?? '').isEmpty;
           if (!isGuest || !isTokenInvalidMsg) {
             AppSnackBar.show(context, message: message);
           }
@@ -918,18 +926,28 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: AvatarWithFrame(
                         radius: 24,
-                        avatarImage: product.seller?.avatar != null && product.seller!.avatar!.isNotEmpty
-                            ? SessionManager.getImageProvider(product.seller!.avatar!)
+                        avatarImage:
+                            product.seller?.avatar != null &&
+                                product.seller!.avatar!.isNotEmpty
+                            ? SessionManager.getImageProvider(
+                                product.seller!.avatar!,
+                              )
                             : null,
                         frameUrl: product.seller?.coverImageWeb,
                         fallbackChild: const Icon(Icons.storefront),
                       ),
-                      title: Text(sellerName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      title: Text(
+                        sellerName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       subtitle: Text(
                         product.sellerLocation ??
                             product.shipsFrom ??
@@ -943,9 +961,15 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if ((sellerScore ?? '').isNotEmpty)
-                                Text('Điểm: $sellerScore', style: const TextStyle(fontSize: 12)),
+                                Text(
+                                  'Điểm: $sellerScore',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                               if ((sellerListing ?? '').isNotEmpty)
-                                Text('Listing: $sellerListing', style: const TextStyle(fontSize: 12)),
+                                Text(
+                                  'Listing: $sellerListing',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                             ],
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -955,49 +979,65 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                               color: isMe
                                   ? Colors.grey[200]
                                   : (context.specialTheme.useGradient
-                                      ? null
-                                      : context.specialTheme.primaryColor),
+                                        ? null
+                                        : context.specialTheme.primaryColor),
                               gradient: isMe
                                   ? null
                                   : (context.specialTheme.useGradient
-                                      ? context.specialTheme.primaryGradient
-                                      : null),
+                                        ? context.specialTheme.primaryGradient
+                                        : null),
                             ),
                             child: IconButton(
-                              icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                              icon: const Icon(
+                                Icons.chat_bubble_outline,
+                                size: 20,
+                              ),
                               color: isMe ? Colors.grey[400] : Colors.white,
                               padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                              constraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
                               onPressed: isMe
                                   ? null
                                   : () {
-                                      final token = authState.currentUser?.token ?? '';
+                                      final token =
+                                          authState.currentUser?.token ?? '';
                                       if (checkLogin(context, token: token)) {
-                                        final chatBloc = context.read<ChatBloc>();
+                                        final chatBloc = context
+                                            .read<ChatBloc>();
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) => BlocProvider(
                                               create: (context) => ChatBloc(
-                                                marketplaceRepository: context.read<MarketplaceRepository>(),
+                                                marketplaceRepository: context
+                                                    .read<
+                                                      MarketplaceRepository
+                                                    >(),
                                               ),
                                               child: ChatScreen(
                                                 partnerId: sellerId,
                                                 partnerUsername: sellerName,
-                                                partnerAvatar: product.seller?.avatar,
+                                                partnerAvatar:
+                                                    product.seller?.avatar,
                                                 currentUserId: currentUserId,
                                                 productId: product.id,
                                                 productTitle: product.title,
                                                 productPrice: product.price,
-                                                productImageUrl: product.imageUrls.isNotEmpty
+                                                productImageUrl:
+                                                    product.imageUrls.isNotEmpty
                                                     ? product.imageUrls.first
                                                     : null,
                                               ),
                                             ),
                                           ),
                                         ).then((_) {
-                                          if (context.mounted && token.isNotEmpty) {
-                                            chatBloc.add(LoadConversationsRequested());
+                                          if (context.mounted &&
+                                              token.isNotEmpty) {
+                                            chatBloc.add(
+                                              LoadConversationsRequested(),
+                                            );
                                           }
                                         });
                                       }
@@ -1099,12 +1139,10 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        splashColor: context.specialTheme.primaryColor.withValues(
-                          alpha: 0.15,
-                        ),
-                        highlightColor: context.specialTheme.primaryColor.withValues(
-                          alpha: 0.05,
-                        ),
+                        splashColor: context.specialTheme.primaryColor
+                            .withValues(alpha: 0.15),
+                        highlightColor: context.specialTheme.primaryColor
+                            .withValues(alpha: 0.05),
                         onTap: () {
                           final authState = context.read<AuthBloc>().state;
                           final token = authState.currentUser?.token ?? '';
@@ -1124,20 +1162,35 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           );
                         },
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           leading: AvatarWithFrame(
                             radius: 24,
                             avatarImage:
-                                (comment.avatar != null && comment.avatar!.isNotEmpty)
-                                ? SessionManager.getImageProvider(comment.avatar!)
+                                (comment.avatar != null &&
+                                    comment.avatar!.isNotEmpty)
+                                ? SessionManager.getImageProvider(
+                                    comment.avatar!,
+                                  )
                                 : null,
                             frameUrl: comment.coverImageWeb,
                           ),
-                          title: Text(comment.authorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          title: Text(
+                            comment.authorName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(comment.content, style: const TextStyle(color: Colors.black87)),
+                              Text(
+                                comment.content,
+                                style: const TextStyle(color: Colors.black87),
+                              ),
                               if (comment.createdAt != null &&
                                   comment.createdAt!.isNotEmpty) ...[
                                 const SizedBox(height: 4),
@@ -1312,8 +1365,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                           color: isSoldOut
                               ? Colors.grey
                               : (isSelected
-                                  ? context.specialTheme.primaryDarkColor
-                                  : Colors.black87),
+                                    ? context.specialTheme.primaryDarkColor
+                                    : Colors.black87),
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -1375,7 +1428,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       ),
                       IconButton(
                         // TIP-02: chặn tăng vượt tồn kho của variant đã chọn
-                        onPressed: (selectedSize?.stock != null &&
+                        onPressed:
+                            (selectedSize?.stock != null &&
                                 quantity >= selectedSize!.stock!)
                             ? null
                             : () => setState(() => quantity++),
@@ -1441,7 +1495,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       }
                       if (stock != null && quantity > stock) {
                         setState(() {
-                          errorMessage = 'Chỉ còn $stock sản phẩm cho phân loại này';
+                          errorMessage =
+                              'Chỉ còn $stock sản phẩm cho phân loại này';
                         });
                         return;
                       }
@@ -1741,9 +1796,7 @@ class _RatingsSectionState extends State<_RatingsSection> {
     return BlocBuilder<ProductDetailBloc, ProductDetailState>(
       builder: (context, state) {
         if (state.errorMessage != null && state.rates.isEmpty) {
-          return Center(
-            child: Text(state.errorMessage!),
-          );
+          return Center(child: Text(state.errorMessage!));
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1755,10 +1808,15 @@ class _RatingsSectionState extends State<_RatingsSection> {
                 PopupMenuButton<int>(
                   initialValue: state.selectedStarFilter,
                   onSelected: (star) {
-                    context.read<ProductDetailBloc>().add(ProductRatesRequested(level: star));
+                    context.read<ProductDetailBloc>().add(
+                      ProductRatesRequested(level: star),
+                    );
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: 0, child: Text('Tất cả đánh giá')),
+                    const PopupMenuItem(
+                      value: 0,
+                      child: Text('Tất cả đánh giá'),
+                    ),
                     ...List.generate(5, (index) {
                       final star = 5 - index;
                       return PopupMenuItem(
@@ -1768,7 +1826,11 @@ class _RatingsSectionState extends State<_RatingsSection> {
                           children: [
                             Text('$star'),
                             const SizedBox(width: 4),
-                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
                           ],
                         ),
                       );
@@ -1824,9 +1886,8 @@ class _RatingsSectionState extends State<_RatingsSection> {
                       splashColor: context.specialTheme.primaryColor.withValues(
                         alpha: 0.15,
                       ),
-                      highlightColor: context.specialTheme.primaryColor.withValues(
-                        alpha: 0.05,
-                      ),
+                      highlightColor: context.specialTheme.primaryColor
+                          .withValues(alpha: 0.05),
                       onTap: () {
                         final authState = context.read<AuthBloc>().state;
                         final token = authState.currentUser?.token ?? '';
@@ -1846,15 +1907,25 @@ class _RatingsSectionState extends State<_RatingsSection> {
                         );
                       },
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         leading: AvatarWithFrame(
                           radius: 24,
-                          avatarImage: (r.avatar != null && r.avatar!.isNotEmpty)
+                          avatarImage:
+                              (r.avatar != null && r.avatar!.isNotEmpty)
                               ? SessionManager.getImageProvider(r.avatar!)
                               : null,
                           frameUrl: r.coverImageWeb,
                         ),
-                        title: Text(r.author, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        title: Text(
+                          r.author,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -1862,7 +1933,8 @@ class _RatingsSectionState extends State<_RatingsSection> {
                               children: [
                                 RatingStars(rating: r.level.toDouble()),
                                 const Spacer(),
-                                if (r.createdAt != null && r.createdAt!.isNotEmpty)
+                                if (r.createdAt != null &&
+                                    r.createdAt!.isNotEmpty)
                                   Text(
                                     _formatDateTime(r.createdAt),
                                     style: const TextStyle(

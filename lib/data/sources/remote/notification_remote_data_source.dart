@@ -7,7 +7,8 @@ import 'package:dio/dio.dart';
 class NotificationRemoteDataSource {
   final DioClient _dioClient;
 
-  NotificationRemoteDataSource({required DioClient dioClient}) : _dioClient = dioClient;
+  NotificationRemoteDataSource({required DioClient dioClient})
+    : _dioClient = dioClient;
 
   Future<ApiResponse<dynamic>> getNotification({
     required int index,
@@ -17,11 +18,7 @@ class NotificationRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.getNotification,
-        data: {
-          'index': index,
-          'count': count,
-          'group': group,
-        },
+        data: {'index': index, 'count': count, 'group': group},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
@@ -35,9 +32,7 @@ class NotificationRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.setReadNotification,
-        data: {
-          'notification_id': int.tryParse(notificationId) ?? 0,
-        },
+        data: {'notification_id': int.tryParse(notificationId) ?? 0},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {

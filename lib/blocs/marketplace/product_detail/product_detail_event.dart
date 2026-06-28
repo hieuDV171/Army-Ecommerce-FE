@@ -23,10 +23,20 @@ class ProductCommentSent extends ProductDetailEvent {
   final String? currentUserName;
   final String? currentUserAvatar;
 
-  ProductCommentSent(this.content, {this.currentUserId, this.currentUserName, this.currentUserAvatar});
+  ProductCommentSent(
+    this.content, {
+    this.currentUserId,
+    this.currentUserName,
+    this.currentUserAvatar,
+  });
 
   @override
-  List<Object?> get props => [content, currentUserId, currentUserName, currentUserAvatar];
+  List<Object?> get props => [
+    content,
+    currentUserId,
+    currentUserName,
+    currentUserAvatar,
+  ];
 }
 
 class ProductReported extends ProductDetailEvent {
@@ -54,4 +64,3 @@ class ProductRatesRequested extends ProductDetailEvent {
 }
 
 class ProductRatesLoadMoreRequested extends ProductDetailEvent {}
-

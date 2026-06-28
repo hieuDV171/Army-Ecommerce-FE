@@ -16,7 +16,9 @@ ProductCardData productCardDataFromModel(ProductModel product) {
     priceNew: product.priceNew,
     priceDiscount: product.priceDiscount,
     bestOffers: product.bestOffers,
-    imageUrl: (primaryImage != null && primaryImage.isNotEmpty) ? primaryImage : null,
+    imageUrl: (primaryImage != null && primaryImage.isNotEmpty)
+        ? primaryImage
+        : null,
     rating: product.rating ?? sellerScore,
     soldCount: product.soldCount ?? sellerListing,
     sellerLocation: product.sellerLocation ?? product.shipsFrom,

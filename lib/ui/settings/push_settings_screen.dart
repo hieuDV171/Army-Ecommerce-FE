@@ -34,8 +34,14 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _checkScale = CurvedAnimation(parent: _checkController, curve: Curves.elasticOut);
-    _checkFade = CurvedAnimation(parent: _checkController, curve: Curves.easeIn);
+    _checkScale = CurvedAnimation(
+      parent: _checkController,
+      curve: Curves.elasticOut,
+    );
+    _checkFade = CurvedAnimation(
+      parent: _checkController,
+      curve: Curves.easeIn,
+    );
   }
 
   @override
@@ -58,7 +64,8 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
   @override
   Widget build(BuildContext context) {
     final draft = _draftSettings;
-    final isSaving = context.watch<PushSettingBloc>().state is PushSettingLoading;
+    final isSaving =
+        context.watch<PushSettingBloc>().state is PushSettingLoading;
 
     return PopScope(
       canPop: !isSaving && !_hasUnsavedChanges(),
@@ -72,7 +79,9 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
       },
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: context.specialTheme.useGradient ? Colors.transparent : context.specialTheme.primaryDarkColor,
+          backgroundColor: context.specialTheme.useGradient
+              ? Colors.transparent
+              : context.specialTheme.primaryDarkColor,
           flexibleSpace: context.specialTheme.useGradient
               ? Container(
                   decoration: BoxDecoration(
@@ -81,7 +90,10 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
                 )
               : null,
           iconTheme: const IconThemeData(color: Colors.white),
-          title: const Text('Cài đặt thông báo', style: TextStyle(color: Colors.white, fontSize: 16)),
+          title: const Text(
+            'Cài đặt thông báo',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
           centerTitle: true,
         ),
 
@@ -103,136 +115,146 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                          // // === Email Notification ===
-                          // _buildSettingSection(
-                          //   title: 'Email thông báo',
-                          //   items: [
-                          //     _buildToggleItem(
-                          //       title: 'Cập nhật đơn hàng',
-                          //       subtitle: 'Cập nhật về trạng thái của các đơn hàng',
-                          //       value: _currentSettings.transaction == 1,
-                          //       onChanged: (val) => _updateSetting(
-                          //         transaction: val ? '1' : '0',
-                          //       ),
-                          //     ),
-                          //     _buildToggleItem(
-                          //       title: 'Khuyến mãi',
-                          //       subtitle: 'Cập nhật về các ưu đãi và khuyến mãi sắp tới',
-                          //       value: _currentSettings.announcement == 1,
-                          //       onChanged: (val) => _updateSetting(
-                          //         announcement: val ? '1' : '0',
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
-                          //
-                          // const SizedBox(height: 24),
+                            // // === Email Notification ===
+                            // _buildSettingSection(
+                            //   title: 'Email thông báo',
+                            //   items: [
+                            //     _buildToggleItem(
+                            //       title: 'Cập nhật đơn hàng',
+                            //       subtitle: 'Cập nhật về trạng thái của các đơn hàng',
+                            //       value: _currentSettings.transaction == 1,
+                            //       onChanged: (val) => _updateSetting(
+                            //         transaction: val ? '1' : '0',
+                            //       ),
+                            //     ),
+                            //     _buildToggleItem(
+                            //       title: 'Khuyến mãi',
+                            //       subtitle: 'Cập nhật về các ưu đãi và khuyến mãi sắp tới',
+                            //       value: _currentSettings.announcement == 1,
+                            //       onChanged: (val) => _updateSetting(
+                            //         announcement: val ? '1' : '0',
+                            //       ),
+                            //     ),
+                            //   ],
+                            // ),
+                            //
+                            // const SizedBox(height: 24),
 
-                          // === Push Notification ===
-                          _buildSettingSection(
-                            title: 'Thông báo đẩy',
-                            items: [
-                              _buildToggleItem(
-                                title: 'Thích (Like)',
-                                subtitle: 'Thông báo khi có người thích bài viết của bạn',
-                                value: draft.like == 1,
-                                onChanged: (val) => _updateDraft(
-                                  draft.copyWith(like: val ? 1 : 0),
+                            // === Push Notification ===
+                            _buildSettingSection(
+                              title: 'Thông báo đẩy',
+                              items: [
+                                _buildToggleItem(
+                                  title: 'Thích (Like)',
+                                  subtitle:
+                                      'Thông báo khi có người thích bài viết của bạn',
+                                  value: draft.like == 1,
+                                  onChanged: (val) => _updateDraft(
+                                    draft.copyWith(like: val ? 1 : 0),
+                                  ),
                                 ),
-                              ),
-                              _buildToggleItem(
-                                title: 'Bình luận',
-                                subtitle: 'Thông báo khi có người bình luận bài viết',
-                                value: draft.comment == 1,
-                                onChanged: (val) => _updateDraft(
-                                  draft.copyWith(comment: val ? 1 : 0),
+                                _buildToggleItem(
+                                  title: 'Bình luận',
+                                  subtitle:
+                                      'Thông báo khi có người bình luận bài viết',
+                                  value: draft.comment == 1,
+                                  onChanged: (val) => _updateDraft(
+                                    draft.copyWith(comment: val ? 1 : 0),
+                                  ),
                                 ),
-                              ),
-                              _buildToggleItem(
-                                title: 'Giao dịch',
-                                subtitle: 'Thông báo về các giao dịch của bạn',
-                                value: draft.transaction == 1,
-                                onChanged: (val) => _updateDraft(
-                                  draft.copyWith(transaction: val ? 1 : 0),
+                                _buildToggleItem(
+                                  title: 'Giao dịch',
+                                  subtitle:
+                                      'Thông báo về các giao dịch của bạn',
+                                  value: draft.transaction == 1,
+                                  onChanged: (val) => _updateDraft(
+                                    draft.copyWith(transaction: val ? 1 : 0),
+                                  ),
                                 ),
-                              ),
-                              _buildToggleItem(
-                                title: 'Thông báo chung',
-                                subtitle: 'Thông báo về các sự kiện quan trọng',
-                                value: draft.announcement == 1,
-                                onChanged: (val) => _updateDraft(
-                                  draft.copyWith(announcement: val ? 1 : 0),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // === Sound Settings ===
-                          _buildSettingSection(
-                            title: 'Âm thanh',
-                            items: [
-                              _buildToggleItem(
-                                title: 'Bật âm thanh',
-                                subtitle: 'Phát âm thanh khi nhận được thông báo',
-                                value: draft.soundOn == 1,
-                                onChanged: (val) => _updateDraft(
-                                  draft.copyWith(soundOn: val ? 1 : 0),
-                                ),
-                              ),
-                              _buildToggleItem(
-                                title: 'Âm thanh mặc định',
-                                subtitle: 'Dùng âm thanh mặc định hệ thống',
-                                value: draft.soundDefault == 1,
-                                onChanged: (val) => _updateDraft(
-                                  draft.copyWith(soundDefault: val ? 1 : 0),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 32),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: AppButton(
-                                  label: 'Lưu thay đổi',
-                                  isLoading: isSaving,
-                                  onPressed: isSaving || !hasUnsavedChanges ? null : _saveChangedSettings,
-                                ),
-                              ),
-                              if (_showCheck) ...[
-                                const SizedBox(width: 12),
-                                ScaleTransition(
-                                  scale: _checkScale,
-                                  child: FadeTransition(
-                                    opacity: _checkFade,
-                                    child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.green,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.check,
-                                        color: Colors.white,
-                                        size: 22,
-                                      ),
-                                    ),
+                                _buildToggleItem(
+                                  title: 'Thông báo chung',
+                                  subtitle:
+                                      'Thông báo về các sự kiện quan trọng',
+                                  value: draft.announcement == 1,
+                                  onChanged: (val) => _updateDraft(
+                                    draft.copyWith(announcement: val ? 1 : 0),
                                   ),
                                 ),
                               ],
-                            ],
-                          ),
-                        ],
-                      ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // === Sound Settings ===
+                            _buildSettingSection(
+                              title: 'Âm thanh',
+                              items: [
+                                _buildToggleItem(
+                                  title: 'Bật âm thanh',
+                                  subtitle:
+                                      'Phát âm thanh khi nhận được thông báo',
+                                  value: draft.soundOn == 1,
+                                  onChanged: (val) => _updateDraft(
+                                    draft.copyWith(soundOn: val ? 1 : 0),
+                                  ),
+                                ),
+                                _buildToggleItem(
+                                  title: 'Âm thanh mặc định',
+                                  subtitle: 'Dùng âm thanh mặc định hệ thống',
+                                  value: draft.soundDefault == 1,
+                                  onChanged: (val) => _updateDraft(
+                                    draft.copyWith(soundDefault: val ? 1 : 0),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 32),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: AppButton(
+                                    label: 'Lưu thay đổi',
+                                    isLoading: isSaving,
+                                    onPressed: isSaving || !hasUnsavedChanges
+                                        ? null
+                                        : _saveChangedSettings,
+                                  ),
+                                ),
+                                if (_showCheck) ...[
+                                  const SizedBox(width: 12),
+                                  ScaleTransition(
+                                    scale: _checkScale,
+                                    child: FadeTransition(
+                                      opacity: _checkFade,
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.green,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   if (isSaving) ...[
-                    const ModalBarrier(dismissible: false, color: Colors.black38),
+                    const ModalBarrier(
+                      dismissible: false,
+                      color: Colors.black38,
+                    ),
                     const Center(child: CircularProgressIndicator()),
                   ],
                 ],
@@ -248,7 +270,9 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        context.read<PushSettingBloc>().add(FetchPushSettingEvent());
+                        context.read<PushSettingBloc>().add(
+                          FetchPushSettingEvent(),
+                        );
                       },
                       child: const Text('Thử lại'),
                     ),
@@ -258,7 +282,6 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
             }
 
             return const Center(child: Text('Không xác định'));
-
           },
           listener: (context, state) {
             if (state is PushSettingSuccess) {
@@ -273,7 +296,7 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
             if (state is PushSettingError) {
               AppSnackBar.showError(context, message: state.error);
             }
-          }
+          },
         ),
       ),
     );
@@ -291,11 +314,21 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
     if (current == null || draft == null) return;
 
     final like = current.like != draft.like ? _toApiValue(draft.like) : null;
-    final comment = current.comment != draft.comment ? _toApiValue(draft.comment) : null;
-    final transaction = current.transaction != draft.transaction ? _toApiValue(draft.transaction) : null;
-    final announcement = current.announcement != draft.announcement ? _toApiValue(draft.announcement) : null;
-    final soundOn = current.soundOn != draft.soundOn ? _toApiValue(draft.soundOn) : null;
-    final soundDefault = current.soundDefault != draft.soundDefault ? _toApiValue(draft.soundDefault) : null;
+    final comment = current.comment != draft.comment
+        ? _toApiValue(draft.comment)
+        : null;
+    final transaction = current.transaction != draft.transaction
+        ? _toApiValue(draft.transaction)
+        : null;
+    final announcement = current.announcement != draft.announcement
+        ? _toApiValue(draft.announcement)
+        : null;
+    final soundOn = current.soundOn != draft.soundOn
+        ? _toApiValue(draft.soundOn)
+        : null;
+    final soundDefault = current.soundDefault != draft.soundDefault
+        ? _toApiValue(draft.soundDefault)
+        : null;
 
     if (like == null &&
         comment == null &&
@@ -335,7 +368,9 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Bỏ thay đổi?'),
-        content: const Text('Bạn có thay đổi chưa lưu. Bạn có muốn thoát màn hình này không?'),
+        content: const Text(
+          'Bạn có thay đổi chưa lưu. Bạn có muốn thoát màn hình này không?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -448,7 +483,9 @@ class _PushSettingScreenState extends State<PushSettingsScreen>
             value: value,
             onChanged: onChanged,
             activeThumbColor: context.specialTheme.primaryColor,
-            activeTrackColor: context.specialTheme.primaryColor.withValues(alpha: 0.5),
+            activeTrackColor: context.specialTheme.primaryColor.withValues(
+              alpha: 0.5,
+            ),
             inactiveTrackColor: AppColors.greyDivider,
           ),
         ],

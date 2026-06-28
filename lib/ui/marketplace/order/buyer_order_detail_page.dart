@@ -29,7 +29,11 @@ class BuyerOrderDetailPage extends StatelessWidget {
   final String orderId;
   final VoidCallback? onRefresh;
 
-  const BuyerOrderDetailPage({super.key, required this.orderId, this.onRefresh});
+  const BuyerOrderDetailPage({
+    super.key,
+    required this.orderId,
+    this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +101,8 @@ class _BuyerOrderDetailViewState extends State<_BuyerOrderDetailView> {
             _shouldRefreshOnPop = true;
             AppSnackBar.show(context, message: state.successMessage!);
 
-            final isConfirmReceived = state.successMessage == 'Đã xác nhận đã nhận hàng';
+            final isConfirmReceived =
+                state.successMessage == 'Đã xác nhận đã nhận hàng';
             final orderToReview = state.orderDetail;
 
             // Refresh details & timeline

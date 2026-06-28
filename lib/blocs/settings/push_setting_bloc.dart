@@ -9,15 +9,16 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
   final SettingRepository settingRepository;
   PushSettingModel? _cachedSettings;
 
-  PushSettingBloc({required this.settingRepository}) : super(PushSettingInitial()) {
+  PushSettingBloc({required this.settingRepository})
+    : super(PushSettingInitial()) {
     on<FetchPushSettingEvent>(_onFetchPushSetting);
     on<UpdatePushSettingEvent>(_onUpdatePushSetting);
   }
 
   Future<void> _onFetchPushSetting(
-      FetchPushSettingEvent event,
-      Emitter<PushSettingState> emit,
-      ) async {
+    FetchPushSettingEvent event,
+    Emitter<PushSettingState> emit,
+  ) async {
     emit(PushSettingLoading());
     try {
       final response = await settingRepository.getPushSetting();
@@ -26,19 +27,30 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
       if (responseCode == ResponseCode.ok && response.data != null) {
         // Lưu cache khi fetch thành công
         _cachedSettings = response.data;
-        emit(PushSettingSuccess(code: response.code, message: response.message, data: response.data!));
+        emit(
+          PushSettingSuccess(
+            code: response.code,
+            message: response.message,
+            data: response.data!,
+          ),
+        );
       } else {
         emit(PushSettingError(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(PushSettingError(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        PushSettingError(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ),
+      );
     }
   }
 
   Future<void> _onUpdatePushSetting(
-      UpdatePushSettingEvent event,
-      Emitter<PushSettingState> emit,
-      ) async {
+    UpdatePushSettingEvent event,
+    Emitter<PushSettingState> emit,
+  ) async {
     emit(PushSettingLoading());
     try {
       final response = await settingRepository.setPushSetting(
@@ -50,11 +62,11 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
         soundDefault: event.soundDefault,
       );
 
-
       final responseCode = ResponseCode.fromCode(response.code);
       if (responseCode == ResponseCode.ok) {
         // Cập nhật cache bằng cách merge settings cũ + thay đổi mới
-        final base = _cachedSettings ??
+        final base =
+            _cachedSettings ??
             PushSettingModel(
               like: 0,
               comment: 0,
@@ -74,21 +86,28 @@ class PushSettingBloc extends Bloc<PushSettingEvent, PushSettingState> {
         _cachedSettings = updatedSettings;
 
         // Emit Success ngay với dữ liệu local đã update
-        emit(PushSettingSuccess(
-          code: response.code,
-          message: response.message,
-          data: updatedSettings,
-          isUpdate: true,
-        ));
+        emit(
+          PushSettingSuccess(
+            code: response.code,
+            message: response.message,
+            data: updatedSettings,
+            isUpdate: true,
+          ),
+        );
 
         // Tự động fetch lại từ server ở background để sync dữ liệu mới nhất
         // Nếu fail thì cũng không quan trọng vì user đã thấy success rồi
         _syncSettingsInBackground();
       } else {
-        emit(PushSettingError(code: response.code, error: response.message,));
+        emit(PushSettingError(code: response.code, error: response.message));
       }
     } catch (e) {
-      emit(PushSettingError(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        PushSettingError(
+          error: e.toString(),
+          code: ResponseCode.exception.code,
+        ),
+      );
     }
   }
 

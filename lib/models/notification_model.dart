@@ -52,10 +52,19 @@ class NotificationModel {
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      notificationId: json['id']?.toString() ?? json['notification_id']?.toString() ?? '',
+      notificationId:
+          json['id']?.toString() ?? json['notification_id']?.toString() ?? '',
       type: json['type']?.toString() ?? '',
-      content: json['title']?.toString() ?? json['content']?.toString() ?? json['message']?.toString() ?? '',
-      isRead: json['read'] == true || json['read'] == 1 || json['is_read'] == true || json['is_read'] == 1,
+      content:
+          json['title']?.toString() ??
+          json['content']?.toString() ??
+          json['message']?.toString() ??
+          '',
+      isRead:
+          json['read'] == true ||
+          json['read'] == 1 ||
+          json['is_read'] == true ||
+          json['is_read'] == 1,
       createdAt: _parseDate(json['created_at']),
       objectId: json['object_id']?.toString(),
     );
@@ -81,7 +90,10 @@ class NotificationListResponse {
     if (rawData is List) {
       dataList = rawData
           .whereType<Map>()
-          .map((item) => NotificationModel.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) =>
+                NotificationModel.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     }
     return NotificationListResponse(

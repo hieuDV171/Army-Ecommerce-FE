@@ -55,7 +55,9 @@ class OrderState extends Equatable {
       isDetailLoading: isDetailLoading ?? this.isDetailLoading,
       isActionInProgress: isActionInProgress ?? this.isActionInProgress,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       index: index ?? this.index,
       count: count ?? this.count,
     );
@@ -63,17 +65,17 @@ class OrderState extends Equatable {
 
   @override
   List<Object?> get props => [
-        orders,
-        orderDetail,
-        timeline,
-        isLoading,
-        isLoadingMore,
-        hasReachedEnd,
-        isDetailLoading,
-        isActionInProgress,
-        errorMessage,
-        successMessage,
-        index,
-        count,
-      ];
+    orders,
+    orderDetail,
+    timeline,
+    isLoading,
+    isLoadingMore,
+    hasReachedEnd,
+    isDetailLoading,
+    isActionInProgress,
+    errorMessage,
+    successMessage,
+    index,
+    count,
+  ];
 }

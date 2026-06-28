@@ -102,17 +102,24 @@ class CartManager extends ChangeNotifier {
       // 2. If we have local guest items, sync/merge them to the server
       if (_items.isNotEmpty) {
         for (final localItem in _items) {
-          final exists = serverItems.any((si) => si.productId == localItem.productId);
+          final exists = serverItems.any(
+            (si) => si.productId == localItem.productId,
+          );
           if (exists) {
             // Edit quantity on server (add local quantity to server quantity)
-            final serverItem = serverItems.firstWhere((si) => si.productId == localItem.productId);
+            final serverItem = serverItems.firstWhere(
+              (si) => si.productId == localItem.productId,
+            );
             await _repository!.editCartItem(
               localItem.productId,
               serverItem.quantity + localItem.quantity,
             );
           } else {
             // Add new item to server
-            await _repository!.addCartItem(localItem.productId, localItem.quantity);
+            await _repository!.addCartItem(
+              localItem.productId,
+              localItem.quantity,
+            );
           }
         }
       }
@@ -134,19 +141,28 @@ class CartManager extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> addToCart(String productId, String title, num price, String? imageUrl, {int quantity = 1, String? sellerId}) async {
+  Future<void> addToCart(
+    String productId,
+    String title,
+    num price,
+    String? imageUrl, {
+    int quantity = 1,
+    String? sellerId,
+  }) async {
     final index = _items.indexWhere((item) => item.productId == productId);
     if (index >= 0) {
       _items[index].quantity += quantity;
     } else {
-      _items.add(CartItem(
-        productId: productId,
-        title: title,
-        price: price,
-        imageUrl: imageUrl,
-        quantity: quantity,
-        sellerId: sellerId,
-      ));
+      _items.add(
+        CartItem(
+          productId: productId,
+          title: title,
+          price: price,
+          imageUrl: imageUrl,
+          quantity: quantity,
+          sellerId: sellerId,
+        ),
+      );
     }
     notifyListeners();
     await saveCart();

@@ -16,21 +16,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeProductLikeToggled>(_onProductLikeToggled);
   }
 
-  Future<void> _onRequested(HomeRequested event, Emitter<HomeState> emit) async {
-    emit(state.copyWith(
-      isInitialLoading: true,
-      clearError: true,
-      index: 0,
-      categoriesIndex: 0,
-      hasReachedEndCategories: false,
-    ));
+  Future<void> _onRequested(
+    HomeRequested event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        isInitialLoading: true,
+        clearError: true,
+        index: 0,
+        categoriesIndex: 0,
+        hasReachedEndCategories: false,
+      ),
+    );
     try {
       final categories = await marketplaceRepository.getCategories(
         parentId: 0,
         index: 0,
         count: state.categoriesCount,
       );
-      final result = await marketplaceRepository.getListProducts(index: 0, count: state.count);
+      final result = await marketplaceRepository.getListProducts(
+        index: 0,
+        count: state.count,
+      );
       emit(
         state.copyWith(
           categories: categories,
@@ -45,25 +53,35 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isInitialLoading: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isInitialLoading: false, errorMessage: error.toString()),
+      );
     }
   }
 
-  Future<void> _onRefreshed(HomeRefreshed event, Emitter<HomeState> emit) async {
-    emit(state.copyWith(
-      isRefreshing: true,
-      clearError: true,
-      index: 0,
-      categoriesIndex: 0,
-      hasReachedEndCategories: false,
-    ));
+  Future<void> _onRefreshed(
+    HomeRefreshed event,
+    Emitter<HomeState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        isRefreshing: true,
+        clearError: true,
+        index: 0,
+        categoriesIndex: 0,
+        hasReachedEndCategories: false,
+      ),
+    );
     try {
       final categories = await marketplaceRepository.getCategories(
         parentId: 0,
         index: 0,
         count: state.categoriesCount,
       );
-      final result = await marketplaceRepository.getListProducts(index: 0, count: state.count);
+      final result = await marketplaceRepository.getListProducts(
+        index: 0,
+        count: state.count,
+      );
       emit(
         state.copyWith(
           categories: categories,
@@ -86,7 +104,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HomeLoadMoreCategoriesRequested event,
     Emitter<HomeState> emit,
   ) async {
-    if (state.isLoadingMoreCategories || state.hasReachedEndCategories || state.isInitialLoading) return;
+    if (state.isLoadingMoreCategories ||
+        state.hasReachedEndCategories ||
+        state.isInitialLoading)
+      return;
 
     emit(state.copyWith(isLoadingMoreCategories: true, clearError: true));
     try {
@@ -106,7 +127,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingMoreCategories: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isLoadingMoreCategories: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -114,7 +140,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HomeLoadMoreRequested event,
     Emitter<HomeState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) return;
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+      return;
 
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     try {
@@ -136,7 +163,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingMore: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingMore: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -169,7 +198,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       await marketplaceRepository.likeProduct(event.productId);
     } catch (error) {
-      emit(state.copyWith(products: originalProducts, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          products: originalProducts,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 }

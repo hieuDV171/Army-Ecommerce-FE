@@ -22,7 +22,9 @@ class OrderLineItem {
     final productJson = readMap(json, ['product']);
     final unitPrice = readNum(json, ['price', 'unit_price']);
     final quantity = readInt(json, ['quantity']) ?? 0;
-    final resolvedPrice = unitPrice == 0 ? readNum(productJson ?? json, ['price']) : unitPrice;
+    final resolvedPrice = unitPrice == 0
+        ? readNum(productJson ?? json, ['price'])
+        : unitPrice;
     final resolvedSubtotal = readNum(json, ['subtotal', 'total_price']);
 
     return OrderLineItem(
@@ -38,7 +40,9 @@ class OrderLineItem {
       ),
       price: resolvedPrice,
       quantity: quantity,
-      subtotal: resolvedSubtotal == 0 ? resolvedPrice * quantity : resolvedSubtotal,
+      subtotal: resolvedSubtotal == 0
+          ? resolvedPrice * quantity
+          : resolvedSubtotal,
     );
   }
 }
@@ -83,7 +87,9 @@ class OrderModel {
     final rawItems = json['items'];
     if (rawItems is List) {
       for (final item in rawItems.whereType<Map>()) {
-        parsedItems.add(OrderLineItem.fromJson(Map<String, dynamic>.from(item)));
+        parsedItems.add(
+          OrderLineItem.fromJson(Map<String, dynamic>.from(item)),
+        );
       }
     }
 
@@ -91,11 +97,12 @@ class OrderModel {
     final buyerJson = readMap(json, ['buyer']);
     final itemSummary = parsedItems.isNotEmpty
         ? parsedItems.map((item) => item.name).take(2).join(', ')
-        : readString(
-            json,
-            ['name', 'title', 'description', 'products'],
-            fallback: 'Đơn hàng',
-          );
+        : readString(json, [
+            'name',
+            'title',
+            'description',
+            'products',
+          ], fallback: 'Đơn hàng');
 
     return OrderModel(
       id: readString(json, ['id', 'purchase_id', 'order_id']),
@@ -106,19 +113,45 @@ class OrderModel {
         final finalPrice = readNum(json, ['final_price']);
         return finalPrice > 0
             ? finalPrice
-            : readNum(json, ['total_price', 'total', 'amount']) + readNum(json, ['ship_fee', 'shipping_fee']);
+            : readNum(json, ['total_price', 'total', 'amount']) +
+                  readNum(json, ['ship_fee', 'shipping_fee']);
       })(),
       createdAt: readOptionalString(json, ['created_at', 'createdAt']),
       note: readOptionalString(json, ['note']),
-      sellerName: readOptionalString(sellerJson ?? json, ['name', 'username', 'seller_name']),
-      buyerName: readOptionalString(buyerJson ?? json, ['name', 'username', 'buyer_name']),
-      buyerPhone: readOptionalString(buyerJson ?? json, ['phonenumber', 'phone', 'phone_number']),
-      buyerAddress: readOptionalString(buyerJson ?? json, ['address', 'full_address']),
+      sellerName: readOptionalString(sellerJson ?? json, [
+        'name',
+        'username',
+        'seller_name',
+      ]),
+      buyerName: readOptionalString(buyerJson ?? json, [
+        'name',
+        'username',
+        'buyer_name',
+      ]),
+      buyerPhone: readOptionalString(buyerJson ?? json, [
+        'phonenumber',
+        'phone',
+        'phone_number',
+      ]),
+      buyerAddress: readOptionalString(buyerJson ?? json, [
+        'address',
+        'full_address',
+      ]),
       buyerId: buyerJson != null
-          ? readOptionalString(buyerJson, ['id', 'buyer_id', 'user_id', 'buyerId'])
+          ? readOptionalString(buyerJson, [
+              'id',
+              'buyer_id',
+              'user_id',
+              'buyerId',
+            ])
           : readOptionalString(json, ['buyer_id', 'buyerId', 'user_id']),
       sellerId: sellerJson != null
-          ? readOptionalString(sellerJson, ['id', 'seller_id', 'user_id', 'sellerId'])
+          ? readOptionalString(sellerJson, [
+              'id',
+              'seller_id',
+              'user_id',
+              'sellerId',
+            ])
           : readOptionalString(json, ['seller_id', 'sellerId', 'user_id']),
       summary: itemSummary,
       items: parsedItems,

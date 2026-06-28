@@ -45,12 +45,24 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController(text: widget.currentUser.email ?? '');
-    _usernameController = TextEditingController(text: widget.currentUser.username);
-    _statusController = TextEditingController(text: widget.currentUser.status ?? '');
-    _firstNameController = TextEditingController(text: widget.currentUser.firstName ?? '');
-    _lastNameController = TextEditingController(text: widget.currentUser.lastName ?? '');
-    _addressController = TextEditingController(text: widget.currentUser.address ?? '');
+    _emailController = TextEditingController(
+      text: widget.currentUser.email ?? '',
+    );
+    _usernameController = TextEditingController(
+      text: widget.currentUser.username,
+    );
+    _statusController = TextEditingController(
+      text: widget.currentUser.status ?? '',
+    );
+    _firstNameController = TextEditingController(
+      text: widget.currentUser.firstName ?? '',
+    );
+    _lastNameController = TextEditingController(
+      text: widget.currentUser.lastName ?? '',
+    );
+    _addressController = TextEditingController(
+      text: widget.currentUser.address ?? '',
+    );
     _passwordController = TextEditingController();
   }
 
@@ -162,11 +174,15 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
         !_removeAvatar &&
         !_removeCoverImage &&
         !_removeCoverImageWeb) {
-      AppSnackBar.show(context, message: 'Vui lòng thay đổi ít nhất một trường thông tin');
+      AppSnackBar.show(
+        context,
+        message: 'Vui lòng thay đổi ít nhất một trường thông tin',
+      );
       return;
     }
 
-    if (email.isNotEmpty && !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+    if (email.isNotEmpty &&
+        !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
       AppSnackBar.showError(context, message: 'Email không hợp lệ');
       return;
     }
@@ -181,7 +197,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
       final size = await file.length();
       if (size > 2 * 1024 * 1024) {
         if (!mounted) return false;
-        AppSnackBar.showError(context, message: '$label quá lớn. Vui lòng chọn file dưới 2MB');
+        AppSnackBar.showError(
+          context,
+          message: '$label quá lớn. Vui lòng chọn file dưới 2MB',
+        );
         return false;
       }
       return true;
@@ -216,10 +235,14 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (previous, current) => current is SetUserInfoSuccess || current is SetUserInfoFailure,
+      listenWhen: (previous, current) =>
+          current is SetUserInfoSuccess || current is SetUserInfoFailure,
       listener: (context, state) {
         if (state is SetUserInfoSuccess) {
-          AppSnackBar.showSuccess(context, message: 'Cập nhật hồ sơ thành công');
+          AppSnackBar.showSuccess(
+            context,
+            message: 'Cập nhật hồ sơ thành công',
+          );
           SessionManager.updateAvatarCacheBustKey();
           Navigator.pop(context, state.user);
         } else if (state is SetUserInfoFailure) {
@@ -231,7 +254,9 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
         final specialTheme = context.specialTheme;
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+            backgroundColor: specialTheme.useGradient
+                ? Colors.transparent
+                : specialTheme.primaryDarkColor,
             flexibleSpace: specialTheme.useGradient
                 ? Container(
                     decoration: BoxDecoration(
@@ -240,7 +265,10 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                   )
                 : null,
             iconTheme: const IconThemeData(color: Colors.white),
-            title: const Text('Cập nhật hồ sơ', style: TextStyle(color: Colors.white, fontSize: 16)),
+            title: const Text(
+              'Cập nhật hồ sơ',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -254,17 +282,36 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                         radius: 52,
                         avatarImage: _avatarFile != null
                             ? FileImage(_avatarFile!)
-                            : (!_removeAvatar && widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty
-                                ? SessionManager.getImageProvider(widget.currentUser.avatar!)
-                                : null),
-                        frameFile: _removeCoverImageWeb ? null : _coverImageWebFile,
-                        frameUrl: _removeCoverImageWeb ? null : widget.currentUser.coverImageWeb,
-                        fallbackChild: (_avatarFile == null && (widget.currentUser.avatar == null || widget.currentUser.avatar!.isEmpty || _removeAvatar))
-                            ? const Icon(Icons.person, size: 52, color: Colors.grey)
+                            : (!_removeAvatar &&
+                                      widget.currentUser.avatar != null &&
+                                      widget.currentUser.avatar!.isNotEmpty
+                                  ? SessionManager.getImageProvider(
+                                      widget.currentUser.avatar!,
+                                    )
+                                  : null),
+                        frameFile: _removeCoverImageWeb
+                            ? null
+                            : _coverImageWebFile,
+                        frameUrl: _removeCoverImageWeb
+                            ? null
+                            : widget.currentUser.coverImageWeb,
+                        fallbackChild:
+                            (_avatarFile == null &&
+                                (widget.currentUser.avatar == null ||
+                                    widget.currentUser.avatar!.isEmpty ||
+                                    _removeAvatar))
+                            ? const Icon(
+                                Icons.person,
+                                size: 52,
+                                color: Colors.grey,
+                              )
                             : null,
                         onTap: _pickAvatar,
                       ),
-                      if (_avatarFile != null || (!_removeAvatar && widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty))
+                      if (_avatarFile != null ||
+                          (!_removeAvatar &&
+                              widget.currentUser.avatar != null &&
+                              widget.currentUser.avatar!.isNotEmpty))
                         Positioned(
                           right: 0,
                           top: 0,
@@ -281,7 +328,11 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                                 color: Colors.red,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.close, size: 16, color: Colors.white),
+                              child: const Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -295,9 +346,18 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                 _buildField(_usernameController, 'Username', Icons.badge),
                 _buildField(_statusController, 'Status', Icons.info_outline),
                 _buildField(_firstNameController, 'Firstname', Icons.person),
-                _buildField(_lastNameController, 'Lastname', Icons.person_outline),
+                _buildField(
+                  _lastNameController,
+                  'Lastname',
+                  Icons.person_outline,
+                ),
                 _buildField(_addressController, 'Address', Icons.location_on),
-                _buildField(_passwordController, 'Password', Icons.lock, obscureText: true),
+                _buildField(
+                  _passwordController,
+                  'Password',
+                  Icons.lock,
+                  obscureText: true,
+                ),
                 const SizedBox(height: 16),
                 _buildFilePickerCard(
                   title: 'Cover image',
@@ -316,7 +376,8 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                 const SizedBox(height: 16),
                 _buildFilePickerCard(
                   title: 'Avatar Frame',
-                  description: 'Khung viền bao quanh ảnh đại diện (nên là ảnh vuông PNG trong suốt)',
+                  description:
+                      'Khung viền bao quanh ảnh đại diện (nên là ảnh vuông PNG trong suốt)',
                   selectedFile: _coverImageWebFile,
                   currentUrl: widget.currentUser.coverImageWeb,
                   isRemoved: _removeCoverImageWeb,
@@ -382,8 +443,15 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                if (selectedFile != null || (!isRemoved && currentUrl != null && currentUrl.isNotEmpty))
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (selectedFile != null ||
+                    (!isRemoved && currentUrl != null && currentUrl.isNotEmpty))
                   IconButton(
                     icon: const Icon(Icons.delete_forever, color: Colors.red),
                     onPressed: onRemove,
@@ -402,12 +470,20 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                   radius: 64,
                   avatarImage: _avatarFile != null
                       ? FileImage(_avatarFile!)
-                      : (!_removeAvatar && widget.currentUser.avatar != null && widget.currentUser.avatar!.isNotEmpty
-                          ? SessionManager.getImageProvider(widget.currentUser.avatar!)
-                          : null),
+                      : (!_removeAvatar &&
+                                widget.currentUser.avatar != null &&
+                                widget.currentUser.avatar!.isNotEmpty
+                            ? SessionManager.getImageProvider(
+                                widget.currentUser.avatar!,
+                              )
+                            : null),
                   frameFile: isRemoved ? null : selectedFile,
                   frameUrl: isRemoved ? null : currentUrl,
-                  fallbackChild: (_avatarFile == null && (widget.currentUser.avatar == null || widget.currentUser.avatar!.isEmpty || _removeAvatar))
+                  fallbackChild:
+                      (_avatarFile == null &&
+                          (widget.currentUser.avatar == null ||
+                              widget.currentUser.avatar!.isEmpty ||
+                              _removeAvatar))
                       ? const Icon(Icons.person, size: 64, color: Colors.grey)
                       : null,
                 ),
@@ -415,7 +491,12 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
             else if (selectedFile != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.file(selectedFile, height: 160, width: double.infinity, fit: BoxFit.cover),
+                child: Image.file(
+                  selectedFile,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               )
             else if (!isRemoved && currentUrl != null && currentUrl.isNotEmpty)
               ClipRRect(
@@ -429,7 +510,11 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
                     height: 160,
                     width: double.infinity,
                     color: Colors.grey.shade200,
-                    child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                    child: const Icon(
+                      Icons.broken_image,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               )
@@ -456,5 +541,3 @@ class _SetUserInfoScreenState extends State<SetUserInfoScreen> {
     );
   }
 }
-
-

@@ -16,10 +16,12 @@ class ChangeInfoAfterSignupScreen extends StatefulWidget {
   const ChangeInfoAfterSignupScreen({super.key, required this.currentUsername});
 
   @override
-  State<ChangeInfoAfterSignupScreen> createState() => _ChangeInfoAfterSignupScreenState();
+  State<ChangeInfoAfterSignupScreen> createState() =>
+      _ChangeInfoAfterSignupScreenState();
 }
 
-class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScreen> {
+class _ChangeInfoAfterSignupScreenState
+    extends State<ChangeInfoAfterSignupScreen> {
   late TextEditingController _nameController;
   File? _selectedImage;
   String? _currentAvatarUrl;
@@ -83,8 +85,12 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
       final fileSize = await _selectedImage!.length();
       if (!mounted) return;
 
-      if (fileSize > 2097152) { // (2 * 1024 * 1024 bytes)
-        AppSnackBar.showError(context, message: 'Dung lượng ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB');
+      if (fileSize > 2097152) {
+        // (2 * 1024 * 1024 bytes)
+        AppSnackBar.showError(
+          context,
+          message: 'Dung lượng ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB',
+        );
         return;
       }
     }
@@ -105,7 +111,10 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
             final navigator = Navigator.of(context);
             final updatedUser = state.updatedUser;
 
-            AppSnackBar.showSuccess(context, message: 'Cập nhật hồ sơ thành công!');
+            AppSnackBar.showSuccess(
+              context,
+              message: 'Cập nhật hồ sơ thành công!',
+            );
 
             // Nếu màn này được push từ Login/OTP thì trả kết quả về cho màn trước.
             // Nếu đây là root screen (điều hướng từ main.dart), không được pop vì sẽ tạo màn đen.
@@ -113,7 +122,7 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
               navigator.pop(updatedUser);
               return;
             }
-            
+
             // Nếu là root screen, main.dart sẽ tự động vẽ lại và chuyển sang HomeScreen
             // nhờ trạng thái AuthSuccess được emit tiếp theo trong AuthBloc.
           } else if (state is AuthFailure) {
@@ -140,17 +149,31 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
                         backgroundColor: Colors.grey[300],
                         backgroundImage: _selectedImage != null
                             ? FileImage(_selectedImage!)
-                            : (_currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty
-                                ? SessionManager.getImageProvider(_currentAvatarUrl!)
-                                : null),
-                        child: (_selectedImage == null && (_currentAvatarUrl == null || _currentAvatarUrl!.isEmpty))
-                            ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                            : (_currentAvatarUrl != null &&
+                                      _currentAvatarUrl!.isNotEmpty
+                                  ? SessionManager.getImageProvider(
+                                      _currentAvatarUrl!,
+                                    )
+                                  : null),
+                        child:
+                            (_selectedImage == null &&
+                                (_currentAvatarUrl == null ||
+                                    _currentAvatarUrl!.isEmpty))
+                            ? const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Colors.grey,
+                              )
                             : null,
                       ),
                       const CircleAvatar(
                         radius: 20,
                         backgroundColor: Colors.blue,
-                        child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ],
                   ),
@@ -179,7 +202,10 @@ class _ChangeInfoAfterSignupScreenState extends State<ChangeInfoAfterSignupScree
                       ),
                       child: state is AuthLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('LƯU THÔNG TIN', style: TextStyle(fontWeight: FontWeight.bold)),
+                          : const Text(
+                              'LƯU THÔNG TIN',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                     );
                   },
                 ),

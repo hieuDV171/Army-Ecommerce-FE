@@ -5,7 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 
 class SessionManager {
-  static String _avatarCacheBustKey = DateTime.now().millisecondsSinceEpoch.toString();
+  static String _avatarCacheBustKey = DateTime.now().millisecondsSinceEpoch
+      .toString();
 
   static String get avatarCacheBustKey => _avatarCacheBustKey;
 
@@ -48,13 +49,21 @@ class SessionManager {
 
   // Lưu thông tin khi đăng nhập thành công
   // token is required; username and phoneNumber are optional and will only be stored when not null
-  static Future<void> saveSession(String token, String? username, String? phoneNumber, {String? userId}) async {
+  static Future<void> saveSession(
+    String token,
+    String? username,
+    String? phoneNumber, {
+    String? userId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyToken, token);
     if (username != null) await prefs.setString(_keyUsername, username);
-    if (phoneNumber != null) await prefs.setString(_keyPhoneNumber, phoneNumber);
+    if (phoneNumber != null)
+      await prefs.setString(_keyPhoneNumber, phoneNumber);
     if (userId != null) await prefs.setString(_keyUserId, userId);
-    logger.i('SessionManager: saved token, username="${username ?? ''}", phone="${phoneNumber ?? ''}", userId="${userId ?? ''}"');
+    logger.i(
+      'SessionManager: saved token, username="${username ?? ''}", phone="${phoneNumber ?? ''}", userId="${userId ?? ''}"',
+    );
   }
 
   static Future<void> setUsername(String username) async {
@@ -73,7 +82,9 @@ class SessionManager {
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_keyToken);
-    logger.d('SessionManager: getToken -> ${token != null ? "[REDACTED]" : "null"}');
+    logger.d(
+      'SessionManager: getToken -> ${token != null ? "[REDACTED]" : "null"}',
+    );
     return token;
   }
 
@@ -101,7 +112,9 @@ class SessionManager {
   static Future<String?> getAvatar() async {
     final prefs = await SharedPreferences.getInstance();
     final avatar = prefs.getString(_keyAvatar);
-    logger.d('SessionManager: getAvatar -> ${avatar != null ? "[RETRIEVED]" : "null"}');
+    logger.d(
+      'SessionManager: getAvatar -> ${avatar != null ? "[RETRIEVED]" : "null"}',
+    );
     return avatar;
   }
 
@@ -114,7 +127,9 @@ class SessionManager {
   static Future<String?> getLastDevToken() async {
     final prefs = await SharedPreferences.getInstance();
     final devToken = prefs.getString(_keyLastDevToken);
-    logger.d('SessionManager: getLastDevToken -> ${devToken != null ? "[RETRIEVED]" : "null"}');
+    logger.d(
+      'SessionManager: getLastDevToken -> ${devToken != null ? "[RETRIEVED]" : "null"}',
+    );
     return devToken;
   }
 
@@ -122,13 +137,17 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyCoverImage, coverImage);
     updateAvatarCacheBustKey();
-    logger.d('SessionManager: setCoverImage -> [SAVED] and updated cache bust key');
+    logger.d(
+      'SessionManager: setCoverImage -> [SAVED] and updated cache bust key',
+    );
   }
 
   static Future<String?> getCoverImage() async {
     final prefs = await SharedPreferences.getInstance();
     final coverImage = prefs.getString(_keyCoverImage);
-    logger.d('SessionManager: getCoverImage -> ${coverImage != null ? "[RETRIEVED]" : "null"}');
+    logger.d(
+      'SessionManager: getCoverImage -> ${coverImage != null ? "[RETRIEVED]" : "null"}',
+    );
     return coverImage;
   }
 
@@ -136,13 +155,17 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyCoverImageWeb, coverImageWeb);
     updateAvatarCacheBustKey();
-    logger.d('SessionManager: setCoverImageWeb -> [SAVED] and updated cache bust key');
+    logger.d(
+      'SessionManager: setCoverImageWeb -> [SAVED] and updated cache bust key',
+    );
   }
 
   static Future<String?> getCoverImageWeb() async {
     final prefs = await SharedPreferences.getInstance();
     final coverImageWeb = prefs.getString(_keyCoverImageWeb);
-    logger.d('SessionManager: getCoverImageWeb -> ${coverImageWeb != null ? "[RETRIEVED]" : "null"}');
+    logger.d(
+      'SessionManager: getCoverImageWeb -> ${coverImageWeb != null ? "[RETRIEVED]" : "null"}',
+    );
     return coverImageWeb;
   }
 

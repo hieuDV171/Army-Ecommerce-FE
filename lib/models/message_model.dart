@@ -35,7 +35,9 @@ class MessageModel {
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     // created là Unix timestamp dạng số nguyên
     final createdRaw = json['created'] ?? json['created_at'];
-    final createdTs = createdRaw is num ? createdRaw.toInt() : int.tryParse(createdRaw?.toString() ?? '') ?? 0;
+    final createdTs = createdRaw is num
+        ? createdRaw.toInt()
+        : int.tryParse(createdRaw?.toString() ?? '') ?? 0;
 
     return MessageModel(
       message: json['message']?.toString() ?? json['content']?.toString() ?? '',
@@ -65,9 +67,12 @@ class ConversationData {
     final rawMessages = json['messages'];
     final messages = rawMessages is List
         ? rawMessages
-            .whereType<Map>()
-            .map((item) => MessageModel.fromJson(Map<String, dynamic>.from(item)))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (item) =>
+                    MessageModel.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList()
         : <MessageModel>[];
     return ConversationData(
       messages: messages,
@@ -82,11 +87,7 @@ class MessageListResponse {
   final String message;
   final ConversationData? data;
 
-  MessageListResponse({
-    required this.code,
-    required this.message,
-    this.data,
-  });
+  MessageListResponse({required this.code, required this.message, this.data});
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory MessageListResponse.fromJson(Map<String, dynamic> json) {
@@ -94,7 +95,9 @@ class MessageListResponse {
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       data: (json['data'] != null && json['data'] is Map)
-          ? ConversationData.fromJson(Map<String, dynamic>.from(json['data'] as Map))
+          ? ConversationData.fromJson(
+              Map<String, dynamic>.from(json['data'] as Map),
+            )
           : null,
     );
   }
@@ -105,10 +108,7 @@ class SimpleResponse {
   final String code;
   final String message;
 
-  SimpleResponse({
-    required this.code,
-    required this.message,
-  });
+  SimpleResponse({required this.code, required this.message});
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory SimpleResponse.fromJson(Map<String, dynamic> json) {

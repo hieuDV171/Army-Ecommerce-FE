@@ -93,7 +93,10 @@ class OrderCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                    child: const Icon(Icons.receipt_long_outlined, color: AppColors.primary),
+                    child: const Icon(
+                      Icons.receipt_long_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
@@ -113,13 +116,19 @@ class OrderCard extends StatelessWidget {
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           'Mã đơn: ${order.id}',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                         if ((order.createdAt ?? '').isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             order.createdAt!,
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ],

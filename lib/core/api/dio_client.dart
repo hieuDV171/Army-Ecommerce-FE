@@ -30,21 +30,30 @@ class DioClient {
         onRequest: (options, handler) async {
           final token = await SessionManager.getToken();
           final isSameBackend =
-              options.path.startsWith(baseUrl) || !options.path.startsWith('http');
+              options.path.startsWith(baseUrl) ||
+              !options.path.startsWith('http');
           final isPublicApi =
-              options.path.endsWith('/auth/login') || options.path.endsWith('/auth/signup');
+              options.path.endsWith('/auth/login') ||
+              options.path.endsWith('/auth/signup');
 
-          if (token != null && token.isNotEmpty && isSameBackend && !isPublicApi) {
+          if (token != null &&
+              token.isNotEmpty &&
+              isSameBackend &&
+              !isPublicApi) {
             options.headers['Authorization'] = 'Bearer $token';
           }
 
           final hasAuth = options.headers.containsKey('Authorization');
-          logger.d('📡 GỬI: [${options.method}] ${options.path} | auth=$hasAuth | body=${options.data}');
+          logger.d(
+            '📡 GỬI: [${options.method}] ${options.path} | auth=$hasAuth | body=${options.data}',
+          );
           return handler.next(options);
         },
         // 2. KHI NHẬN PHẢN HỒI — kiểm tra token có còn hợp lệ không
         onResponse: (response, handler) async {
-          logger.i('✅ NHẬN VỀ: [${response.statusCode}] ${response.requestOptions.path}');
+          logger.i(
+            '✅ NHẬN VỀ: [${response.statusCode}] ${response.requestOptions.path}',
+          );
 
           if (ApiResponseParser.isTokenInvalid(response.data)) {
             await SessionManager.clearSession();
@@ -88,7 +97,9 @@ class DioClient {
         },
         // 3. KHI CÓ LỖI — xử lý token hết hạn và bọc lỗi thành ApiException
         onError: (DioException error, handler) async {
-          logger.e('❌ LỖI API: [${error.response?.statusCode}] ${error.requestOptions.path} | msg=${error.message}');
+          logger.e(
+            '❌ LỖI API: [${error.response?.statusCode}] ${error.requestOptions.path} | msg=${error.message}',
+          );
 
           final responseData = error.response?.data;
           final code = responseData is Map<String, dynamic>

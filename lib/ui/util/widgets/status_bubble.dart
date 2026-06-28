@@ -20,7 +20,6 @@ class StatusBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final bgColor = backgroundColor ?? const Color(0xFFF8F8F8);
 
     return Column(
@@ -33,9 +32,7 @@ class StatusBubble extends StatelessWidget {
             // The bubble body
             Container(
               width: 220,
-              constraints: const BoxConstraints(
-                maxHeight: 100,
-              ),
+              constraints: const BoxConstraints(maxHeight: 100),
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: bgColor,
@@ -70,7 +67,8 @@ class StatusBubble extends StatelessWidget {
                       physics: const BouncingScrollPhysics(),
                       child: Text(
                         status,
-                        style: textStyle ??
+                        style:
+                            textStyle ??
                             const TextStyle(
                               fontSize: 14,
                               color: Colors.black87,
@@ -121,18 +119,38 @@ class _BubbleTailPainter extends CustomPainter {
     // Horizontal tail pointing left with a sagging (drooping) effect
     path.moveTo(size.width, 0);
     // Upper curve sagging down
-    path.quadraticBezierTo(size.width * 0.4, size.height * 0.6, 0, size.height * 0.5);
+    path.quadraticBezierTo(
+      size.width * 0.4,
+      size.height * 0.6,
+      0,
+      size.height * 0.5,
+    );
     // Lower curve sagging down
-    path.quadraticBezierTo(size.width * 0.6, size.height * 1.2, size.width, size.height);
+    path.quadraticBezierTo(
+      size.width * 0.6,
+      size.height * 1.2,
+      size.width,
+      size.height,
+    );
     path.close();
 
     canvas.drawPath(path, paint);
-    
+
     // Draw the curved border edges
     final borderPath = Path();
     borderPath.moveTo(size.width, 0);
-    borderPath.quadraticBezierTo(size.width * 0.4, size.height * 0.6, 0, size.height * 0.5);
-    borderPath.quadraticBezierTo(size.width * 0.5, size.height * 0.8, size.width, size.height);
+    borderPath.quadraticBezierTo(
+      size.width * 0.4,
+      size.height * 0.6,
+      0,
+      size.height * 0.5,
+    );
+    borderPath.quadraticBezierTo(
+      size.width * 0.5,
+      size.height * 0.8,
+      size.width,
+      size.height,
+    );
     canvas.drawPath(borderPath, borderPaint);
   }
 

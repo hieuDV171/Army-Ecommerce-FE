@@ -8,7 +8,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   final MarketplaceRepository marketplaceRepository;
 
   CheckoutBloc({required this.marketplaceRepository})
-      : super(const CheckoutState()) {
+    : super(const CheckoutState()) {
     on<CheckoutRequested>(_onRequested);
     on<CheckoutAddressSelected>(_onAddressSelected);
     on<CheckoutShipFeeRequested>(_onShipFeeRequested);
@@ -19,12 +19,18 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     CheckoutRequested event,
     Emitter<CheckoutState> emit,
   ) async {
-    emit(state.copyWith(
-        isLoading: true, productId: event.productId, clearMessages: true));
+    emit(
+      state.copyWith(
+        isLoading: true,
+        productId: event.productId,
+        clearMessages: true,
+      ),
+    );
     try {
       final addresses = await marketplaceRepository.getAddresses();
-      final addressItems =
-          addresses.map((address) => address.toItem()).toList();
+      final addressItems = addresses
+          .map((address) => address.toItem())
+          .toList();
       final defaultAddress = addressItems.isEmpty ? null : addressItems.first;
 
       num shipFee = 0;
@@ -89,8 +95,12 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
           emit(state.copyWith(isLoading: false));
         }
       } catch (error) {
-        emit(state.copyWith(
-            isLoading: false, errorMessage: 'Không tính được phí ship: $error'));
+        emit(
+          state.copyWith(
+            isLoading: false,
+            errorMessage: 'Không tính được phí ship: $error',
+          ),
+        );
       }
     }
   }
@@ -117,8 +127,12 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
         emit(state.copyWith(isLoading: false));
       }
     } catch (error) {
-      emit(state.copyWith(
-          isLoading: false, errorMessage: 'Không tính được phí ship: $error'));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'Không tính được phí ship: $error',
+        ),
+      );
     }
   }
 
@@ -145,12 +159,16 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
 
     if (event.items.isNotEmpty) {
       final firstSellerId = event.items.first.sellerId;
-      final isSameSeller =
-          event.items.every((item) => item.sellerId == firstSellerId);
+      final isSameSeller = event.items.every(
+        (item) => item.sellerId == firstSellerId,
+      );
       if (!isSameSeller) {
-        emit(state.copyWith(
+        emit(
+          state.copyWith(
             errorMessage:
-                'Các sản phẩm trong đơn hàng phải thuộc cùng một người bán'));
+                'Các sản phẩm trong đơn hàng phải thuộc cùng một người bán',
+          ),
+        );
         return;
       }
     }
@@ -202,18 +220,16 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
       });
 
       emit(
-        state.copyWith(
-          isSubmitting: false,
-          successMessage: 'Đã tạo đơn hàng',
-        ),
+        state.copyWith(isSubmitting: false, successMessage: 'Đã tạo đơn hàng'),
       );
     } catch (error) {
       final errorStr = error.toString();
       final isProductNotExisted =
           (error is ApiException && error.code == '9992') ||
-              errorStr.contains('Product is not existed');
+          errorStr.contains('Product is not existed');
       // TIP-03: BE báo sản phẩm đã bán hết / hết hàng (mã 1011 productSold)
-      final isOutOfStock = (error is ApiException && error.code == '1011') ||
+      final isOutOfStock =
+          (error is ApiException && error.code == '1011') ||
           errorStr.toLowerCase().contains('sold') ||
           errorStr.contains('hết hàng');
       if (isProductNotExisted) {

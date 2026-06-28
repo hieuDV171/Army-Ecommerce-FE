@@ -54,14 +54,14 @@ class CheckoutState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage:
-          clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       shippingFee: shippingFee ?? this.shippingFee,
       leatime: leatime ?? this.leatime,
       productId: productId ?? this.productId,
       isProductNotExisted: isProductNotExisted ?? this.isProductNotExisted,
-      isOutOfStock:
-          clearMessages ? false : (isOutOfStock ?? this.isOutOfStock),
+      isOutOfStock: clearMessages ? false : (isOutOfStock ?? this.isOutOfStock),
       isInsufficientBalance: clearMessages
           ? false
           : (isInsufficientBalance ?? this.isInsufficientBalance),

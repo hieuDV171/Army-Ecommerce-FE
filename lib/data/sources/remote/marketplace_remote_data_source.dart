@@ -94,7 +94,11 @@ class MarketplaceRemoteDataSource {
     }
   }
 
-  Future<ApiResponse<dynamic>> getCategories({int? parentId, int? index, int? count}) {
+  Future<ApiResponse<dynamic>> getCategories({
+    int? parentId,
+    int? index,
+    int? count,
+  }) {
     final request = <String, dynamic>{};
     if (parentId != null) request['parent_id'] = parentId;
     if (index != null) request['index'] = index;
@@ -208,7 +212,7 @@ class MarketplaceRemoteDataSource {
   Future<ApiResponse<dynamic>> getListPurchases({
     String? state,
     int index = 0,
-    int count = 20
+    int count = 20,
   }) {
     final queryParams = <String, dynamic>{
       'index': index,
@@ -219,7 +223,7 @@ class MarketplaceRemoteDataSource {
     return post(ApiPaths.getListPurchases, data: queryParams);
   }
 
-    /// POST /order/get_list_purchases_seller - lấy danh sách đơn bán hàng
+  /// POST /order/get_list_purchases_seller - lấy danh sách đơn bán hàng
   Future<ApiResponse<dynamic>> getListPurchasesSeller({
     String? state,
     int index = 0,
@@ -263,9 +267,7 @@ class MarketplaceRemoteDataSource {
   Future<ApiResponse<dynamic>> deleteCart(String productId) {
     return post(
       ApiPaths.deleteCart,
-      data: {
-        'product_id': int.tryParse(productId) ?? productId,
-      },
+      data: {'product_id': int.tryParse(productId) ?? productId},
     );
   }
 
@@ -276,9 +278,7 @@ class MarketplaceRemoteDataSource {
     String? videoUrl,
     String? imageUrl,
   }) {
-    final data = <String, dynamic>{
-      'description': description,
-    };
+    final data = <String, dynamic>{'description': description};
     if (videoUrl != null && videoUrl.isNotEmpty) {
       data['video_url'] = videoUrl;
     }
@@ -286,18 +286,13 @@ class MarketplaceRemoteDataSource {
       data['image_url'] = imageUrl;
     }
 
-    return post(
-      ApiPaths.addRewardProof,
-      data: data,
-    );
+    return post(ApiPaths.addRewardProof, data: data);
   }
 
   Future<ApiResponse<dynamic>> getRewardProof(String rewardId) {
     return post(
       ApiPaths.getRewardProof,
-      data: {
-        'reward_id': int.tryParse(rewardId) ?? 0,
-      },
+      data: {'reward_id': int.tryParse(rewardId) ?? 0},
     );
   }
 
@@ -307,10 +302,7 @@ class MarketplaceRemoteDataSource {
   }) {
     return post(
       ApiPaths.getRewardHistory,
-      data: {
-        'index': index,
-        'count': count,
-      },
+      data: {'index': index, 'count': count},
     );
   }
 
@@ -318,15 +310,10 @@ class MarketplaceRemoteDataSource {
     required String rewardId,
     String? reason,
   }) {
-    final data = <String, dynamic>{
-      'reward_id': int.tryParse(rewardId) ?? 0,
-    };
+    final data = <String, dynamic>{'reward_id': int.tryParse(rewardId) ?? 0};
     if (reason != null) data['reason'] = reason;
 
-    return post(
-      ApiPaths.createRewardAppeal,
-      data: data,
-    );
+    return post(ApiPaths.createRewardAppeal, data: data);
   }
 
   /// GET /order/provinces — Lấy danh sách tỉnh/thành phố.

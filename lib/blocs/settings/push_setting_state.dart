@@ -24,5 +24,5 @@ class PushSettingError extends PushSettingState {
   final String code;
   final String error;
 
-  PushSettingError({required this.code, required this.error, });
+  PushSettingError({required this.code, required this.error});
 }

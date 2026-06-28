@@ -7,7 +7,8 @@ import 'package:dio/dio.dart';
 class BlockRemoteDataSource {
   final DioClient _dioClient;
 
-  BlockRemoteDataSource({required DioClient dioClient}) : _dioClient = dioClient;
+  BlockRemoteDataSource({required DioClient dioClient})
+    : _dioClient = dioClient;
 
   Future<ApiResponse<dynamic>> setBlocks({
     required String userId,
@@ -16,10 +17,7 @@ class BlockRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.setUserBlock,
-        data: {
-          'user_id': userId,
-          'type': action == 'block' ? 0 : 1,
-        },
+        data: {'user_id': userId, 'type': action == 'block' ? 0 : 1},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {
@@ -34,10 +32,7 @@ class BlockRemoteDataSource {
     try {
       final response = await _dioClient.dio.post(
         ApiPaths.getListBlocks,
-        data: {
-          'index': index,
-          'count': count,
-        },
+        data: {'index': index, 'count': count},
       );
       return ApiResponse.fromDynamic(response.data, (json) => json);
     } on DioException catch (e) {

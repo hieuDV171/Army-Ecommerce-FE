@@ -36,7 +36,11 @@ class SpecialAppTheme extends ThemeExtension<SpecialAppTheme> {
     if (other is! SpecialAppTheme) return this;
     return SpecialAppTheme(
       primaryColor: Color.lerp(primaryColor, other.primaryColor, t)!,
-      primaryDarkColor: Color.lerp(primaryDarkColor, other.primaryDarkColor, t)!,
+      primaryDarkColor: Color.lerp(
+        primaryDarkColor,
+        other.primaryDarkColor,
+        t,
+      )!,
       primaryGradient: Gradient.lerp(primaryGradient, other.primaryGradient, t),
       useGradient: t < 0.5 ? useGradient : other.useGradient,
     );
@@ -44,10 +48,11 @@ class SpecialAppTheme extends ThemeExtension<SpecialAppTheme> {
 }
 
 extension SpecialThemeBuildContext on BuildContext {
-  SpecialAppTheme get specialTheme => Theme.of(this).extension<SpecialAppTheme>() ?? 
-    const SpecialAppTheme(
-      primaryColor: AppColors.primary,
-      primaryDarkColor: AppColors.primaryDark,
-      useGradient: false,
-    );
+  SpecialAppTheme get specialTheme =>
+      Theme.of(this).extension<SpecialAppTheme>() ??
+      const SpecialAppTheme(
+        primaryColor: AppColors.primary,
+        primaryDarkColor: AppColors.primaryDark,
+        useGradient: false,
+      );
 }

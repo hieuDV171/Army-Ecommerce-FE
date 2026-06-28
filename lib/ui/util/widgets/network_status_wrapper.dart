@@ -72,8 +72,10 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper>
 
   void _startPeriodicCheck() {
     _periodicTimer?.cancel();
-    _periodicTimer =
-        Timer.periodic(const Duration(seconds: 5), (_) => _checkStatus());
+    _periodicTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _checkStatus(),
+    );
   }
 
   void _stopPeriodicCheck() {
@@ -87,8 +89,9 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper>
 
     bool online;
     try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 3));
       online = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
       online = false;
@@ -133,11 +136,11 @@ class _NetworkStatusWrapperState extends State<NetworkStatusWrapper>
             color: Colors.transparent,
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                color:
-                    !_isOnline ? AppColors.primaryDark : AppColors.successDark,
+                color: !_isOnline
+                    ? AppColors.primaryDark
+                    : AppColors.successDark,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(

@@ -87,12 +87,16 @@ class _SellerListingsViewState extends State<_SellerListingsView> {
     if (!_scrollController.hasClients) return;
     final threshold = _scrollController.position.maxScrollExtent - 360;
     if (_scrollController.position.pixels >= threshold) {
-      context.read<SellerListingsBloc>().add(SellerListingsLoadMoreRequested(widget.userId));
+      context.read<SellerListingsBloc>().add(
+        SellerListingsLoadMoreRequested(widget.userId),
+      );
     }
   }
 
   void _loadProducts() {
-    context.read<SellerListingsBloc>().add(SellerListingsRequested(widget.userId, isRefresh: true));
+    context.read<SellerListingsBloc>().add(
+      SellerListingsRequested(widget.userId, isRefresh: true),
+    );
   }
 
   void _toggleLikeProduct(ProductModel product) {
@@ -121,7 +125,9 @@ class _SellerListingsViewState extends State<_SellerListingsView> {
                   onPressed: () async {
                     final result = await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ProductFormPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const ProductFormPage(),
+                      ),
                     );
                     if (result == true) {
                       _loadProducts();
@@ -142,7 +148,9 @@ class _SellerListingsViewState extends State<_SellerListingsView> {
               : RefreshIndicator(
                   onRefresh: () async {
                     _loadProducts();
-                    await context.read<SellerListingsBloc>().stream.firstWhere((s) => !s.isLoading);
+                    await context.read<SellerListingsBloc>().stream.firstWhere(
+                      (s) => !s.isLoading,
+                    );
                   },
                   child: CustomScrollView(
                     controller: _scrollController,
@@ -150,7 +158,9 @@ class _SellerListingsViewState extends State<_SellerListingsView> {
                       SliverPadding(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         sliver: SliverGrid.builder(
-                          itemCount: state.products.length + (state.isLoadingMore ? 1 : 0),
+                          itemCount:
+                              state.products.length +
+                              (state.isLoadingMore ? 1 : 0),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,

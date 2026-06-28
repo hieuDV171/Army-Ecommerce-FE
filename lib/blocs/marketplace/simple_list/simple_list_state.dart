@@ -47,7 +47,9 @@ class SimpleListState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       hasReachedEnd: hasReachedEnd ?? this.hasReachedEnd,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       index: index ?? this.index,
       count: count ?? this.count,
     );

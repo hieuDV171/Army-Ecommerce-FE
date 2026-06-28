@@ -27,10 +27,7 @@ class OrderLoadMoreRequested extends OrderEvent {
   final bool isSeller;
   final String? stateFilter;
 
-  const OrderLoadMoreRequested({
-    required this.isSeller,
-    this.stateFilter,
-  });
+  const OrderLoadMoreRequested({required this.isSeller, this.stateFilter});
 
   @override
   List<Object?> get props => [isSeller, stateFilter];
@@ -45,14 +42,7 @@ class OrderDetailRequested extends OrderEvent {
   List<Object?> get props => [orderId];
 }
 
-enum OrderActionType {
-  accept,
-  reject,
-  ship,
-  cancel,
-  confirmReceived,
-  refund,
-}
+enum OrderActionType { accept, reject, ship, cancel, confirmReceived, refund }
 
 class OrderActionRequested extends OrderEvent {
   final OrderModel order;
@@ -75,10 +65,7 @@ class OrderEditRequested extends OrderEvent {
   final String orderId;
   final Map<String, dynamic> data;
 
-  const OrderEditRequested({
-    required this.orderId,
-    required this.data,
-  });
+  const OrderEditRequested({required this.orderId, required this.data});
 
   @override
   List<Object?> get props => [orderId, data];

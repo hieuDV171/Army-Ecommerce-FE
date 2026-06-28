@@ -34,16 +34,17 @@ class AvatarWithFrame extends StatelessWidget {
     Widget avatar = CircleAvatar(
       radius: radius,
       backgroundImage: avatarImage,
-      child: avatarImage == null ? (fallbackChild ?? Icon(Icons.person, size: radius * 0.8, color: Colors.grey)) : null,
+      child: avatarImage == null
+          ? (fallbackChild ??
+                Icon(Icons.person, size: radius * 0.8, color: Colors.grey))
+          : null,
     );
 
-    final bool hasFrame = (frameUrl != null && frameUrl!.isNotEmpty) || (frameFile != null);
+    final bool hasFrame =
+        (frameUrl != null && frameUrl!.isNotEmpty) || (frameFile != null);
 
     if (!hasFrame) {
-      return GestureDetector(
-        onTap: onTap,
-        child: avatar,
-      );
+      return GestureDetector(onTap: onTap, child: avatar);
     }
 
     Widget frameImageWidget;
@@ -74,10 +75,7 @@ class AvatarWithFrame extends StatelessWidget {
             avatar,
             // Frame overlay ở trên — chúng ta đục lỗ giữa để đảm bảo thấy avatar
             Positioned.fill(
-              child: ClipPath(
-                clipper: DonutClipper(),
-                child: frameImageWidget,
-              ),
+              child: ClipPath(clipper: DonutClipper(), child: frameImageWidget),
             ),
           ],
         ),
@@ -94,17 +92,21 @@ class DonutClipper extends CustomClipper<Path> {
     final double centerX = size.width / 2;
     final double centerY = size.height / 2;
     final double outerRadius = size.width / 2;
-    
-    path.addOval(Rect.fromCircle(center: Offset(centerX, centerY), radius: outerRadius));
-    
+
+    path.addOval(
+      Rect.fromCircle(center: Offset(centerX, centerY), radius: outerRadius),
+    );
+
     // Vòng trong: hình tròn ở giữa để "đục lỗ"
     // Chúng ta dùng PathFillType.evenOdd để tạo hiệu ứng donut
     // Bán kính lỗ hổng khoảng 42% kích thước frame (tương đương với size của avatar bên dưới)
     final double innerRadius = size.width * 0.42;
-    
-    path.addOval(Rect.fromCircle(center: Offset(centerX, centerY), radius: innerRadius));
+
+    path.addOval(
+      Rect.fromCircle(center: Offset(centerX, centerY), radius: innerRadius),
+    );
     path.fillType = PathFillType.evenOdd;
-    
+
     return path;
   }
 

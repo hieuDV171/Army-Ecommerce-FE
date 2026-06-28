@@ -29,17 +29,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<NewMessageReceived>(_onNewMessageReceived);
 
     // Subscribe to new messages from Socket.IO stream
-    _messageSubscription = marketplaceRepository.newMessagesStream.listen((message) {
-      logger.d('ChatBloc WebSocket Stream: Received message: "${message.message}" from senderId=${message.sender.id} (activePartnerId=$_activePartnerId)');
-      if (_activePartnerId != null && message.sender.id.toString() == _activePartnerId) {
-        logger.d('ChatBloc: Sender matches active chat. Appending message to list.');
+    _messageSubscription = marketplaceRepository.newMessagesStream.listen((
+      message,
+    ) {
+      logger.d(
+        'ChatBloc WebSocket Stream: Received message: "${message.message}" from senderId=${message.sender.id} (activePartnerId=$_activePartnerId)',
+      );
+      if (_activePartnerId != null &&
+          message.sender.id.toString() == _activePartnerId) {
+        logger.d(
+          'ChatBloc: Sender matches active chat. Appending message to list.',
+        );
         add(NewMessageReceived(message: message));
         add(MarkMessageReadRequested(partnerId: _activePartnerId!));
       } else if (_activePartnerId == null) {
-        logger.d('ChatBloc: No active chat partner. Refreshing conversation list.');
+        logger.d(
+          'ChatBloc: No active chat partner. Refreshing conversation list.',
+        );
         add(LoadConversationsRequested(isSilent: true));
       } else {
-        logger.d('ChatBloc: Ignored message because sender ID does not match active partner.');
+        logger.d(
+          'ChatBloc: Ignored message because sender ID does not match active partner.',
+        );
       }
     });
   }
@@ -72,11 +83,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           ),
         );
 
-        emit(MessagesLoaded(
-          messages: [optimisticMessage, ...originalMessages],
-          hasMore: hasMore,
-          canSendMessage: canSendMessage,
-        ));
+        emit(
+          MessagesLoaded(
+            messages: [optimisticMessage, ...originalMessages],
+            hasMore: hasMore,
+            canSendMessage: canSendMessage,
+          ),
+        );
       }
     }
 
@@ -91,52 +104,62 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final responseCode = ResponseCode.fromCode(response.code);
 
       if (responseCode == ResponseCode.ok && response.data != null) {
-        emit(MessageSent(
-          conversationId: response.data!.conversationId,
-          messageId: response.data!.messageId,
-        ));
-
-        // Re-emit MessagesLoaded to maintain chat list state
-        final sentMessage = optimisticMessage ?? MessageModel(
-          message: event.message,
-          unread: false,
-          type: event.typeMessage,
-          created: DateTime.now(),
-          sender: MessageSender(
-            id: int.tryParse(event.senderId ?? '0') ?? 0,
-            username: '',
+        emit(
+          MessageSent(
+            conversationId: response.data!.conversationId,
+            messageId: response.data!.messageId,
           ),
         );
+
+        // Re-emit MessagesLoaded to maintain chat list state
+        final sentMessage =
+            optimisticMessage ??
+            MessageModel(
+              message: event.message,
+              unread: false,
+              type: event.typeMessage,
+              created: DateTime.now(),
+              sender: MessageSender(
+                id: int.tryParse(event.senderId ?? '0') ?? 0,
+                username: '',
+              ),
+            );
 
         final finalMessages = optimisticMessage != null
             ? [sentMessage, ...originalMessages]
             : [sentMessage, ...originalMessages];
 
-        emit(MessagesLoaded(
-          messages: finalMessages,
-          hasMore: hasMore,
-          canSendMessage: canSendMessage,
-        ));
+        emit(
+          MessagesLoaded(
+            messages: finalMessages,
+            hasMore: hasMore,
+            canSendMessage: canSendMessage,
+          ),
+        );
       } else {
         logger.w('ChatBloc: sendMessage failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
-        
+
         // Restore original message list (remove optimistic message)
-        emit(MessagesLoaded(
-          messages: originalMessages,
-          hasMore: hasMore,
-          canSendMessage: canSendMessage,
-        ));
+        emit(
+          MessagesLoaded(
+            messages: originalMessages,
+            hasMore: hasMore,
+            canSendMessage: canSendMessage,
+          ),
+        );
       }
     } catch (e) {
       emit(ChatFailure(error: e.toString(), code: ResponseCode.exception.code));
-      
+
       // Restore original message list (remove optimistic message)
-      emit(MessagesLoaded(
-        messages: originalMessages,
-        hasMore: hasMore,
-        canSendMessage: canSendMessage,
-      ));
+      emit(
+        MessagesLoaded(
+          messages: originalMessages,
+          hasMore: hasMore,
+          canSendMessage: canSendMessage,
+        ),
+      );
     }
   }
 
@@ -174,11 +197,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         });
 
         numNewMessage = response.numNewMessage;
-        emit(ConversationsLoaded(
-          conversations: list,
-          hasMore: list.length == _pageSize,
-          numNewMessage: response.numNewMessage,
-        ));
+        emit(
+          ConversationsLoaded(
+            conversations: list,
+            hasMore: list.length == _pageSize,
+            numNewMessage: response.numNewMessage,
+          ),
+        );
       } else {
         logger.w('ChatBloc: getConversations failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
@@ -222,21 +247,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         });
 
         numNewMessage = response.numNewMessage;
-        emit(ConversationsLoaded(
-          conversations: updatedList,
-          hasMore: newItems.length == _pageSize,
-          numNewMessage: response.numNewMessage,
-        ));
+        emit(
+          ConversationsLoaded(
+            conversations: updatedList,
+            hasMore: newItems.length == _pageSize,
+            numNewMessage: response.numNewMessage,
+          ),
+        );
       } else {
         if (responseCode == ResponseCode.noData) {
-          emit(ConversationsLoaded(
-            conversations: currentState.conversations,
-            hasMore: false,
-            numNewMessage: currentState.numNewMessage,
-          ));
+          emit(
+            ConversationsLoaded(
+              conversations: currentState.conversations,
+              hasMore: false,
+              numNewMessage: currentState.numNewMessage,
+            ),
+          );
           return;
         }
-        logger.w('ChatBloc: loadMore conversations failed code=${response.code}');
+        logger.w(
+          'ChatBloc: loadMore conversations failed code=${response.code}',
+        );
         emit(ChatFailure(error: response.message, code: response.code));
       }
     } catch (e) {
@@ -267,11 +298,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         final conversationData = response.data!;
         final list = conversationData.messages;
         _messagesIndex += 1;
-        emit(MessagesLoaded(
-          messages: list,
-          hasMore: list.length == _pageSize,
-          canSendMessage: conversationData.canSendMessage,
-        ));
+        emit(
+          MessagesLoaded(
+            messages: list,
+            hasMore: list.length == _pageSize,
+            canSendMessage: conversationData.canSendMessage,
+          ),
+        );
       } else {
         logger.w('ChatBloc: getConversation failed code=${response.code}');
         emit(ChatFailure(error: response.message, code: response.code));
@@ -307,18 +340,22 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         // Backend trả về mới nhất trước → tin cũ hơn (newItems) nối vào CUỐI list
         // ListView(reverse: true): index 0 = đáy (mới nhất), index cuối = đỉnh (cũ nhất)
         final updatedList = [...currentState.messages, ...newItems];
-        emit(MessagesLoaded(
-          messages: updatedList,
-          hasMore: newItems.length == _pageSize,
-          canSendMessage: response.data!.canSendMessage,
-        ));
+        emit(
+          MessagesLoaded(
+            messages: updatedList,
+            hasMore: newItems.length == _pageSize,
+            canSendMessage: response.data!.canSendMessage,
+          ),
+        );
       } else {
         if (responseCode == ResponseCode.noData) {
-          emit(MessagesLoaded(
-            messages: currentState.messages,
-            hasMore: false,
-            canSendMessage: currentState.canSendMessage,
-          ));
+          emit(
+            MessagesLoaded(
+              messages: currentState.messages,
+              hasMore: false,
+              canSendMessage: currentState.canSendMessage,
+            ),
+          );
           return;
         }
         logger.w('ChatBloc: loadMore messages failed code=${response.code}');
@@ -335,9 +372,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     try {
-      await marketplaceRepository.markConversationRead(
-        event.partnerId,
-      );
+      await marketplaceRepository.markConversationRead(event.partnerId);
       // Không emit state mới - mobile không hiển thị trạng thái "Đã xem"
     } catch (e) {
       logger.w('ChatBloc: markConversationRead failed: $e');
@@ -353,18 +388,23 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final currentState = state;
     if (currentState is MessagesLoaded) {
       // Tránh trùng lặp tin nhắn (phòng trường hợp API HTTP và Socket cùng về một lúc)
-      final isDuplicate = currentState.messages.any((m) =>
-          m.message == event.message.message &&
-          m.created.millisecondsSinceEpoch == event.message.created.millisecondsSinceEpoch &&
-          m.sender.id == event.message.sender.id);
+      final isDuplicate = currentState.messages.any(
+        (m) =>
+            m.message == event.message.message &&
+            m.created.millisecondsSinceEpoch ==
+                event.message.created.millisecondsSinceEpoch &&
+            m.sender.id == event.message.sender.id,
+      );
 
       if (!isDuplicate) {
         final updatedList = [event.message, ...currentState.messages];
-        emit(MessagesLoaded(
-          messages: updatedList,
-          hasMore: currentState.hasMore,
-          canSendMessage: currentState.canSendMessage,
-        ));
+        emit(
+          MessagesLoaded(
+            messages: updatedList,
+            hasMore: currentState.hasMore,
+            canSendMessage: currentState.canSendMessage,
+          ),
+        );
       }
     }
   }

@@ -4,11 +4,7 @@ class ConversationPartner {
   final String username;
   final String? avatar;
 
-  ConversationPartner({
-    required this.id,
-    required this.username,
-    this.avatar,
-  });
+  ConversationPartner({required this.id, required this.username, this.avatar});
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory ConversationPartner.fromJson(Map<String, dynamic> json) {
@@ -125,7 +121,10 @@ class ConversationListResponse {
     if (rawData is List) {
       dataList = rawData
           .whereType<Map>()
-          .map((item) => ConversationModel.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) =>
+                ConversationModel.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     }
     return ConversationListResponse(
@@ -143,11 +142,7 @@ class SendMessageResponse {
   final String message;
   final SendMessageResult? data;
 
-  SendMessageResponse({
-    required this.code,
-    required this.message,
-    this.data,
-  });
+  SendMessageResponse({required this.code, required this.message, this.data});
 
   // Hàm chuyển đổi dữ liệu JSON từ API thành Object trong Flutter
   factory SendMessageResponse.fromJson(Map<String, dynamic> json) {
@@ -155,7 +150,9 @@ class SendMessageResponse {
       code: json['code']?.toString() ?? '',
       message: json['message']?.toString() ?? '',
       data: (json['data'] != null && json['data'] is Map)
-          ? SendMessageResult.fromJson(Map<String, dynamic>.from(json['data'] as Map))
+          ? SendMessageResult.fromJson(
+              Map<String, dynamic>.from(json['data'] as Map),
+            )
           : null,
     );
   }

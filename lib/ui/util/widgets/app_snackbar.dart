@@ -3,12 +3,17 @@ import 'package:army_ecommerce/ui/util/widgets/error_state.dart';
 
 class AppSnackBar {
   /// Hiển thị SnackBar và ngay lập tức đóng SnackBar trước đó nếu có.
-  static void show(BuildContext context, {required String message, Color? backgroundColor, Duration duration = const Duration(seconds: 2)}) {
+  static void show(
+    BuildContext context, {
+    required String message,
+    Color? backgroundColor,
+    Duration duration = const Duration(seconds: 2),
+  }) {
     final messenger = ScaffoldMessenger.of(context);
-    
+
     // Xóa SnackBar hiện tại ngay lập tức để SnackBar mới được hiện lên luôn
     messenger.removeCurrentSnackBar();
-    
+
     final cleanMessage = ErrorState.cleanMessage(message);
     messenger.showSnackBar(
       SnackBar(
@@ -22,20 +27,12 @@ class AppSnackBar {
 
   /// Hiển thị SnackBar thông báo lỗi (màu đỏ)
   static void showError(BuildContext context, {required String message}) {
-    show(
-      context,
-      message: message,
-      backgroundColor: Colors.redAccent,
-    );
+    show(context, message: message, backgroundColor: Colors.redAccent);
   }
 
   /// Hiển thị SnackBar thông báo thành công (màu xanh)
   static void showSuccess(BuildContext context, {required String message}) {
-    show(
-      context,
-      message: message,
-      backgroundColor: Colors.green,
-    );
+    show(context, message: message, backgroundColor: Colors.green);
   }
 }
 

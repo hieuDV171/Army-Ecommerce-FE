@@ -17,7 +17,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<ApiResponse<UserModel>> signup(String phoneNumber, String password, String uuid) {
+  Future<ApiResponse<UserModel>> signup(
+    String phoneNumber,
+    String password,
+    String uuid,
+  ) {
     return remoteDataSource.signup(phoneNumber, password, uuid);
   }
 
@@ -27,7 +31,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<ApiResponse<UserModel>> checkSignupCode(String phoneNumber, String code) {
+  Future<ApiResponse<UserModel>> checkSignupCode(
+    String phoneNumber,
+    String code,
+  ) {
     return remoteDataSource.checkSignupCode(phoneNumber, code);
   }
 
@@ -37,33 +44,57 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<ApiResponse<String?>> checkCodeResetPassword(String phoneNumber, String resetCode) {
+  Future<ApiResponse<String?>> checkCodeResetPassword(
+    String phoneNumber,
+    String resetCode,
+  ) {
     return remoteDataSource.checkCodeResetPassword(phoneNumber, resetCode);
   }
 
   @override
-  Future<ApiResponse<UserModel>> getUserInfo({required String token, Object? userId}) {
+  Future<ApiResponse<UserModel>> getUserInfo({
+    required String token,
+    Object? userId,
+  }) {
     return remoteDataSource.getUserInfo(token: token, userId: userId);
   }
 
   @override
-  Future<ApiResponse<UserModel>> resetPassword(String phoneNumber, String newPassword) {
+  Future<ApiResponse<UserModel>> resetPassword(
+    String phoneNumber,
+    String newPassword,
+  ) {
     return remoteDataSource.resetPassword(phoneNumber, newPassword);
   }
 
   @override
-  Future<ApiResponse<String>> changePassword({required String oldPassword, required String newPassword}) {
-    return remoteDataSource.changePassword(oldPassword: oldPassword, newPassword: newPassword);
+  Future<ApiResponse<String>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) {
+    return remoteDataSource.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+    );
   }
 
   @override
-  Future<ApiResponse<String>> setDevToken({required String devToken, required String devType}) {
+  Future<ApiResponse<String>> setDevToken({
+    required String devToken,
+    required String devType,
+  }) {
     return remoteDataSource.setDevToken(devToken: devToken, devType: devType);
   }
 
   @override
-  Future<ApiResponse<UserModel>> changeInfoAfterSignup({required String username, File? avatarFile}) {
-    return remoteDataSource.changeInfoAfterSignup(username: username, avatarFile: avatarFile);
+  Future<ApiResponse<UserModel>> changeInfoAfterSignup({
+    required String username,
+    File? avatarFile,
+  }) {
+    return remoteDataSource.changeInfoAfterSignup(
+      username: username,
+      avatarFile: avatarFile,
+    );
   }
 
   @override

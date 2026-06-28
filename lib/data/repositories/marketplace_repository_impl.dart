@@ -27,17 +27,27 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   MarketplaceRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<List<CategoryModel>> getCategories({int? parentId, int? index, int? count}) async {
+  Future<List<CategoryModel>> getCategories({
+    int? parentId,
+    int? index,
+    int? count,
+  }) async {
     try {
-      final response = await remoteDataSource.getCategories(parentId: parentId, index: index, count: count);
+      final response = await remoteDataSource.getCategories(
+        parentId: parentId,
+        index: index,
+        count: count,
+      );
       // Cache response data for first level categories (only if first load)
-      if ((parentId == null || parentId == 0) && (index == null || index == 0)) {
+      if ((parentId == null || parentId == 0) &&
+          (index == null || index == 0)) {
         SessionManager.saveCachedCategoriesJson(jsonEncode(response.data));
       }
       return parseListFromData(response.data, CategoryModel.fromJson);
     } catch (e) {
       // Offline fallback: load categories from cache
-      if ((parentId == null || parentId == 0) && (index == null || index == 0)) {
+      if ((parentId == null || parentId == 0) &&
+          (index == null || index == 0)) {
         final cachedJson = await SessionManager.getCachedCategoriesJson();
         if (cachedJson != null) {
           final decoded = jsonDecode(cachedJson);
@@ -714,10 +724,15 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     if (data is List) {
       return data.map((json) {
         final map = json as Map<String, dynamic>;
-        final productId = (map['product_id'] ?? map['productId'] ?? '').toString();
-        final title = (map['title'] ?? map['product_title'] ?? map['name'] ?? 'Sản phẩm').toString();
+        final productId = (map['product_id'] ?? map['productId'] ?? '')
+            .toString();
+        final title =
+            (map['title'] ?? map['product_title'] ?? map['name'] ?? 'Sản phẩm')
+                .toString();
         final price = (map['price'] ?? map['product_price'] ?? 0) as num;
-        final imageUrl = (map['image_url'] ?? map['imageUrl'] ?? map['image'] ?? '').toString();
+        final imageUrl =
+            (map['image_url'] ?? map['imageUrl'] ?? map['image'] ?? '')
+                .toString();
         final quantity = (map['quantity'] ?? 1) as int;
         final sellerId = (map['seller_id'] ?? map['sellerId'] ?? '').toString();
 
@@ -776,7 +791,10 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     int index = 1,
     int count = 20,
   }) async {
-    final response = await remoteDataSource.getRewardHistory(index: index, count: count);
+    final response = await remoteDataSource.getRewardHistory(
+      index: index,
+      count: count,
+    );
     return parseListFromData(response.data, RewardHistoryModel.fromJson);
   }
 
@@ -785,7 +803,10 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
     required String rewardId,
     String? reason,
   }) async {
-    final response = await remoteDataSource.createRewardAppeal(rewardId: rewardId, reason: reason);
+    final response = await remoteDataSource.createRewardAppeal(
+      rewardId: rewardId,
+      reason: reason,
+    );
     return RewardAppealModel.fromJson(parseMapFromData(response.data));
   }
 
@@ -859,12 +880,14 @@ class MarketplaceRepositoryImpl implements MarketplaceRepository {
   }
 
   @override
-  Stream<MessageModel> get newMessagesStream => _socketService.newMessagesStream.map((data) {
+  Stream<MessageModel> get newMessagesStream =>
+      _socketService.newMessagesStream.map((data) {
         return MessageModel.fromJson(data);
       });
 
   @override
-  Stream<mk.NotificationModel> get newNotificationsStream => _socketService.newNotificationsStream.map((data) {
+  Stream<mk.NotificationModel> get newNotificationsStream =>
+      _socketService.newNotificationsStream.map((data) {
         return mk.NotificationModel.fromJson(data);
       });
 

@@ -59,12 +59,14 @@ class ThemeCubit extends Cubit<ThemeState> {
     required Color initialCustomPrimary,
     required Color initialCustomDark,
     required bool initialCustomUseGradient,
-  }) : super(ThemeState(
-          themeMode: initialTheme,
-          customPrimaryColor: initialCustomPrimary,
-          customDarkColor: initialCustomDark,
-          customUseGradient: initialCustomUseGradient,
-        ));
+  }) : super(
+         ThemeState(
+           themeMode: initialTheme,
+           customPrimaryColor: initialCustomPrimary,
+           customDarkColor: initialCustomDark,
+           customUseGradient: initialCustomUseGradient,
+         ),
+       );
 
   Future<void> setTheme(AppThemeMode mode) async {
     emit(state.copyWith(themeMode: mode));
@@ -79,12 +81,14 @@ class ThemeCubit extends Cubit<ThemeState> {
     required Color dark,
     required bool useGradient,
   }) async {
-    emit(state.copyWith(
-      themeMode: AppThemeMode.custom,
-      customPrimaryColor: primary,
-      customDarkColor: dark,
-      customUseGradient: useGradient,
-    ));
+    emit(
+      state.copyWith(
+        themeMode: AppThemeMode.custom,
+        customPrimaryColor: primary,
+        customDarkColor: dark,
+        customUseGradient: useGradient,
+      ),
+    );
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_keyThemeMode, AppThemeMode.custom.name);

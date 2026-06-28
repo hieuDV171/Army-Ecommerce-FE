@@ -41,7 +41,9 @@ class AddressState extends Equatable {
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       provinces: provinces ?? this.provinces,
       wards: wards ?? this.wards,
       isLoadingProvinces: isLoadingProvinces ?? this.isLoadingProvinces,
@@ -51,14 +53,14 @@ class AddressState extends Equatable {
 
   @override
   List<Object?> get props => [
-        addresses,
-        isLoading,
-        isSubmitting,
-        errorMessage,
-        successMessage,
-        provinces,
-        wards,
-        isLoadingProvinces,
-        isLoadingWards,
-      ];
+    addresses,
+    isLoading,
+    isSubmitting,
+    errorMessage,
+    successMessage,
+    provinces,
+    wards,
+    isLoadingProvinces,
+    isLoadingWards,
+  ];
 }

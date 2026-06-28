@@ -12,11 +12,14 @@ class SocketService {
 
   // StreamControllers to publish socket events to listeners
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
-  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
+  final _notificationController =
+      StreamController<Map<String, dynamic>>.broadcast();
 
   // Streams exposed to consumers
-  Stream<Map<String, dynamic>> get newMessagesStream => _messageController.stream;
-  Stream<Map<String, dynamic>> get newNotificationsStream => _notificationController.stream;
+  Stream<Map<String, dynamic>> get newMessagesStream =>
+      _messageController.stream;
+  Stream<Map<String, dynamic>> get newNotificationsStream =>
+      _notificationController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 

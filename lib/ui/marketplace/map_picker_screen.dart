@@ -14,11 +14,7 @@ class MapPickerScreen extends StatefulWidget {
   final double? initialLat;
   final double? initialLng;
 
-  const MapPickerScreen({
-    super.key,
-    this.initialLat,
-    this.initialLng,
-  });
+  const MapPickerScreen({super.key, this.initialLat, this.initialLng});
 
   @override
   State<MapPickerScreen> createState() => _MapPickerScreenState();
@@ -51,7 +47,10 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
-          AppSnackBar.show(context, message: 'Dịch vụ định vị GPS chưa được bật.');
+          AppSnackBar.show(
+            context,
+            message: 'Dịch vụ định vị GPS chưa được bật.',
+          );
         }
         return;
       }
@@ -69,7 +68,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
       if (permission == LocationPermission.deniedForever) {
         if (mounted) {
-          AppSnackBar.show(context, message: 'Quyền định vị bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.');
+          AppSnackBar.show(
+            context,
+            message:
+                'Quyền định vị bị từ chối vĩnh viễn. Vui lòng bật trong cài đặt.',
+          );
         }
         return;
       }
@@ -143,7 +146,9 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
           // Central Pin indicator (Visual indicator of picked position)
           Center(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 35), // Offset icon size to match point
+              margin: const EdgeInsets.only(
+                bottom: 35,
+              ), // Offset icon size to match point
               child: const Icon(
                 Icons.location_on,
                 size: 44,
@@ -191,7 +196,11 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
-                        const Icon(Icons.pin_drop_outlined, size: 20, color: AppColors.primary),
+                        const Icon(
+                          Icons.pin_drop_outlined,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(

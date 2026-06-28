@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:army_ecommerce/core/utils/logger.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:army_ecommerce/blocs/chat/chat_bloc.dart';
@@ -71,15 +72,17 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     // Tải tin nhắn khi mở màn hình
-    context.read<ChatBloc>().add(LoadMessagesRequested(
-          partnerId: widget.partnerId,
-          conversationId: widget.conversationId,
-        ));
+    context.read<ChatBloc>().add(
+      LoadMessagesRequested(
+        partnerId: widget.partnerId,
+        conversationId: widget.conversationId,
+      ),
+    );
 
     // Đánh dấu đã đọc tất cả tin nhắn (gọi ngầm, không ảnh hưởng UI)
-    context.read<ChatBloc>().add(MarkMessageReadRequested(
-          partnerId: widget.partnerId,
-        ));
+    context.read<ChatBloc>().add(
+      MarkMessageReadRequested(partnerId: widget.partnerId),
+    );
 
     // Lắng nghe cuộn đến đầu danh sách để tải thêm tin cũ
     _scrollController.addListener(_onScroll);
@@ -99,11 +102,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // reverse: true → cuộn đến "đầu" ListView = kéo lên đỉnh màn hình = tin nhắn cũ nhất
   void _onScroll() {
-    if (_scrollController.offset >= _scrollController.position.maxScrollExtent - 100) {
-      context.read<ChatBloc>().add(LoadMoreMessagesRequested(
-            partnerId: widget.partnerId,
-            conversationId: _resolvedConversationId,
-          ));
+    if (_scrollController.offset >=
+        _scrollController.position.maxScrollExtent - 100) {
+      context.read<ChatBloc>().add(
+        LoadMoreMessagesRequested(
+          partnerId: widget.partnerId,
+          conversationId: _resolvedConversationId,
+        ),
+      );
     }
   }
 
@@ -115,12 +121,14 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isSending = true);
     _inputController.clear();
 
-    context.read<ChatBloc>().add(SendMessageRequested(
-          toId: widget.partnerId,
-          message: text,
-          productId: _productIdToSend ?? '0',
-          senderId: widget.currentUserId,
-        ));
+    context.read<ChatBloc>().add(
+      SendMessageRequested(
+        toId: widget.partnerId,
+        message: text,
+        productId: _productIdToSend ?? '0',
+        senderId: widget.currentUserId,
+      ),
+    );
     _productIdToSend = null;
   }
 
@@ -160,7 +168,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   _scrollToBottom();
                 } else if (state is ChatFailure) {
                   setState(() => _isSending = false);
-                  AppSnackBar.showError(context, message: 'Gửi thất bại: ${state.error}');
+                  AppSnackBar.showError(
+                    context,
+                    message: 'Gửi thất bại: ${state.error}',
+                  );
                 }
               },
               builder: (context, state) {
@@ -174,7 +185,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 if (state is MessagesLoaded) {
                   messages = state.messages;
                 } else if (state is ChatLoadingMore) {
-                  messages = state.currentList.whereType<MessageModel>().toList();
+                  messages = state.currentList
+                      .whereType<MessageModel>()
+                      .toList();
                   isLoadingMore = true;
                 }
 
@@ -186,7 +199,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 return ListView.builder(
                   controller: _scrollController,
                   reverse: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   itemCount: messages.length + (isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
                     // Indicator tải thêm ở đầu danh sách (tin cũ nhất = index cao nhất)
@@ -203,10 +219,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
 
                     final message = messages[index];
-                    final isMine = message.sender.id.toString() == widget.currentUserId;
+                    final isMine =
+                        message.sender.id.toString() == widget.currentUserId;
 
                     // Hiển thị ngăn cách ngày nếu tin nhắn trước đó là ngày khác
-                    final bool showDateSeparator = _shouldShowDate(messages, index);
+                    final bool showDateSeparator = _shouldShowDate(
+                      messages,
+                      index,
+                    );
 
                     return Column(
                       children: [
@@ -224,7 +244,9 @@ class _ChatScreenState extends State<ChatScreen> {
           // Vùng nhập tin nhắn — ẩn khi không được phép gửi (can_send_message = false)
           BlocBuilder<ChatBloc, ChatState>(
             builder: (context, state) {
-              final canSend = state is MessagesLoaded ? state.canSendMessage : true;
+              final canSend = state is MessagesLoaded
+                  ? state.canSendMessage
+                  : true;
               return canSend ? _buildInputArea() : _buildBlockedBanner();
             },
           ),
@@ -248,12 +270,12 @@ class _ChatScreenState extends State<ChatScreen> {
   PreferredSizeWidget _buildAppBar() {
     final specialTheme = context.specialTheme;
     return AppBar(
-      backgroundColor: specialTheme.useGradient ? Colors.transparent : specialTheme.primaryDarkColor,
+      backgroundColor: specialTheme.useGradient
+          ? Colors.transparent
+          : specialTheme.primaryDarkColor,
       flexibleSpace: specialTheme.useGradient
           ? Container(
-              decoration: BoxDecoration(
-                gradient: specialTheme.primaryGradient,
-              ),
+              decoration: BoxDecoration(gradient: specialTheme.primaryGradient),
             )
           : null,
       elevation: 0.5,
@@ -282,11 +304,14 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               radius: 18,
               backgroundColor: Colors.grey[200],
-              backgroundImage: (widget.partnerAvatar != null &&
+              backgroundImage:
+                  (widget.partnerAvatar != null &&
                       widget.partnerAvatar!.isNotEmpty)
                   ? NetworkImage(widget.partnerAvatar!)
                   : null,
-              child: (widget.partnerAvatar == null || widget.partnerAvatar!.isEmpty)
+              child:
+                  (widget.partnerAvatar == null ||
+                      widget.partnerAvatar!.isEmpty)
                   ? Icon(Icons.person, size: 20, color: Colors.grey[500])
                   : null,
             ),
@@ -320,7 +345,9 @@ class _ChatScreenState extends State<ChatScreen> {
           // Thumbnail sản phẩm
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: widget.productImageUrl != null && widget.productImageUrl!.isNotEmpty
+            child:
+                widget.productImageUrl != null &&
+                    widget.productImageUrl!.isNotEmpty
                 ? Image.network(
                     widget.productImageUrl!,
                     width: 48,
@@ -373,7 +400,11 @@ class _ChatScreenState extends State<ChatScreen> {
       width: 48,
       height: 48,
       color: AppColors.primaryUltraLight,
-      child: Icon(Icons.inventory_2_outlined, size: 22, color: context.specialTheme.primaryColor),
+      child: Icon(
+        Icons.inventory_2_outlined,
+        size: 22,
+        color: context.specialTheme.primaryColor,
+      ),
     );
   }
 
@@ -406,7 +437,9 @@ class _ChatScreenState extends State<ChatScreen> {
               color: context.specialTheme.primaryColor,
               size: 26,
             ),
-            onPressed: _isSending ? null : () => _showAttachmentBottomSheet(context),
+            onPressed: _isSending
+                ? null
+                : () => _showAttachmentBottomSheet(context),
           ),
           const SizedBox(width: 4),
 
@@ -427,7 +460,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   hintText: 'Nhập tin nhắn...',
                   hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                 ),
                 onSubmitted: (_) => _sendMessage(),
               ),
@@ -444,19 +480,29 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: BoxDecoration(
                 color: _isSending
                     ? Colors.grey[300]
-                    : (context.specialTheme.useGradient ? null : context.specialTheme.primaryColor),
+                    : (context.specialTheme.useGradient
+                          ? null
+                          : context.specialTheme.primaryColor),
                 gradient: _isSending
                     ? null
-                    : (context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null),
+                    : (context.specialTheme.useGradient
+                          ? context.specialTheme.primaryGradient
+                          : null),
                 shape: BoxShape.circle,
               ),
               child: _isSending
                   ? const Padding(
                       padding: EdgeInsets.all(10),
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  : const Icon(
+                      Icons.send_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
             ),
           ),
         ],
@@ -489,13 +535,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
       // 2. Gửi tin nhắn chứa URL file
       if (mounted) {
-        context.read<ChatBloc>().add(SendMessageRequested(
-              toId: widget.partnerId,
-              message: fileUrl,
-              typeMessage: isVideo ? 'video' : 'image',
-              productId: widget.productId ?? '0',
-              senderId: widget.currentUserId,
-            ));
+        context.read<ChatBloc>().add(
+          SendMessageRequested(
+            toId: widget.partnerId,
+            message: fileUrl,
+            typeMessage: isVideo ? 'video' : 'image',
+            productId: widget.productId ?? '0',
+            senderId: widget.currentUserId,
+          ),
+        );
       }
     } catch (e) {
       setState(() => _isSending = false);
@@ -514,24 +562,26 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _isSending = true);
 
       final file = File(result.files.single.path!);
-      
+
       // Upload lên server
       final repo = context.read<MarketplaceRepository>();
       final fileUrl = await repo.uploadFile(file);
-      
+
       if (fileUrl == null || fileUrl.isEmpty) {
         throw Exception('Không nhận được URL sau khi upload file');
       }
-      
+
       // Gửi tin nhắn chứa link file với type là 'file'
       if (mounted) {
-        context.read<ChatBloc>().add(SendMessageRequested(
-          toId: widget.partnerId,
-          message: fileUrl,
-          typeMessage: 'file',
-          productId: widget.productId ?? '0',
-          senderId: widget.currentUserId,
-        ));
+        context.read<ChatBloc>().add(
+          SendMessageRequested(
+            toId: widget.partnerId,
+            message: fileUrl,
+            typeMessage: 'file',
+            productId: widget.productId ?? '0',
+            senderId: widget.currentUserId,
+          ),
+        );
       }
     } catch (e) {
       setState(() => _isSending = false);
@@ -540,7 +590,6 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
   }
-
 
   void _showAttachmentBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -564,32 +613,56 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: Icon(Icons.camera_alt_rounded, color: context.specialTheme.primaryColor),
-                title: const Text('Chụp ảnh mới', style: TextStyle(fontWeight: FontWeight.w500)),
+                leading: Icon(
+                  Icons.camera_alt_rounded,
+                  color: context.specialTheme.primaryColor,
+                ),
+                title: const Text(
+                  'Chụp ảnh mới',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickAndSendMedia(ImageSource.camera, false);
                 },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library_rounded, color: context.specialTheme.primaryColor),
-                title: const Text('Chọn ảnh từ thư viện', style: TextStyle(fontWeight: FontWeight.w500)),
+                leading: Icon(
+                  Icons.photo_library_rounded,
+                  color: context.specialTheme.primaryColor,
+                ),
+                title: const Text(
+                  'Chọn ảnh từ thư viện',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickAndSendMedia(ImageSource.gallery, false);
                 },
               ),
               ListTile(
-                leading: Icon(Icons.video_library_rounded, color: context.specialTheme.primaryColor),
-                title: const Text('Chọn video từ thư viện', style: TextStyle(fontWeight: FontWeight.w500)),
+                leading: Icon(
+                  Icons.video_library_rounded,
+                  color: context.specialTheme.primaryColor,
+                ),
+                title: const Text(
+                  'Chọn video từ thư viện',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickAndSendMedia(ImageSource.gallery, true);
                 },
               ),
               ListTile(
-                leading: Icon(Icons.file_present_rounded, color: context.specialTheme.primaryColor),
-                title: const Text('Đính kèm tài liệu/tệp tin', style: TextStyle(fontWeight: FontWeight.w500)),
+                leading: Icon(
+                  Icons.file_present_rounded,
+                  color: context.specialTheme.primaryColor,
+                ),
+                title: const Text(
+                  'Đính kèm tài liệu/tệp tin',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickAndSendFile();
@@ -662,8 +735,9 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
-        mainAxisAlignment:
-            isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMine) const SizedBox(width: 4),
@@ -675,9 +749,13 @@ class _MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isMine
-                    ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryColor)
+                    ? (context.specialTheme.useGradient
+                          ? null
+                          : context.specialTheme.primaryColor)
                     : Colors.white,
-                gradient: isMine && context.specialTheme.useGradient ? context.specialTheme.primaryGradient : null,
+                gradient: isMine && context.specialTheme.useGradient
+                    ? context.specialTheme.primaryGradient
+                    : null,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
@@ -726,19 +804,24 @@ class _MessageBubble extends StatelessWidget {
           final productId = decoded['product_id']?.toString() ?? '';
           final textMsg = decoded['message']?.toString() ?? '';
           return Column(
-            crossAxisAlignment: isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isMine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               _ProductMessageBubble(productId: productId, isMine: isMine),
               if (textMsg.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 _buildMessageText(textMsg, isMine, context),
-              ]
+              ],
             ],
           );
         }
       } catch (_) {
         // Fallback cho tin nhắn định dạng cũ (chỉ chứa productId)
-        return _ProductMessageBubble(productId: message.message, isMine: isMine);
+        return _ProductMessageBubble(
+          productId: message.message,
+          isMine: isMine,
+        );
       }
     }
     if (message.type == 'image') {
@@ -814,7 +897,10 @@ class _MessageBubble extends StatelessWidget {
             child: const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.grey,
+              ),
             ),
           ),
           errorWidget: (context, url, error) => Container(
@@ -837,7 +923,7 @@ class _MessageBubble extends StatelessWidget {
           try {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } catch (e) {
-            debugPrint('Error launching video url: $e');
+            logger.e('Error launching video url: $e');
           }
         }
       },
@@ -851,7 +937,11 @@ class _MessageBubble extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Icon(Icons.video_library_rounded, size: 60, color: Colors.white.withValues(alpha: 0.15)),
+            Icon(
+              Icons.video_library_rounded,
+              size: 60,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
             const Icon(
               Icons.play_circle_fill_rounded,
               color: Colors.white,
@@ -868,7 +958,10 @@ class _MessageBubble extends StatelessWidget {
                   Expanded(
                     child: Text(
                       fileName,
-                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -884,7 +977,9 @@ class _MessageBubble extends StatelessWidget {
 
   Widget _buildFileMessage(String url, BuildContext context) {
     final fileName = url.split('/').last;
-    final fileExtension = fileName.contains('.') ? fileName.split('.').last.toUpperCase() : 'FILE';
+    final fileExtension = fileName.contains('.')
+        ? fileName.split('.').last.toUpperCase()
+        : 'FILE';
 
     return GestureDetector(
       onTap: () async {
@@ -893,7 +988,7 @@ class _MessageBubble extends StatelessWidget {
           try {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } catch (e) {
-            debugPrint('Error launching file url: $e');
+            logger.e('Error launching file url: $e');
           }
         }
       },
@@ -913,7 +1008,9 @@ class _MessageBubble extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isMine ? Colors.white30 : Colors.blue.withValues(alpha: 0.1),
+                color: isMine
+                    ? Colors.white30
+                    : Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -978,50 +1075,56 @@ class _MessageBubble extends StatelessWidget {
     int lastMatchEnd = 0;
     for (final match in matches) {
       if (match.start > lastMatchEnd) {
-        spans.add(TextSpan(
-          text: text.substring(lastMatchEnd, match.start),
+        spans.add(
+          TextSpan(
+            text: text.substring(lastMatchEnd, match.start),
+            style: TextStyle(
+              fontSize: 14,
+              color: isMine ? Colors.white : Colors.black87,
+              height: 1.4,
+            ),
+          ),
+        );
+      }
+
+      final url = match.group(0)!;
+      spans.add(
+        TextSpan(
+          text: url,
+          style: TextStyle(
+            fontSize: 14,
+            color: isMine ? Colors.white : Colors.blue,
+            decoration: TextDecoration.underline,
+            decorationColor: isMine ? Colors.white : Colors.blue,
+            height: 1.4,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () async {
+              final uri = Uri.tryParse(url);
+              if (uri != null) {
+                try {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } catch (e) {
+                  logger.e('Error launching url: $e');
+                }
+              }
+            },
+        ),
+      );
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(lastMatchEnd),
           style: TextStyle(
             fontSize: 14,
             color: isMine ? Colors.white : Colors.black87,
             height: 1.4,
           ),
-        ));
-      }
-
-      final url = match.group(0)!;
-      spans.add(TextSpan(
-        text: url,
-        style: TextStyle(
-          fontSize: 14,
-          color: isMine ? Colors.white : Colors.blue,
-          decoration: TextDecoration.underline,
-          decorationColor: isMine ? Colors.white : Colors.blue,
-          height: 1.4,
         ),
-        recognizer: TapGestureRecognizer()
-          ..onTap = () async {
-            final uri = Uri.tryParse(url);
-            if (uri != null) {
-              try {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } catch (e) {
-                debugPrint('Error launching url: $e');
-              }
-            }
-          },
-      ));
-      lastMatchEnd = match.end;
-    }
-
-    if (lastMatchEnd < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastMatchEnd),
-        style: TextStyle(
-          fontSize: 14,
-          color: isMine ? Colors.white : Colors.black87,
-          height: 1.4,
-        ),
-      ));
+      );
     }
 
     if (spans.isEmpty) {
@@ -1035,9 +1138,7 @@ class _MessageBubble extends StatelessWidget {
       );
     }
 
-    return RichText(
-      text: TextSpan(children: spans),
-    );
+    return RichText(text: TextSpan(children: spans));
   }
 }
 
@@ -1078,20 +1179,24 @@ class _ProductMessageBubbleState extends State<_ProductMessageBubble> {
       _isLoading = true;
       _product = null;
     });
-    context.read<MarketplaceRepository>().getProductDetail(widget.productId).then((product) {
-      if (mounted) {
-        setState(() {
-          _product = product;
-          _isLoading = false;
+    context
+        .read<MarketplaceRepository>()
+        .getProductDetail(widget.productId)
+        .then((product) {
+          if (mounted) {
+            setState(() {
+              _product = product;
+              _isLoading = false;
+            });
+          }
+        })
+        .catchError((e) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
         });
-      }
-    }).catchError((e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
   }
 
   @override
@@ -1129,14 +1234,19 @@ class _ProductMessageBubbleState extends State<_ProductMessageBubble> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock),
+            builder: (_) => ProductDetailPage(
+              productId: product.id,
+              isStock: product.isStock,
+            ),
           ),
         );
       },
       child: Container(
         width: 210,
         decoration: BoxDecoration(
-          color: widget.isMine ? Colors.white.withValues(alpha: 0.15) : Colors.grey[100],
+          color: widget.isMine
+              ? Colors.white.withValues(alpha: 0.15)
+              : Colors.grey[100],
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.all(8),
@@ -1150,7 +1260,8 @@ class _ProductMessageBubbleState extends State<_ProductMessageBubble> {
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildFallbackIcon(),
                     )
                   : _buildFallbackIcon(),
             ),
@@ -1175,7 +1286,9 @@ class _ProductMessageBubbleState extends State<_ProductMessageBubble> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: widget.isMine ? Colors.white.withValues(alpha: 0.9) : Colors.red[700],
+                      color: widget.isMine
+                          ? Colors.white.withValues(alpha: 0.9)
+                          : Colors.red[700],
                     ),
                   ),
                 ],
@@ -1192,7 +1305,11 @@ class _ProductMessageBubbleState extends State<_ProductMessageBubble> {
       width: 48,
       height: 48,
       color: Colors.grey[300],
-      child: const Icon(Icons.inventory_2_outlined, size: 20, color: Colors.grey),
+      child: const Icon(
+        Icons.inventory_2_outlined,
+        size: 20,
+        color: Colors.grey,
+      ),
     );
   }
 
@@ -1221,7 +1338,10 @@ class _DateSeparator extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             _formatDate(date),
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
           const SizedBox(width: 10),
           const Expanded(child: Divider(color: AppColors.greyDivider)),
@@ -1253,8 +1373,9 @@ class _SkeletonBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment:
-            isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           Container(
             height: 36,

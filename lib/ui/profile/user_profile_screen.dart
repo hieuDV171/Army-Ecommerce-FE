@@ -44,12 +44,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     SessionManager.updateAvatarCacheBustKey();
     final userIdStr = widget.userId;
     final userIdInt = userIdStr != null ? int.tryParse(userIdStr) : null;
-    context.read<AuthBloc>().add(
-      GetUserInfoRequested(userId: userIdInt),
-    );
+    context.read<AuthBloc>().add(GetUserInfoRequested(userId: userIdInt));
   }
 
-  String _valueOf(String? value) => value == null || value.trim().isEmpty ? '-' : value;
+  String _valueOf(String? value) =>
+      value == null || value.trim().isEmpty ? '-' : value;
 
   void _showZoomedAvatar(BuildContext context, String imageUrl, String name) {
     showDialog(
@@ -70,7 +69,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white, size: 80),
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.broken_image,
+                    color: Colors.white,
+                    size: 80,
+                  ),
                 ),
               ),
               Positioned(
@@ -160,10 +163,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -194,7 +194,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           setState(() {
             _errorMessage = state.error;
           });
-          AppSnackBar.showError(context, message: 'Lỗi lấy hồ sơ: ${state.error}');
+          AppSnackBar.showError(
+            context,
+            message: 'Lỗi lấy hồ sơ: ${state.error}',
+          );
         } else if (state is SetUserInfoSuccess) {
           SessionManager.updateAvatarCacheBustKey();
           setState(() {
@@ -230,7 +233,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.person_outline, size: 72, color: Colors.grey),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 72,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           _errorMessage ?? 'Không có dữ liệu hồ sơ',
@@ -253,111 +260,147 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   slivers: [
                     // Header với cover image
                     SliverToBoxAdapter(
-                      child: LayoutBuilder(builder: (context, constraints) {
-                        final double coverHeight = (constraints.maxWidth * 0.42).clamp(180.0, 280.0).toDouble();
-                        const double avatarRadius = 56.0;
-                        const double avatarPadding = 4.0; // padding around avatar to create white border
-                        final double avatarBoxSize = avatarRadius * 2 + avatarPadding * 2; // includes padding
-                        final double halfAvatarBox = avatarBoxSize / 2;
-                        final double headerHeight = coverHeight + halfAvatarBox;
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final double coverHeight =
+                              (constraints.maxWidth * 0.42)
+                                  .clamp(180.0, 280.0)
+                                  .toDouble();
+                          const double avatarRadius = 56.0;
+                          const double avatarPadding =
+                              4.0; // padding around avatar to create white border
+                          final double avatarBoxSize =
+                              avatarRadius * 2 +
+                              avatarPadding * 2; // includes padding
+                          final double halfAvatarBox = avatarBoxSize / 2;
+                          final double headerHeight =
+                              coverHeight + halfAvatarBox;
 
-                        return SizedBox(
-                          width: double.infinity,
-                          height: headerHeight,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                top: 0,
-                                height: coverHeight,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    image: profile.coverImage != null && profile.coverImage!.isNotEmpty
-                                        ? DecorationImage(
-                                            image: SessionManager.getImageProvider(profile.coverImage!),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : null,
-                                    color: profile.coverImage == null || profile.coverImage!.isEmpty
-                                        ? Colors.grey.shade300
-                                        : null,
+                          return SizedBox(
+                            width: double.infinity,
+                            height: headerHeight,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: 0,
+                                  height: coverHeight,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      image:
+                                          profile.coverImage != null &&
+                                              profile.coverImage!.isNotEmpty
+                                          ? DecorationImage(
+                                              image:
+                                                  SessionManager.getImageProvider(
+                                                    profile.coverImage!,
+                                                  ),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : null,
+                                      color:
+                                          profile.coverImage == null ||
+                                              profile.coverImage!.isEmpty
+                                          ? Colors.grey.shade300
+                                          : null,
+                                    ),
                                   ),
                                 ),
-                              ),
 
-                              // Avatar + status indicator
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                top: coverHeight - halfAvatarBox,
-                                child: Center(
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      // Avatar with white border inside a fixed-size box so we can position the dot
-                                      SizedBox(
-                                        width: avatarBoxSize,
-                                        height: avatarBoxSize,
-                                        child: Stack(
-                                          children: [
-                                            // Avatar với viền trắng + khung frame nếu có
-                                            Center(
-                                              child: AvatarWithFrame(
-                                                avatarImage: profile.avatar != null && profile.avatar!.isNotEmpty
-                                                    ? SessionManager.getImageProvider(
-                                                        SessionManager.bustAvatarUrl(profile.avatar!),
-                                                      )
-                                                    : null,
-                                                frameUrl: profile.coverImageWeb,
-                                                radius: avatarRadius,
-                                                fallbackChild: Icon(
-                                                  Icons.person,
-                                                  size: avatarRadius * 0.9,
-                                                  color: Colors.grey,
+                                // Avatar + status indicator
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: coverHeight - halfAvatarBox,
+                                  child: Center(
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        // Avatar with white border inside a fixed-size box so we can position the dot
+                                        SizedBox(
+                                          width: avatarBoxSize,
+                                          height: avatarBoxSize,
+                                          child: Stack(
+                                            children: [
+                                              // Avatar với viền trắng + khung frame nếu có
+                                              Center(
+                                                child: AvatarWithFrame(
+                                                  avatarImage:
+                                                      profile.avatar != null &&
+                                                          profile
+                                                              .avatar!
+                                                              .isNotEmpty
+                                                      ? SessionManager.getImageProvider(
+                                                          SessionManager.bustAvatarUrl(
+                                                            profile.avatar!,
+                                                          ),
+                                                        )
+                                                      : null,
+                                                  frameUrl:
+                                                      profile.coverImageWeb,
+                                                  radius: avatarRadius,
+                                                  fallbackChild: Icon(
+                                                    Icons.person,
+                                                    size: avatarRadius * 0.9,
+                                                    color: Colors.grey,
+                                                  ),
+                                                  onTap: () {
+                                                    if (profile.avatar !=
+                                                            null &&
+                                                        profile
+                                                            .avatar!
+                                                            .isNotEmpty) {
+                                                      _showZoomedAvatar(
+                                                        context,
+                                                        SessionManager.bustAvatarUrl(
+                                                          profile.avatar!,
+                                                        ),
+                                                        profile.username,
+                                                      );
+                                                    }
+                                                  },
                                                 ),
-                                                onTap: () {
-                                                  if (profile.avatar != null && profile.avatar!.isNotEmpty) {
-                                                    _showZoomedAvatar(
-                                                      context,
-                                                      SessionManager.bustAvatarUrl(profile.avatar!),
-                                                      profile.username,
-                                                    );
-                                                  }
-                                                },
                                               ),
-                                            ),
 
-                                            if (profile.online == true)
-                                              const Positioned(
-                                                right: 4,
-                                                bottom: 4,
-                                                child: _OnlineStatusDot(),
-                                              ),
-                                          ],
+                                              if (profile.online == true)
+                                                const Positioned(
+                                                  right: 4,
+                                                  bottom: 4,
+                                                  child: _OnlineStatusDot(),
+                                                ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
 
                     // Username và status
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 16, left: 16, right: 16),
+                        padding: const EdgeInsets.only(
+                          top: 16,
+                          left: 16,
+                          right: 16,
+                        ),
                         child: Center(
                           child: Column(
                             children: [
                               Text(
                                 profile.username,
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -366,16 +409,22 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               ),
                               const SizedBox(height: 16),
                               Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: AppColors.surface,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: AppColors.border),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    _buildStatItem('Đơn đã bán', profile.listing ?? 0),
+                                    _buildStatItem(
+                                      'Đơn đã bán',
+                                      profile.listing ?? 0,
+                                    ),
                                     _buildStatItem(
                                       'Người theo dõi',
                                       profile.followers ?? 0,
@@ -385,7 +434,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                           MaterialPageRoute(
                                             builder: (context) => BlocProvider(
                                               create: (_) => FollowBloc(
-                                                followRepository: context.read<FollowRepository>(),
+                                                followRepository: context
+                                                    .read<FollowRepository>(),
                                               ),
                                               child: FollowersScreen(
                                                 userId: profile.id,
@@ -408,7 +458,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                           MaterialPageRoute(
                                             builder: (context) => BlocProvider(
                                               create: (_) => FollowBloc(
-                                                followRepository: context.read<FollowRepository>(),
+                                                followRepository: context
+                                                    .read<FollowRepository>(),
                                               ),
                                               child: FollowingScreen(
                                                 userId: profile.id,
@@ -439,7 +490,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                              _SectionCard(
+                            _SectionCard(
                               title: 'Thông tin hiển thị',
                               children: [
                                 _infoRow('Username', profile.username),
@@ -466,13 +517,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               children: [
                                 _infoRow('Địa chỉ', profile.address),
                                 _infoRow('Thành phố', profile.city),
-                                _infoRow('Địa chỉ mặc định', _defaultAddressLabel(profile.defaultAddress)),
+                                _infoRow(
+                                  'Địa chỉ mặc định',
+                                  _defaultAddressLabel(profile.defaultAddress),
+                                ),
                               ],
                             ),
                             if (_isOwnProfile) ...[
                               const SizedBox(height: 24),
                               ElevatedButton.icon(
-                                onPressed: isLoading ? null : () => _openEditProfile(profile),
+                                onPressed: isLoading
+                                    ? null
+                                    : () => _openEditProfile(profile),
                                 icon: const Icon(Icons.edit),
                                 label: const Text('Cập nhật hồ sơ'),
                               ),
@@ -505,9 +561,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          Expanded(
-            child: Text(_valueOf(value)),
-          ),
+          Expanded(child: Text(_valueOf(value))),
         ],
       ),
     );
@@ -563,13 +617,15 @@ class _OnlineStatusDotState extends State<_OnlineStatusDot>
       duration: const Duration(milliseconds: 1400),
     )..repeat();
 
-    _scale = Tween<double>(begin: 1.0, end: 2.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 2.8,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _opacity = Tween<double>(begin: 0.8, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.8,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override

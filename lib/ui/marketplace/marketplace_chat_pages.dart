@@ -21,9 +21,9 @@ class ConversationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ChatBloc(
-        marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(LoadConversationsRequested()),
+      create: (context) =>
+          ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>())
+            ..add(LoadConversationsRequested()),
       child: const _ConversationListView(),
     );
   }
@@ -77,7 +77,7 @@ class _ConversationListViewState extends State<_ConversationListView> {
     if (state is ChatInitial || state is ChatLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     List<ConversationModel> conversations = [];
     bool isLoadingMore = false;
     String? errorMessage;
@@ -94,10 +94,11 @@ class _ConversationListViewState extends State<_ConversationListView> {
     if (errorMessage != null && conversations.isEmpty) {
       return ErrorState(
         message: errorMessage,
-        onRetry: () => context.read<ChatBloc>().add(LoadConversationsRequested()),
+        onRetry: () =>
+            context.read<ChatBloc>().add(LoadConversationsRequested()),
       );
     }
-    
+
     if (conversations.isEmpty && state is! ChatLoadingMore) {
       return const EmptyState(title: 'Chưa có cuộc trò chuyện');
     }
@@ -116,15 +117,23 @@ class _ConversationListViewState extends State<_ConversationListView> {
             return const Center(child: CircularProgressIndicator());
           }
           final conversation = conversations[index];
-          final unread = (conversation.lastMessage?.unread ?? false) || conversation.numNewMessage > 0;
-          
+          final unread =
+              (conversation.lastMessage?.unread ?? false) ||
+              conversation.numNewMessage > 0;
+
           return ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
-              child: Icon(unread ? Icons.mark_chat_unread : Icons.chat_outlined),
+              child: Icon(
+                unread ? Icons.mark_chat_unread : Icons.chat_outlined,
+              ),
             ),
             title: Text(conversation.partner.username),
-            subtitle: Text(conversation.lastMessage?.message ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              conversation.lastMessage?.message ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: unread
                 ? const Icon(Icons.circle, size: 10, color: AppColors.primary)
                 : null,
@@ -175,12 +184,15 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ChatBloc(
-        marketplaceRepository: context.read<MarketplaceRepository>(),
-      )..add(LoadMessagesRequested(
-          partnerId: widget.partnerId,
-          conversationId: widget.conversationId,
-        ))..add(MarkMessageReadRequested(partnerId: widget.partnerId)),
+      create: (context) =>
+          ChatBloc(marketplaceRepository: context.read<MarketplaceRepository>())
+            ..add(
+              LoadMessagesRequested(
+                partnerId: widget.partnerId,
+                conversationId: widget.conversationId,
+              ),
+            )
+            ..add(MarkMessageReadRequested(partnerId: widget.partnerId)),
       child: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatFailure) {
@@ -198,9 +210,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     title: const Text('Sản phẩm liên quan'),
                     subtitle: Text('Mã sản phẩm: ${widget.productId}'),
                   ),
-                Expanded(
-                  child: _buildMessageList(context, state),
-                ),
+                Expanded(child: _buildMessageList(context, state)),
                 SafeArea(
                   top: false,
                   child: Padding(
@@ -219,11 +229,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                           onPressed: () {
                             final text = _messageController.text.trim();
                             if (text.isNotEmpty) {
-                              context.read<ChatBloc>().add(SendMessageRequested(
-                                    toId: widget.partnerId,
-                                    message: text,
-                                    productId: widget.productId ?? '0',
-                                  ));
+                              context.read<ChatBloc>().add(
+                                SendMessageRequested(
+                                  toId: widget.partnerId,
+                                  message: text,
+                                  productId: widget.productId ?? '0',
+                                ),
+                              );
                               _messageController.clear();
                             }
                           },
@@ -262,9 +274,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
-        
+
         final isMine = message.sender.id.toString() != widget.partnerId;
-        
+
         return Align(
           alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(

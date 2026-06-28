@@ -9,7 +9,8 @@ import 'package:dio/dio.dart';
 class SettingRemoteDataSource {
   final DioClient _dioClient;
 
-  SettingRemoteDataSource({required DioClient dioClient}) : _dioClient = dioClient;
+  SettingRemoteDataSource({required DioClient dioClient})
+    : _dioClient = dioClient;
 
   Future<ApiResponse<PushSettingModel>> getPushSetting() async {
     try {
@@ -17,14 +18,12 @@ class SettingRemoteDataSource {
 
       final response = await _dioClient.dio.post(
         ApiPaths.getPushSetting,
-        data: {
-          'token': token
-        },
+        data: {'token': token},
       );
 
       return ApiResponse<PushSettingModel>.fromJson(
-          response.data,
-              (json) => PushSettingModel.fromJson(json as Map<String, dynamic>)
+        response.data,
+        (json) => PushSettingModel.fromJson(json as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));
@@ -43,9 +42,7 @@ class SettingRemoteDataSource {
   }) async {
     try {
       final token = await SessionManager.getToken();
-      final request = <String, dynamic>{
-        'token': token ?? '',
-      };
+      final request = <String, dynamic>{'token': token ?? ''};
       if (like != null) request['like'] = like;
       if (comment != null) request['comment'] = comment;
       if (transaction != null) request['transaction'] = transaction;
@@ -54,13 +51,13 @@ class SettingRemoteDataSource {
       if (soundDefault != null) request['sound_default'] = soundDefault;
 
       final response = await _dioClient.dio.post(
-          ApiPaths.setPushSetting,
-          data: request
+        ApiPaths.setPushSetting,
+        data: request,
       );
 
       return ApiResponse<String?>.fromJson(
         response.data,
-            (json) => json?.toString(),
+        (json) => json?.toString(),
       );
     } on DioException catch (e) {
       throw Exception(ApiException.getMessage(e));

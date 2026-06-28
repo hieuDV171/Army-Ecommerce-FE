@@ -14,9 +14,17 @@ import 'package:army_ecommerce/models/product_model.dart';
 import 'package:army_ecommerce/models/wallet_model.dart';
 
 abstract class MarketplaceRepository {
-  Future<List<CategoryModel>> getCategories({int? parentId, int? index, int? count});
+  Future<List<CategoryModel>> getCategories({
+    int? parentId,
+    int? index,
+    int? count,
+  });
 
-  Future<List<BrandModel>> getBrands({String? categoryId, int index = 0, int count = 20});
+  Future<List<BrandModel>> getBrands({
+    String? categoryId,
+    int index = 0,
+    int count = 20,
+  });
 
   Future<ProductListResult> getListProducts({
     int index = 0,
@@ -48,18 +56,37 @@ abstract class MarketplaceRepository {
 
   Future<void> likeProduct(String productId);
 
-  Future<List<CommentModel>> getComments(String productId, {int index = 0, int count = 20});
+  Future<List<CommentModel>> getComments(
+    String productId, {
+    int index = 0,
+    int count = 20,
+  });
 
   Future<void> sendComment(String productId, String content);
 
   Future<void> reportProduct(String productId, String subject, String details);
 
   // Ratings
-  Future<List<RateModel>> getRates({String? userId, String? productId, int? level, int index = 0, int count = 20});
+  Future<List<RateModel>> getRates({
+    String? userId,
+    String? productId,
+    int? level,
+    int index = 0,
+    int count = 20,
+  });
 
-  Future<void> setRates({required String userId, required int level, required String content, String? productId, String? purchaseId});
+  Future<void> setRates({
+    required String userId,
+    required int level,
+    required String content,
+    String? productId,
+    String? purchaseId,
+  });
 
-  Future<List<MarketplaceItem>> getSavedSearches({int index = 0, int count = 20});
+  Future<List<MarketplaceItem>> getSavedSearches({
+    int index = 0,
+    int count = 20,
+  });
 
   Future<void> saveSearch(String keyword);
 
@@ -89,7 +116,11 @@ abstract class MarketplaceRepository {
 
   Future<List<WardModel>> getWards(int provinceId);
 
-  Future<List<OrderModel>> getOrders({String? state, int index = 0, int count = 20});
+  Future<List<OrderModel>> getOrders({
+    String? state,
+    int index = 0,
+    int count = 20,
+  });
   Future<List<OrderModel>> getOrdersSeller({
     String? state,
     int index = 0,
@@ -116,7 +147,10 @@ abstract class MarketplaceRepository {
   Future<void> createOrder(Map<String, dynamic> data);
 
   /// Edit purchase (buyer-side) when the order hasn't been shipped yet.
-  Future<Map<String, dynamic>> editOrder(String purchaseId, Map<String, dynamic> data);
+  Future<Map<String, dynamic>> editOrder(
+    String purchaseId,
+    Map<String, dynamic> data,
+  );
 
   /// Seller marks a purchase as shipped.
   Future<void> sellerMarkAsShipped(String purchaseId, {String? buyerId});
@@ -133,7 +167,10 @@ abstract class MarketplaceRepository {
 
   Future<void> refundOrder(String purchaseId, {String? reason});
 
-  Future<ConversationListResponse> getConversations({int index = 0, int count = 20});
+  Future<ConversationListResponse> getConversations({
+    int index = 0,
+    int count = 20,
+  });
 
   Future<MessageListResponse> getConversation({
     required String partnerId,
@@ -165,7 +202,10 @@ abstract class MarketplaceRepository {
 
   Future<void> markNotificationRead(String notificationId);
 
-  Future<List<WalletHistoryModel>> getBalanceHistory({int index = 0, int count = 20});
+  Future<List<WalletHistoryModel>> getBalanceHistory({
+    int index = 0,
+    int count = 20,
+  });
 
   Future<List<MarketplaceItem>> getGenericList(
     String path, {
@@ -207,9 +247,7 @@ abstract class MarketplaceRepository {
 
   /// [STUB — BE chưa implement] Tải video quy đổi điểm thưởng.
   /// Endpoint dự kiến: POST /media/upload_video
-  Future<UploadVideoResponseModel> uploadVideo({
-    required File videoFile,
-  });
+  Future<UploadVideoResponseModel> uploadVideo({required File videoFile});
 
   /// Tải ảnh/tập tin sản phẩm lên máy chủ.
   Future<String?> uploadFile(File file);

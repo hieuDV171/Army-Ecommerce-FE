@@ -27,7 +27,11 @@ class SearchPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Row(
             children: [
-              const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+              const Icon(
+                Icons.search,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -35,8 +39,8 @@ class SearchPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],

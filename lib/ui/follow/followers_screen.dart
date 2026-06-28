@@ -11,7 +11,8 @@ import '../util/constants/app_colors.dart';
 import 'package:army_ecommerce/ui/util/theme/special_app_theme.dart';
 import 'package:army_ecommerce/ui/util/widgets/app_snackbar.dart';
 
-Color _themePrimaryColor(BuildContext context) => context.specialTheme.primaryDarkColor;
+Color _themePrimaryColor(BuildContext context) =>
+    context.specialTheme.primaryDarkColor;
 const Color _greyBackground = AppColors.greyBackground;
 
 class FollowersScreen extends StatefulWidget {
@@ -36,7 +37,9 @@ class _FollowersScreenState extends State<FollowersScreen> {
   void initState() {
     super.initState();
     // Tải danh sách người theo dõi khi màn hình được mở
-    context.read<FollowBloc>().add(LoadFollowersRequested(userId: widget.userId));
+    context.read<FollowBloc>().add(
+      LoadFollowersRequested(userId: widget.userId),
+    );
     _scrollController.addListener(_onScroll);
   }
 
@@ -51,13 +54,17 @@ class _FollowersScreenState extends State<FollowersScreen> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     if (currentScroll >= maxScroll - 200) {
-      context.read<FollowBloc>().add(LoadMoreFollowersRequested(userId: widget.userId));
+      context.read<FollowBloc>().add(
+        LoadMoreFollowersRequested(userId: widget.userId),
+      );
     }
   }
 
   // Xử lý kéo để làm mới danh sách
   Future<void> _onRefresh() async {
-    context.read<FollowBloc>().add(LoadFollowersRequested(userId: widget.userId));
+    context.read<FollowBloc>().add(
+      LoadFollowersRequested(userId: widget.userId),
+    );
     await Future.delayed(const Duration(milliseconds: 800));
   }
 
@@ -101,7 +108,12 @@ class _FollowersScreenState extends State<FollowersScreen> {
             final message = state.isFollowed
                 ? 'Theo dõi ${state.username} thành công'
                 : 'Đã hủy theo dõi ${state.username}';
-            AppSnackBar.show(context, message: message, backgroundColor: _themePrimaryColor(context), duration: Duration(seconds: 2));
+            AppSnackBar.show(
+              context,
+              message: message,
+              backgroundColor: _themePrimaryColor(context),
+              duration: Duration(seconds: 2),
+            );
           } else if (state is FollowFailure) {
             if (state.code == ResponseCode.notAccess.code ||
                 state.error == ResponseCode.notAccess.message ||
@@ -158,7 +170,9 @@ class _FollowersScreenState extends State<FollowersScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: CircularProgressIndicator(color: _themePrimaryColor(context)),
+                      child: CircularProgressIndicator(
+                        color: _themePrimaryColor(context),
+                      ),
                     ),
                   );
                 }
@@ -167,17 +181,17 @@ class _FollowersScreenState extends State<FollowersScreen> {
                   user: followers[index],
                   onFollowToggle: (u, action) {
                     context.read<FollowBloc>().add(
-                          FollowUserRequested(
-                            followeeId: u.id,
-                            username: u.username,
-                            action: action,
-                          ),
-                        );
+                      FollowUserRequested(
+                        followeeId: u.id,
+                        username: u.username,
+                        action: action,
+                      ),
+                    );
                   },
                   onRefresh: () {
                     context.read<FollowBloc>().add(
-                          LoadFollowersRequested(userId: widget.userId),
-                        );
+                      LoadFollowersRequested(userId: widget.userId),
+                    );
                   },
                 );
               },
@@ -273,7 +287,9 @@ class _UserFollowItemState extends State<_UserFollowItem> {
             onPressed: () => Navigator.pop(dialogContext, false),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.grey),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
             child: const Text('Hủy', style: TextStyle(color: Colors.black54)),
           ),
@@ -282,9 +298,14 @@ class _UserFollowItemState extends State<_UserFollowItem> {
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: _themePrimaryColor(context),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-            child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Xác nhận',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -325,7 +346,9 @@ class _UserFollowItemState extends State<_UserFollowItem> {
                 ? context.specialTheme.primaryGradient
                 : null,
             color: _isFollowed
-                ? (context.specialTheme.useGradient ? null : context.specialTheme.primaryDarkColor)
+                ? (context.specialTheme.useGradient
+                      ? null
+                      : context.specialTheme.primaryDarkColor)
                 : Colors.white,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
@@ -339,7 +362,9 @@ class _UserFollowItemState extends State<_UserFollowItem> {
       fontWeight: FontWeight.w500,
       color: isMe
           ? Colors.grey[500]
-          : (_isFollowed ? Colors.white : context.specialTheme.primaryDarkColor),
+          : (_isFollowed
+                ? Colors.white
+                : context.specialTheme.primaryDarkColor),
     );
 
     return Container(
@@ -373,10 +398,14 @@ class _UserFollowItemState extends State<_UserFollowItem> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.grey[200],
-                    backgroundImage: (widget.user.avatar != null && widget.user.avatar!.isNotEmpty)
+                    backgroundImage:
+                        (widget.user.avatar != null &&
+                            widget.user.avatar!.isNotEmpty)
                         ? NetworkImage(widget.user.avatar!)
                         : null,
-                    child: (widget.user.avatar == null || widget.user.avatar!.isEmpty)
+                    child:
+                        (widget.user.avatar == null ||
+                            widget.user.avatar!.isEmpty)
                         ? Icon(Icons.person, size: 28, color: Colors.grey[500])
                         : null,
                   ),
@@ -409,7 +438,9 @@ class _UserFollowItemState extends State<_UserFollowItem> {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                isMe ? 'Theo dõi' : (_isFollowed ? 'Đang theo dõi' : 'Theo dõi'),
+                isMe
+                    ? 'Theo dõi'
+                    : (_isFollowed ? 'Đang theo dõi' : 'Theo dõi'),
                 style: textStyle,
               ),
             ),

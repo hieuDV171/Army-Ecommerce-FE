@@ -37,18 +37,18 @@ class AddressAdded extends AddressEvent {
 
   @override
   List<Object?> get props => [
-        address,
-        fullAddress,
-        receiverName,
-        phone,
-        isDefault,
-        addressDetail,
-        province,
-        district,
-        latitude,
-        longitude,
-        addressId
-      ];
+    address,
+    fullAddress,
+    receiverName,
+    phone,
+    isDefault,
+    addressDetail,
+    province,
+    district,
+    latitude,
+    longitude,
+    addressId,
+  ];
 }
 
 class AddressUpdated extends AddressEvent {
@@ -84,20 +84,20 @@ class AddressUpdated extends AddressEvent {
 
   @override
   List<Object?> get props => [
-        id,
-        address,
-        fullAddress,
-        receiverName,
-        phone,
-        isDefault,
-        addressDetail,
-        province,
-        district,
-        latitude,
-        longitude,
-        addressId,
-        originalAddress,
-      ];
+    id,
+    address,
+    fullAddress,
+    receiverName,
+    phone,
+    isDefault,
+    addressDetail,
+    province,
+    district,
+    latitude,
+    longitude,
+    addressId,
+    originalAddress,
+  ];
 }
 
 class AddressDeleted extends AddressEvent {

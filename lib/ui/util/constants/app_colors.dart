@@ -39,11 +39,7 @@ class AppColors {
 
   // Gradient themes for holidays
   static const hologramGradient = LinearGradient(
-    colors: [
-      Color(0xFFE0C3FC),
-      Color(0xFF8EC5FC),
-      Color(0xFFFBC2EB),
-    ],
+    colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC), Color(0xFFFBC2EB)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

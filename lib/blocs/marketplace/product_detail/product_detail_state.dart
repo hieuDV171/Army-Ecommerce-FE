@@ -57,10 +57,13 @@ class ProductDetailState extends Equatable {
       comments: comments ?? this.comments,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,
-      isFetchingMoreComments: isFetchingMoreComments ?? this.isFetchingMoreComments,
+      isFetchingMoreComments:
+          isFetchingMoreComments ?? this.isFetchingMoreComments,
       hasMoreComments: hasMoreComments ?? this.hasMoreComments,
       errorMessage: clearMessages ? null : errorMessage ?? this.errorMessage,
-      successMessage: clearMessages ? null : successMessage ?? this.successMessage,
+      successMessage: clearMessages
+          ? null
+          : successMessage ?? this.successMessage,
       rates: rates ?? this.rates,
       isLoadingRates: isLoadingRates ?? this.isLoadingRates,
       isFetchingMoreRates: isFetchingMoreRates ?? this.isFetchingMoreRates,
@@ -72,19 +75,19 @@ class ProductDetailState extends Equatable {
 
   @override
   List<Object?> get props => [
-        product,
-        comments,
-        isLoading,
-        isSubmitting,
-        isFetchingMoreComments,
-        hasMoreComments,
-        errorMessage,
-        successMessage,
-        rates,
-        isLoadingRates,
-        isFetchingMoreRates,
-        hasMoreRates,
-        selectedStarFilter,
-        isDeleted,
-      ];
+    product,
+    comments,
+    isLoading,
+    isSubmitting,
+    isFetchingMoreComments,
+    hasMoreComments,
+    errorMessage,
+    successMessage,
+    rates,
+    isLoadingRates,
+    isFetchingMoreRates,
+    hasMoreRates,
+    selectedStarFilter,
+    isDeleted,
+  ];
 }

@@ -34,8 +34,5 @@ class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
-  static const button = TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w700,
-  );
+  static const button = TextStyle(fontSize: 15, fontWeight: FontWeight.w700);
 }

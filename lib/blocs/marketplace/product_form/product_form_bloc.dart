@@ -7,7 +7,7 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
   final MarketplaceRepository marketplaceRepository;
 
   ProductFormBloc({required this.marketplaceRepository})
-      : super(const ProductFormState()) {
+    : super(const ProductFormState()) {
     on<ProductFormMetadataRequested>(_onMetadataRequested);
     on<ProductFormCategoriesLoadMoreRequested>(_onCategoriesLoadMoreRequested);
     on<ProductFormBrandsRequested>(_onBrandsRequested);
@@ -18,10 +18,21 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
     ProductFormMetadataRequested event,
     Emitter<ProductFormState> emit,
   ) async {
-    emit(state.copyWith(isLoadingMetadata: true, clearMessages: true, categoriesIndex: 0, hasReachedEndCategories: false));
+    emit(
+      state.copyWith(
+        isLoadingMetadata: true,
+        clearMessages: true,
+        categoriesIndex: 0,
+        hasReachedEndCategories: false,
+      ),
+    );
     try {
       final results = await Future.wait([
-        marketplaceRepository.getCategories(parentId: 0, index: 0, count: state.categoriesCount),
+        marketplaceRepository.getCategories(
+          parentId: 0,
+          index: 0,
+          count: state.categoriesCount,
+        ),
         marketplaceRepository.getAddresses(),
       ]);
 
@@ -39,7 +50,12 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingMetadata: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isLoadingMetadata: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -47,7 +63,10 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
     ProductFormCategoriesLoadMoreRequested event,
     Emitter<ProductFormState> emit,
   ) async {
-    if (state.isLoadingMoreCategories || state.hasReachedEndCategories || state.isLoadingMetadata) return;
+    if (state.isLoadingMoreCategories ||
+        state.hasReachedEndCategories ||
+        state.isLoadingMetadata)
+      return;
     emit(state.copyWith(isLoadingMoreCategories: true, clearMessages: true));
     try {
       final more = await marketplaceRepository.getCategories(
@@ -72,7 +91,12 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingMoreCategories: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          isLoadingMoreCategories: false,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -80,7 +104,13 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
     ProductFormBrandsRequested event,
     Emitter<ProductFormState> emit,
   ) async {
-    emit(state.copyWith(isLoadingBrands: true, clearMessages: true, brands: const []));
+    emit(
+      state.copyWith(
+        isLoadingBrands: true,
+        clearMessages: true,
+        brands: const [],
+      ),
+    );
     try {
       final brands = await marketplaceRepository.getBrands(
         categoryId: event.categoryId,
@@ -95,7 +125,9 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(isLoadingBrands: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(isLoadingBrands: false, errorMessage: error.toString()),
+      );
     }
   }
 
@@ -116,8 +148,12 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
 
       // 2. Prepare request payload
       final intWarehouseId = int.tryParse(event.warehouseId) ?? 0;
-      final intCategoryId = event.categoryId != null ? int.tryParse(event.categoryId!) : null;
-      final intBrandId = event.brandId != null ? int.tryParse(event.brandId!) : null;
+      final intCategoryId = event.categoryId != null
+          ? int.tryParse(event.categoryId!)
+          : null;
+      final intBrandId = event.brandId != null
+          ? int.tryParse(event.brandId!)
+          : null;
 
       final variantsJson = event.variants.map((v) {
         final map = <String, dynamic>{

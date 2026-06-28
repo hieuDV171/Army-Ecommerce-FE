@@ -66,7 +66,9 @@ class _NewsTabViewState extends State<_NewsTabView> {
         // Chỉ hiện loading xoay nếu danh sách đang trống hoàn toàn (lần đầu vào app)
         if (state.isInitialLoading && state.items.isEmpty) {
           return Center(
-            child: CircularProgressIndicator(color: context.specialTheme.primaryColor),
+            child: CircularProgressIndicator(
+              color: context.specialTheme.primaryColor,
+            ),
           );
         }
 
@@ -138,7 +140,10 @@ class _NewsTabViewState extends State<_NewsTabView> {
                           onTap: () => _openDetail(context, item),
                         );
                       },
-                      childCount: state.items.length - 2 + (state.isLoadingMore ? 1 : 0),
+                      childCount:
+                          state.items.length -
+                          2 +
+                          (state.isLoadingMore ? 1 : 0),
                     ),
                   ),
                 ),
@@ -167,10 +172,15 @@ class _NewsTabViewState extends State<_NewsTabView> {
         children: [
           Icon(Icons.error_outline, size: 56, color: Colors.grey[400]),
           const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600])),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600]),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => context.read<SimpleListBloc>().add(SimpleListRequested()),
+            onPressed: () =>
+                context.read<SimpleListBloc>().add(SimpleListRequested()),
             child: const Text('Thử lại'),
           ),
         ],
@@ -195,7 +205,10 @@ class _NewsTabViewState extends State<_NewsTabView> {
               children: [
                 Icon(Icons.article_outlined, size: 72, color: Colors.grey[300]),
                 const SizedBox(height: 12),
-                Text('Chưa có tin tức', style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+                Text(
+                  'Chưa có tin tức',
+                  style: TextStyle(fontSize: 15, color: Colors.grey[500]),
+                ),
               ],
             ),
           ),
@@ -243,7 +256,9 @@ class _NewsCardLarge extends StatelessWidget {
             children: [
               // Ảnh bìa
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
                 child: SizedBox(
                   height: 180,
                   width: double.infinity,
@@ -251,7 +266,8 @@ class _NewsCardLarge extends StatelessWidget {
                       ? Image.network(
                           item.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, e, st) => _buildImageFallback(context),
+                          errorBuilder: (context, e, st) =>
+                              _buildImageFallback(context),
                         )
                       : _buildImageFallback(context),
                 ),
@@ -278,18 +294,29 @@ class _NewsCardLarge extends StatelessWidget {
                         item.subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.4),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
                       ),
                     ],
                     if (timeText.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.schedule_outlined, size: 13, color: Colors.grey[400]),
+                          Icon(
+                            Icons.schedule_outlined,
+                            size: 13,
+                            color: Colors.grey[400],
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             timeText,
-                            style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[400],
+                            ),
                           ),
                         ],
                       ),
@@ -371,7 +398,11 @@ class _NewsListTile extends StatelessWidget {
                     item.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.35),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
                   ),
                   if (item.subtitle.isNotEmpty) ...[
                     const SizedBox(height: 3),

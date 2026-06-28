@@ -118,9 +118,7 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                   AppSpacing.sm,
                 ),
                 sliver: SliverToBoxAdapter(
-                  child: SectionHeader(
-                    title: 'Gợi ý hôm nay',
-                  ),
+                  child: SectionHeader(title: 'Gợi ý hôm nay'),
                 ),
               ),
               if (state.products.isEmpty)
@@ -128,7 +126,9 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                   hasScrollBody: false,
                   child: Center(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.lg,
+                      ),
                       child: EmptyState(
                         title: 'Chưa có sản phẩm nào',
                         message:
@@ -147,19 +147,22 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
                   ),
                   sliver: SliverGrid.builder(
                     itemCount: state.products.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: AppSpacing.md,
-                      crossAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 0.51,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 0.51,
+                        ),
                     itemBuilder: (context, index) {
                       final product = state.products[index];
                       return ProductCard(
                         product: productCardDataFromModel(product),
                         onTap: () => _openProduct(context, product),
                         onLikeTap: () {
-                          context.read<HomeBloc>().add(HomeProductLikeToggled(product.id));
+                          context.read<HomeBloc>().add(
+                            HomeProductLikeToggled(product.id),
+                          );
                         },
                       );
                     },
@@ -182,7 +185,10 @@ class _MarketplaceHomeBodyState extends State<MarketplaceHomeBody> {
   void _openProduct(BuildContext context, ProductModel product) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: product.id, isStock: product.isStock)),
+      MaterialPageRoute(
+        builder: (_) =>
+            ProductDetailPage(productId: product.id, isStock: product.isStock),
+      ),
     );
   }
 }
@@ -233,13 +239,17 @@ class _HomeHeader extends StatelessWidget {
                           MaterialPageRoute(
                             builder: (_) => BlocProvider.value(
                               value: chatBloc,
-                              child: ConversationListScreen(currentUserId: userId),
+                              child: ConversationListScreen(
+                                currentUserId: userId,
+                              ),
                             ),
                           ),
                         ).then((_) {
                           // Làm mới badge khi quay lại từ màn hình chat
                           if (ctx.mounted && token.isNotEmpty) {
-                            chatBloc.add(LoadConversationsRequested(isSilent: true));
+                            chatBloc.add(
+                              LoadConversationsRequested(isSilent: true),
+                            );
                           }
                         });
                       }
@@ -247,7 +257,10 @@ class _HomeHeader extends StatelessWidget {
                     icon: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                        const Icon(
+                          Icons.chat_bubble_outline,
+                          color: Colors.white,
+                        ),
                         if (unread > 0)
                           Positioned(
                             right: -6,
@@ -259,7 +272,9 @@ class _HomeHeader extends StatelessWidget {
                               ),
                               decoration: const BoxDecoration(
                                 color: Color.fromARGB(255, 255, 0, 0),
-                                borderRadius: BorderRadius.all(Radius.circular(8)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(8),
+                                ),
                               ),
                               constraints: const BoxConstraints(minWidth: 16),
                               child: Text(
@@ -312,7 +327,11 @@ class _HomeHeader extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.account_balance_wallet_outlined, color: Colors.white, size: 18),
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   SizedBox(width: AppSpacing.sm),
                   Text('Ví quân nhu', style: TextStyle(color: Colors.white)),
                 ],
@@ -376,8 +395,11 @@ class _HomeCategoriesState extends State<_HomeCategories> {
                 return ListView.separated(
                   controller: _scrollController,
                   scrollDirection: Axis.horizontal,
-                  itemCount: widget.categories.length + (state.isLoadingMoreCategories ? 1 : 0),
-                  separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+                  itemCount:
+                      widget.categories.length +
+                      (state.isLoadingMoreCategories ? 1 : 0),
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     if (index >= widget.categories.length) {
                       return const SizedBox(
@@ -404,20 +426,27 @@ class _HomeCategoriesState extends State<_HomeCategories> {
                               final specialTheme = context.specialTheme;
                               final iconWidget = Icon(
                                 Icons.category_outlined,
-                                color: specialTheme.useGradient ? Colors.white : specialTheme.primaryColor,
+                                color: specialTheme.useGradient
+                                    ? Colors.white
+                                    : specialTheme.primaryColor,
                               );
                               return Container(
                                 width: 54,
                                 height: 54,
                                 decoration: BoxDecoration(
-                                  color: specialTheme.primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                                  color: specialTheme.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.lg,
+                                  ),
                                 ),
                                 child: Center(
                                   child: specialTheme.useGradient
                                       ? ShaderMask(
                                           shaderCallback: (bounds) =>
-                                              specialTheme.primaryGradient!.createShader(bounds),
+                                              specialTheme.primaryGradient!
+                                                  .createShader(bounds),
                                           child: iconWidget,
                                         )
                                       : iconWidget,

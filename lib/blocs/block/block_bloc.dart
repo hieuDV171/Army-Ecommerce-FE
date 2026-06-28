@@ -32,11 +32,13 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
       final responseCode = ResponseCode.fromCode(response.code);
 
       if (responseCode == ResponseCode.ok) {
-        emit(BlockActionSuccess(
-          userId: event.userId,
-          username: event.username,
-          isBlocked: event.action == 'block',
-        ));
+        emit(
+          BlockActionSuccess(
+            userId: event.userId,
+            username: event.username,
+            isBlocked: event.action == 'block',
+          ),
+        );
       } else {
         // Mã 1010: hành động đã thực hiện trước đó - không cần báo ra UI
         if (responseCode == ResponseCode.actionDone) {
@@ -47,7 +49,9 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
         emit(BlockFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(BlockFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        BlockFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 
@@ -70,13 +74,20 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
       if (responseCode == ResponseCode.ok) {
         final list = response.data ?? [];
         _index += 1;
-        emit(BlockedUsersLoaded(blockedUsers: list, hasMore: list.length == _pageSize));
+        emit(
+          BlockedUsersLoaded(
+            blockedUsers: list,
+            hasMore: list.length == _pageSize,
+          ),
+        );
       } else {
         logger.w('BlockBloc: getListBlocks failed code=${response.code}');
         emit(BlockFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(BlockFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        BlockFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 
@@ -102,17 +113,31 @@ class BlockBloc extends Bloc<BlockEvent, BlockState> {
         final newItems = response.data ?? [];
         _index += 1;
         final updatedList = [...currentState.blockedUsers, ...newItems];
-        emit(BlockedUsersLoaded(blockedUsers: updatedList, hasMore: newItems.length == _pageSize));
+        emit(
+          BlockedUsersLoaded(
+            blockedUsers: updatedList,
+            hasMore: newItems.length == _pageSize,
+          ),
+        );
       } else {
         if (responseCode == ResponseCode.noData) {
-          emit(BlockedUsersLoaded(blockedUsers: currentState.blockedUsers, hasMore: false));
+          emit(
+            BlockedUsersLoaded(
+              blockedUsers: currentState.blockedUsers,
+              hasMore: false,
+            ),
+          );
           return;
         }
-        logger.w('BlockBloc: loadMore blocked users failed code=${response.code}');
+        logger.w(
+          'BlockBloc: loadMore blocked users failed code=${response.code}',
+        );
         emit(BlockFailure(error: response.message, code: response.code));
       }
     } catch (e) {
-      emit(BlockFailure(error: e.toString(), code: ResponseCode.exception.code));
+      emit(
+        BlockFailure(error: e.toString(), code: ResponseCode.exception.code),
+      );
     }
   }
 }

@@ -61,7 +61,10 @@ class _RewardScreenState extends State<RewardScreen>
           bottom: TabBar(
             controller: _tabController,
             tabs: const [
-              Tab(icon: Icon(Icons.cloud_upload_outlined), text: 'Gửi chiến tích'),
+              Tab(
+                icon: Icon(Icons.cloud_upload_outlined),
+                text: 'Gửi chiến tích',
+              ),
               Tab(icon: Icon(Icons.feedback_outlined), text: 'Khiếu nại'),
               Tab(icon: Icon(Icons.history), text: 'Lịch sử'),
             ],
@@ -113,7 +116,8 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
       if (mounted) {
         AppSnackBar.showError(
           context,
-          message: 'Dung lượng ${isImage ? "hình ảnh" : "video"} vượt quá giới hạn cho phép (tối đa $limitStr)',
+          message:
+              'Dung lượng ${isImage ? "hình ảnh" : "video"} vượt quá giới hạn cho phép (tối đa $limitStr)',
         );
       }
       return false;
@@ -160,20 +164,27 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
       return;
     }
     if (_mediaFile == null) {
-      AppSnackBar.showError(context, message: 'Vui lòng chọn hình ảnh hoặc video minh chứng');
+      AppSnackBar.showError(
+        context,
+        message: 'Vui lòng chọn hình ảnh hoặc video minh chứng',
+      );
       return;
     }
 
     context.read<RewardBloc>().add(
-          RewardProofSubmitted(
-            filePath: _mediaFile!.path,
-            description: description,
-            isImage: _isImage,
-          ),
-        );
+      RewardProofSubmitted(
+        filePath: _mediaFile!.path,
+        description: description,
+        isImage: _isImage,
+      ),
+    );
   }
 
-  void _showRewardResultDialog(BuildContext context, num aiScore, num rewardCoin) {
+  void _showRewardResultDialog(
+    BuildContext context,
+    num aiScore,
+    num rewardCoin,
+  ) {
     final success = aiScore > 0;
     showDialog<void>(
       context: context,
@@ -181,7 +192,9 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
       builder: (BuildContext context) {
         final formatter = NumberFormat.decimalPattern('vi_VN');
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
           elevation: 10,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xl),
@@ -191,7 +204,9 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: success ? Colors.green.withValues(alpha: 0.12) : Colors.red.withValues(alpha: 0.12),
+                    color: success
+                        ? Colors.green.withValues(alpha: 0.12)
+                        : Colors.red.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -215,22 +230,35 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
                   success
                       ? 'AI xác nhận chiến tích của bạn trùng khớp với mô tả.'
                       : 'AI xác nhận nội dung không khớp với mô tả chiến tích đã nhập.',
-                  style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 if (success && rewardCoin > 0) ...[
                   const SizedBox(height: AppSpacing.lg),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.4),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.monetization_on, color: Colors.amber, size: 24),
+                        const Icon(
+                          Icons.monetization_on,
+                          color: Colors.amber,
+                          size: 24,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
                           '+${formatter.format(rewardCoin)} xu',
@@ -250,12 +278,21 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: success ? Colors.green : Colors.grey[800],
+                      backgroundColor: success
+                          ? Colors.green
+                          : Colors.grey[800],
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
+                      ),
                     ),
-                    child: const Text('Xác nhận', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Xác nhận',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -272,7 +309,9 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
 
     return BlocConsumer<RewardBloc, RewardState>(
       listener: (context, state) {
-        if (state.successMessage != null && state.proofResult != null && state.proofResult!.isNotEmpty) {
+        if (state.successMessage != null &&
+            state.proofResult != null &&
+            state.proofResult!.isNotEmpty) {
           final proof = state.proofResult!['proof'] as Map<String, dynamic>?;
           if (proof != null) {
             final aiScore = proof['ai_score'] as num? ?? -1;
@@ -285,14 +324,18 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
           setState(() {
             _mediaFile = null;
           });
-          context.read<RewardBloc>().add(const RewardHistoryRequested(isRefresh: true));
+          context.read<RewardBloc>().add(
+            const RewardHistoryRequested(isRefresh: true),
+          );
         } else if (state.successMessage != null) {
           AppSnackBar.showSuccess(context, message: state.successMessage!);
           _descriptionCtrl.clear();
           setState(() {
             _mediaFile = null;
           });
-          context.read<RewardBloc>().add(const RewardHistoryRequested(isRefresh: true));
+          context.read<RewardBloc>().add(
+            const RewardHistoryRequested(isRefresh: true),
+          );
         } else if (state.errorMessage != null && state.isSubmittingProof) {
           AppSnackBar.showError(context, message: state.errorMessage!);
         }
@@ -320,7 +363,11 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.infoBlue, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.infoBlue,
+                      size: 20,
+                    ),
                     SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
@@ -367,16 +414,18 @@ class _UploadVideoTabState extends State<_UploadVideoTab> {
                   ),
                   child: hasMedia
                       ? (_isImage
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(AppRadius.lg - 2),
-                              child: Image.file(
-                                File(_mediaFile!.path),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
-                            )
-                          : _VideoPreview(file: File(_mediaFile!.path)))
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.lg - 2,
+                                ),
+                                child: Image.file(
+                                  File(_mediaFile!.path),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              )
+                            : _VideoPreview(file: File(_mediaFile!.path)))
                       : const _MediaPlaceholder(),
                 ),
               ),
@@ -524,16 +573,19 @@ class _RewardAppealTabState extends State<_RewardAppealTab> {
     final reason = _reasonCtrl.text.trim();
 
     if (rewardId.isEmpty) {
-      AppSnackBar.showError(context, message: 'Vui lòng nhập mã điểm thưởng (Reward ID)');
+      AppSnackBar.showError(
+        context,
+        message: 'Vui lòng nhập mã điểm thưởng (Reward ID)',
+      );
       return;
     }
 
     context.read<RewardBloc>().add(
-          RewardAppealSubmitted(
-            rewardId: rewardId,
-            reason: reason.isNotEmpty ? reason : null,
-          ),
-        );
+      RewardAppealSubmitted(
+        rewardId: rewardId,
+        reason: reason.isNotEmpty ? reason : null,
+      ),
+    );
   }
 
   @override
@@ -545,11 +597,14 @@ class _RewardAppealTabState extends State<_RewardAppealTab> {
           final rwId = state.appealResult!.rewardId ?? widget.rewardIdCtrl.text;
           AppSnackBar.showSuccess(
             context,
-            message: 'Đã gửi khiếu nại thành công cho minh chứng #$rwId! Mã khiếu nại của bạn là #$apId.',
+            message:
+                'Đã gửi khiếu nại thành công cho minh chứng #$rwId! Mã khiếu nại của bạn là #$apId.',
           );
           widget.rewardIdCtrl.clear();
           _reasonCtrl.clear();
-          context.read<RewardBloc>().add(const RewardHistoryRequested(isRefresh: true));
+          context.read<RewardBloc>().add(
+            const RewardHistoryRequested(isRefresh: true),
+          );
         } else if (state.errorMessage != null && state.isSubmittingAppeal) {
           AppSnackBar.showError(context, message: state.errorMessage!);
         }
@@ -577,7 +632,11 @@ class _RewardAppealTabState extends State<_RewardAppealTab> {
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.warning,
+                      size: 20,
+                    ),
                     SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
@@ -693,7 +752,10 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
       if (state.proofDetail != null) {
         _showProofDetailBottomSheet(state.proofDetail!);
       } else if (state.errorMessage != null) {
-        AppSnackBar.showError(context, message: 'Không thể tải chi tiết: ${state.errorMessage}');
+        AppSnackBar.showError(
+          context,
+          message: 'Không thể tải chi tiết: ${state.errorMessage}',
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -706,15 +768,22 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
     final uri = Uri.tryParse(urlString);
     if (uri != null) {
       try {
-        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        final launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
         if (!launched && mounted) {
-          AppSnackBar.showError(context, message: 'Không thể mở liên kết video');
+          AppSnackBar.showError(
+            context,
+            message: 'Không thể mở liên kết video',
+          );
         }
       } catch (e) {
         if (mounted) {
           AppSnackBar.showError(
             context,
-            message: 'Không thể mở liên kết: Vui lòng đóng ứng dụng và chạy lại từ đầu (Cold Boot) nếu bạn vừa cài đặt gói.',
+            message:
+                'Không thể mở liên kết: Vui lòng đóng ứng dụng và chạy lại từ đầu (Cold Boot) nếu bạn vừa cài đặt gói.',
           );
         }
       }
@@ -733,18 +802,27 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
       builder: (context) {
         final formatter = NumberFormat.decimalPattern('vi_VN');
         final id = proof['id']?.toString() ?? 'N/A';
-        final description = proof['description']?.toString() ?? 'Không có mô tả';
+        final description =
+            proof['description']?.toString() ?? 'Không có mô tả';
         final rawCoin = proof['reward_coin'];
-        final rewardCoin = rawCoin is num ? rawCoin : (num.tryParse(rawCoin?.toString() ?? '') ?? 0);
+        final rewardCoin = rawCoin is num
+            ? rawCoin
+            : (num.tryParse(rawCoin?.toString() ?? '') ?? 0);
         final rawScore = proof['ai_score'];
-        final aiScore = rawScore is num ? rawScore : (num.tryParse(rawScore?.toString() ?? '') ?? 0);
-        final status = proof['status']?.toString() ?? (aiScore > 0 ? 'approved' : 'rejected');
+        final aiScore = rawScore is num
+            ? rawScore
+            : (num.tryParse(rawScore?.toString() ?? '') ?? 0);
+        final status =
+            proof['status']?.toString() ??
+            (aiScore > 0 ? 'approved' : 'rejected');
         final createdAt = proof['created_at']?.toString() ?? '';
         final videoUrl = proof['video_url']?.toString() ?? '';
         final imageUrl = proof['image_url']?.toString() ?? '';
 
         final parsedDate = DateTime.tryParse(createdAt);
-        final dateStr = parsedDate != null ? DateFormat('HH:mm dd/MM/yyyy').format(parsedDate.toLocal()) : createdAt;
+        final dateStr = parsedDate != null
+            ? DateFormat('HH:mm dd/MM/yyyy').format(parsedDate.toLocal())
+            : createdAt;
 
         final isApproved = status == 'approved' || aiScore > 0;
         final isRejected = status == 'rejected' || aiScore == 0;
@@ -774,7 +852,9 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
             return Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.lg),
+                ),
               ),
               child: Column(
                 children: [
@@ -798,23 +878,33 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                             Expanded(
                               child: Text(
                                 'Chi tiết minh chứng',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusColor.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                                border: Border.all(
+                                  color: statusColor.withValues(alpha: 0.3),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(statusIcon, color: statusColor, size: 14),
+                                  Icon(
+                                    statusIcon,
+                                    color: statusColor,
+                                    size: 14,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     statusLabel,
@@ -832,13 +922,19 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           'Mã minh chứng: #$id',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                         if (dateStr.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             'Thời gian: $dateStr',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                         const Divider(height: AppSpacing.xl),
@@ -846,12 +942,20 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                         // Mô tả chiến công
                         const Text(
                           'Mô tả chiến công',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           description,
-                          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
 
@@ -863,20 +967,30 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                                 padding: const EdgeInsets.all(AppSpacing.md),
                                 decoration: BoxDecoration(
                                   color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
                                   border: Border.all(color: AppColors.border),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('AI Đánh Giá', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                    const Text(
+                                      'AI Đánh Giá',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '${(aiScore).toStringAsFixed(1)} / 1.0',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: aiScore > 0 ? AppColors.success : AppColors.danger,
+                                        color: aiScore > 0
+                                            ? AppColors.success
+                                            : AppColors.danger,
                                       ),
                                     ),
                                   ],
@@ -889,13 +1003,23 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                                 padding: const EdgeInsets.all(AppSpacing.md),
                                 decoration: BoxDecoration(
                                   color: Colors.amber.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
+                                  border: Border.all(
+                                    color: Colors.amber.withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Thưởng Xu', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                    const Text(
+                                      'Thưởng Xu',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
                                     const SizedBox(height: 4),
                                     Text(
                                       '+${formatter.format(rewardCoin)} xu',
@@ -917,7 +1041,11 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                         if (imageUrl.isNotEmpty) ...[
                           const Text(
                             'Hình ảnh minh chứng',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           ClipRRect(
@@ -927,19 +1055,28 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: 200,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                height: 120,
-                                color: AppColors.surface,
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.broken_image_outlined, size: 40, color: AppColors.textSecondary),
-                              ),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    height: 120,
+                                    color: AppColors.surface,
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 40,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.lg),
                         ] else if (videoUrl.isNotEmpty) ...[
                           const Text(
                             'Video minh chứng (Nhấn để xem)',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           InkWell(
@@ -949,18 +1086,29 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                               height: 120,
                               decoration: BoxDecoration(
                                 color: Colors.black87,
-                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
+                                ),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.play_circle_outline, color: Colors.white, size: 44),
+                                  const Icon(
+                                    Icons.play_circle_outline,
+                                    color: Colors.white,
+                                    size: 44,
+                                  ),
                                   const SizedBox(height: 8),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
                                     child: Text(
                                       videoUrl.split('/').last,
-                                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -968,7 +1116,10 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                                   const SizedBox(height: 4),
                                   const Text(
                                     'Nhấn để phát video',
-                                    style: TextStyle(color: Colors.white54, fontSize: 11),
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -982,13 +1133,20 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                           const Divider(height: AppSpacing.xl),
                           const Text(
                             'Lịch sử khiếu nại',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           ...appealsList.map((appealMap) {
                             final appeal = Map<String, dynamic>.from(appealMap);
-                            final apReason = appeal['reason']?.toString() ?? 'Không có lý do';
-                            final apStatus = appeal['status']?.toString() ?? 'pending';
+                            final apReason =
+                                appeal['reason']?.toString() ??
+                                'Không có lý do';
+                            final apStatus =
+                                appeal['status']?.toString() ?? 'pending';
 
                             Color apColor = AppColors.warning;
                             String apLabel = 'Đang chờ xử lý';
@@ -1001,33 +1159,48 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                             }
 
                             return Container(
-                              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                              margin: const EdgeInsets.only(
+                                bottom: AppSpacing.sm,
+                              ),
                               padding: const EdgeInsets.all(AppSpacing.md),
                               decoration: BoxDecoration(
                                 color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                                 border: Border.all(color: AppColors.border),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         'Khiếu nại #${appeal['id'] ?? ''}',
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                       Text(
                                         apLabel,
-                                        style: TextStyle(color: apColor, fontSize: 12, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          color: apColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     apReason,
-                                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1036,7 +1209,8 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                         ],
 
                         // Nút khiếu nại nếu bị từ chối/ai_score = 0
-                        if (isRejected && (appealsList == null || appealsList.isEmpty)) ...[
+                        if (isRejected &&
+                            (appealsList == null || appealsList.isEmpty)) ...[
                           const SizedBox(height: AppSpacing.xl),
                           SizedBox(
                             width: double.infinity,
@@ -1051,8 +1225,14 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.danger,
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.md,
+                                ),
                               ),
                             ),
                           ),
@@ -1082,7 +1262,10 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Lỗi: ${state.errorMessage!}', textAlign: TextAlign.center),
+                Text(
+                  'Lỗi: ${state.errorMessage!}',
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 ElevatedButton(
                   onPressed: _refresh,
@@ -1122,7 +1305,8 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
           child: ListView.separated(
             controller: _scrollController,
             padding: const EdgeInsets.all(AppSpacing.lg),
-            itemCount: state.history.length + (state.isLoadingMoreHistory ? 1 : 0),
+            itemCount:
+                state.history.length + (state.isLoadingMoreHistory ? 1 : 0),
             separatorBuilder: (_, index) => const Divider(),
             itemBuilder: (context, index) {
               if (index == state.history.length) {
@@ -1139,7 +1323,10 @@ class _RewardHistoryTabState extends State<_RewardHistoryTab> {
                 onTap: () => _showDetail(item),
                 leading: CircleAvatar(
                   backgroundColor: AppColors.success.withValues(alpha: 0.12),
-                  child: const Icon(Icons.monetization_on, color: AppColors.success),
+                  child: const Icon(
+                    Icons.monetization_on,
+                    color: AppColors.success,
+                  ),
                 ),
                 title: Text('Mã điểm thưởng: #${item.rewardId ?? "N/A"}'),
                 subtitle: Text('Số dư khả dụng: ${item.availableBalance} xu'),
@@ -1179,7 +1366,11 @@ class _MediaPlaceholder extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         const Text(
           'Nhấn để chọn hình ảnh hoặc video minh chứng',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         const Text(
