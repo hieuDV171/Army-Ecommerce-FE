@@ -34,8 +34,9 @@ class ConversationListBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationsLoadMoreRequested event,
     Emitter<ConversationState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) {
       return;
+    }
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     await _loadPage(emit, index: state.index, replace: false);
   }

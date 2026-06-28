@@ -58,8 +58,9 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyToken, token);
     if (username != null) await prefs.setString(_keyUsername, username);
-    if (phoneNumber != null)
+    if (phoneNumber != null) {
       await prefs.setString(_keyPhoneNumber, phoneNumber);
+    }
     if (userId != null) await prefs.setString(_keyUserId, userId);
     logger.i(
       'SessionManager: saved token, username="${username ?? ''}", phone="${phoneNumber ?? ''}", userId="${userId ?? ''}"',

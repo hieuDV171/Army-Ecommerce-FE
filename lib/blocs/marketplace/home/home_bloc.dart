@@ -106,8 +106,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     if (state.isLoadingMoreCategories ||
         state.hasReachedEndCategories ||
-        state.isInitialLoading)
+        state.isInitialLoading) {
       return;
+    }
 
     emit(state.copyWith(isLoadingMoreCategories: true, clearError: true));
     try {
@@ -140,8 +141,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HomeLoadMoreRequested event,
     Emitter<HomeState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) {
       return;
+    }
 
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     try {

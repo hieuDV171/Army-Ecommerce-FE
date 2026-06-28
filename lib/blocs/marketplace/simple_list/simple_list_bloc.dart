@@ -68,8 +68,9 @@ class SimpleListBloc extends Bloc<SimpleListEvent, SimpleListState> {
     SimpleListLoadMoreRequested event,
     Emitter<SimpleListState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) {
       return;
+    }
 
     emit(state.copyWith(isLoadingMore: true, clearMessages: true));
     try {

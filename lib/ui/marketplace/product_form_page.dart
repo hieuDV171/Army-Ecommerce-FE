@@ -537,10 +537,12 @@ class _ProductFormViewState extends State<_ProductFormView> {
                                       labelText: 'Tên sản phẩm *',
                                     ),
                                     validator: (val) {
-                                      if (val == null || val.trim().isEmpty)
+                                      if (val == null || val.trim().isEmpty) {
                                         return 'Vui lòng nhập tên sản phẩm';
-                                      if (val.trim().length > 255)
+                                      }
+                                      if (val.trim().length > 255) {
                                         return 'Tên sản phẩm tối đa 255 ký tự';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -552,11 +554,13 @@ class _ProductFormViewState extends State<_ProductFormView> {
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) {
-                                      if (val == null || val.trim().isEmpty)
+                                      if (val == null || val.trim().isEmpty) {
                                         return 'Vui lòng nhập giá bán';
+                                      }
                                       final price = double.tryParse(val.trim());
-                                      if (price == null || price < 0)
+                                      if (price == null || price < 0) {
                                         return 'Giá bán phải là số hợp lệ >= 0';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -569,8 +573,9 @@ class _ProductFormViewState extends State<_ProductFormView> {
                                     maxLines: 4,
                                     keyboardType: TextInputType.multiline,
                                     validator: (val) {
-                                      if (val == null || val.trim().isEmpty)
+                                      if (val == null || val.trim().isEmpty) {
                                         return 'Vui lòng nhập mô tả';
+                                      }
                                       return null;
                                     },
                                   ),

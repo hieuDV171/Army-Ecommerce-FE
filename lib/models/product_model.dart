@@ -406,8 +406,9 @@ List<ProductImageModel> _readProductImageList(
     final value = json[key];
     if (value is List) {
       return value.map((item) {
-        if (item is Map)
+        if (item is Map) {
           return ProductImageModel.fromJson(Map<String, dynamic>.from(item));
+        }
         return ProductImageModel(id: '', url: item?.toString() ?? '');
       }).toList();
     }
@@ -423,8 +424,9 @@ List<ProductVideoModel> _readProductVideoList(
     final value = json[key];
     if (value is List) {
       return value.map((item) {
-        if (item is Map)
+        if (item is Map) {
           return ProductVideoModel.fromJson(Map<String, dynamic>.from(item));
+        }
         return ProductVideoModel(url: item?.toString() ?? '');
       }).toList();
     }
@@ -440,8 +442,9 @@ List<ProductSizeModel> _readProductSizeList(
     final value = json[key];
     if (value is List) {
       return value.map((item) {
-        if (item is Map)
+        if (item is Map) {
           return ProductSizeModel.fromJson(Map<String, dynamic>.from(item));
+        }
         return ProductSizeModel(id: '', name: item?.toString() ?? '');
       }).toList();
     }

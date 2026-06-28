@@ -65,8 +65,9 @@ class ProductFormBloc extends Bloc<ProductFormEvent, ProductFormState> {
   ) async {
     if (state.isLoadingMoreCategories ||
         state.hasReachedEndCategories ||
-        state.isLoadingMetadata)
+        state.isLoadingMetadata) {
       return;
+    }
     emit(state.copyWith(isLoadingMoreCategories: true, clearMessages: true));
     try {
       final more = await marketplaceRepository.getCategories(

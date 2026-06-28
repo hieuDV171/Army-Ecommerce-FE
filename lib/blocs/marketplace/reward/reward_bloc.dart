@@ -54,8 +54,9 @@ class RewardBloc extends Bloc<RewardEvent, RewardState> {
   ) async {
     if (state.isLoadingMoreHistory ||
         state.hasReachedEndHistory ||
-        state.isLoadingHistory)
+        state.isLoadingHistory) {
       return;
+    }
 
     emit(state.copyWith(isLoadingMoreHistory: true, clearMessages: true));
     try {

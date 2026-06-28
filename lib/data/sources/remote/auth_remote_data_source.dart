@@ -384,12 +384,15 @@ class AuthRemoteDataSource {
 
       final payload = <String, dynamic>{'token': token};
 
-      if (email != null && email.trim().isNotEmpty)
+      if (email != null && email.trim().isNotEmpty) {
         payload['email'] = email.trim();
-      if (username != null && username.trim().isNotEmpty)
+      }
+      if (username != null && username.trim().isNotEmpty) {
         payload['username'] = username.trim();
-      if (status != null && status.trim().isNotEmpty)
+      }
+      if (status != null && status.trim().isNotEmpty) {
         payload['status'] = status.trim();
+      }
 
       if (removeAvatar) {
         payload['avatar'] = "";
@@ -397,14 +400,18 @@ class AuthRemoteDataSource {
         payload['avatar'] = avatarUrl;
       }
 
-      if (firstName != null && firstName.trim().isNotEmpty)
+      if (firstName != null && firstName.trim().isNotEmpty) {
         payload['firstname'] = firstName.trim();
-      if (lastName != null && lastName.trim().isNotEmpty)
+      }
+      if (lastName != null && lastName.trim().isNotEmpty) {
         payload['lastname'] = lastName.trim();
-      if (address != null && address.trim().isNotEmpty)
+      }
+      if (address != null && address.trim().isNotEmpty) {
         payload['address'] = address.trim();
-      if (password != null && password.trim().isNotEmpty)
+      }
+      if (password != null && password.trim().isNotEmpty) {
         payload['password'] = password;
+      }
 
       if (removeCoverImage) {
         payload['cover_image'] = "";

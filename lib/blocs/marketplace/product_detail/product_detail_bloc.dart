@@ -158,8 +158,9 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
   ) async {
     if (_productId == null ||
         state.isFetchingMoreComments ||
-        !state.hasMoreComments)
+        !state.hasMoreComments) {
       return;
+    }
 
     emit(state.copyWith(isFetchingMoreComments: true));
     try {
@@ -261,8 +262,9 @@ class ProductDetailBloc extends Bloc<ProductDetailEvent, ProductDetailState> {
     if (productId == null ||
         product == null ||
         state.isFetchingMoreRates ||
-        !state.hasMoreRates)
+        !state.hasMoreRates) {
       return;
+    }
 
     final sellerId = product.seller?.id;
     final level = state.selectedStarFilter == 0

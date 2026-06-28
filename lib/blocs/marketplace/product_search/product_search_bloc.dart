@@ -145,8 +145,9 @@ class ProductSearchBloc extends Bloc<ProductSearchEvent, ProductSearchState> {
     ProductSearchLoadMoreRequested event,
     Emitter<ProductSearchState> emit,
   ) async {
-    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading)
+    if (state.isLoadingMore || state.hasReachedEnd || state.isInitialLoading) {
       return;
+    }
     emit(state.copyWith(isLoadingMore: true, clearError: true));
     await _loadPage(emit, index: state.index, replace: false);
   }
