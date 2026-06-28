@@ -83,7 +83,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProductDetailPage(productId: objectId),
+            builder: (_) => ProductDetailPage(
+              productId: objectId,
+              scrollToComments: type == 'comment' || type == 'comment_product',
+            ),
           ),
         );
       }

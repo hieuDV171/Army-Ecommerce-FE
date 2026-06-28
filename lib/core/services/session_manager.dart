@@ -195,7 +195,7 @@ class SessionManager {
     return userId;
   }
 
-  // Xóa sạch khi đăng xuất (chỉ xóa session, giữ lại cache, custom_base_url và theme)
+  // Xóa khi đăng xuất (chỉ xóa session, giữ lại cache, custom_base_url và theme)
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyToken);

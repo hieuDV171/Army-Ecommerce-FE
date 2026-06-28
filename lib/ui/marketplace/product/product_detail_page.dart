@@ -1062,12 +1062,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Divider(height: 32),
-                      SizedBox(
-                        key: _commentSectionKey,
-                        child: _RatingsSection(
-                          productId: product.id,
-                          sellerId: product.seller?.id,
-                        ),
+                      _RatingsSection(
+                        productId: product.id,
+                        sellerId: product.seller?.id,
                       ),
                     ],
                   );
@@ -1075,6 +1072,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               ),
               const SizedBox(height: AppSpacing.lg),
               SectionHeader(
+                key: _commentSectionKey,
                 title: 'Bình luận',
                 actionLabel: 'Viết',
                 onActionTap: () {
